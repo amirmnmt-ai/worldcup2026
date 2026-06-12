@@ -1327,6 +1327,20 @@ firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db   = firebase.database();
 
+// ── TELEGRAM BOT ──
+const TG_TOKEN   = "8724029460:AAEK90I9EmWvE2G6J2-NDhOayW_iBEmbdz4";
+const TG_CHAT_ID = "-1003945719587";
+
+async function sendTelegram(text) {
+  try {
+    await fetch(`https://api.telegram.org/bot${TG_TOKEN}/sendMessage`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ chat_id: TG_CHAT_ID, text, parse_mode: 'HTML' })
+    });
+  } catch(e) { console.warn('Telegram send failed:', e); }
+}
+
 // مانیتور اتصال به Firebase
 db.ref('.info/connected').on('value', snap => {
   const connEl = document.getElementById('conn-status');
@@ -2048,6 +2062,38 @@ async function confirmResult(matchId) {
       appData.results[matchId] = result;
       renderAll();
       showToast(`✅ نتیجه ثبت و تأیید شد`, 'success');
+
+      // ارسال پیام تلگرام
+      try {
+        const match = MATCHES.find(m => m.id === matchId);
+        const home = getTeamInfo(matchId, 'home');
+        const away = getTeamInfo(matchId, 'away');
+        const scoreStr = `${result.homeGoals} – ${result.awayGoals}`;
+        const typeStr  = result.type === 'pen' ? ' (پنالتی)' : result.type === 'ot' ? ' (وقت اضافه)' : '';
+
+        // محاسبه نتایج بازیکنان
+        const { payments, cat90={} } = calcSettlementForMatch(matchId, result);
+        const approvedUsers = Object.entries(appData.users).filter(([,u]) => u.approved);
+        let playerLines = '';
+        for (const [uid, user] of approvedUsers) {
+          const cat   = cat90[uid];
+          const pay   = payments[uid] || 0;
+          const pred  = (appData.predictions[matchId]||{})[uid];
+          const predStr = pred ? `${pred.homeGoals}-${pred.awayGoals}` : '—';
+          const icon  = cat==='exact' ? '🎯' : cat==='correct' ? '✅' : cat==='wrong' ? '❌' : '➖';
+          const payStr= pay > 0
+            ? `+${Math.abs(pay).toLocaleString('fa-IR')}`
+            : pay < 0 ? `-${Math.abs(pay).toLocaleString('fa-IR')}` : '۰';
+          playerLines += `\n${icon} ${user.name} (${predStr}) ← ${payStr} تومان`;
+        }
+
+        const msg = `🏆 <b>نتیجه ثبت شد</b>\n`
+          + `${home.flag} <b>${home.name} ${scoreStr} ${away.name}</b> ${away.flag}${typeStr}\n`
+          + playerLines
+          + `\n\n📊 amirmnmt-ai.github.io/worldcup2026`;
+        sendTelegram(msg);
+      } catch(e) { console.warn('TG result msg:', e); }
+
       return;
     } catch (e) {
       lastError = e;
@@ -3564,6 +3610,58 @@ async function shareScreenshot() {
 function closeScreenshotModal() {
   document.getElementById('screenshot-modal').style.display = 'none';
 }
+
+// ════════════════════════════════════════════════════════════
+//  TELEGRAM MATCH NOTIFICATIONS
+// ════════════════════════════════════════════════════════════
+const _notifSent = {}; // { matchId: { open: bool, close: bool } }
+
+async function checkMatchNotifications() {
+  if (!currentUser) return;
+  for (const match of MATCHES) {
+    const status = getMatchStatus(match);
+    const n = _notifSent[match.id] || {};
+
+    // باز شدن
+    if ((status === 'open') && !n.open) {
+      _notifSent[match.id] = { ...n, open: true };
+      const home = getTeamInfo(match.id,'home');
+      const away = getTeamInfo(match.id,'away');
+      const dt   = new Date(match.datetime + '+03:30');
+      const timeStr = dt.toLocaleTimeString('fa-IR', {hour:'2-digit', minute:'2-digit'});
+      const dateStr = dt.toLocaleDateString('fa-IR', {weekday:'short', month:'long', day:'numeric'});
+      sendTelegram(
+        `⚽ <b>پیش‌بینی باز شد</b>
+`
+        + `${home.flag} ${home.name} vs ${away.name} ${away.flag}
+`
+        + `📅 ${dateStr} ساعت ${timeStr}
+`
+        + `⏰ تا یک ساعت قبل از شروع بازی فرصت ثبت پیش‌بینی دارید.
+
+`
+        + `🔗 amirmnmt-ai.github.io/worldcup2026`
+      );
+    }
+
+    // بسته شدن
+    if ((status === 'locked' || status === 'done') && n.open && !n.close) {
+      _notifSent[match.id] = { ...n, close: true };
+      const home = getTeamInfo(match.id,'home');
+      const away = getTeamInfo(match.id,'away');
+      sendTelegram(
+        `🔒 <b>پیش‌بینی بسته شد</b>
+`
+        + `${home.flag} ${home.name} vs ${away.name} ${away.flag}
+`
+        + `دیگه نمیشه پیش‌بینی تغییر داد.`
+      );
+    }
+  }
+}
+
+// چک هر ۶۰ ثانیه
+setInterval(checkMatchNotifications, 60 * 1000);
 
 // ════════════════════════════════════════════════════════════
 //  RENDER ALL
