@@ -2012,16 +2012,20 @@ async function confirmResult(matchId) {
     }
   }
 
-  // آپدیت فوری حافظه (کار می‌کنه حتی در test mode)
-  appData.results[matchId] = result;
-  renderAll();
-  showToast('نتیجه ثبت شد ✅ محاسبات به‌روز شد', 'success');
-
-  // ذخیره در Firebase
+  // ذخیره در Firebase اول
   try {
     await db.ref(`results/${matchId}`).set(result);
+    // بعد از ذخیره موفق، حافظه آپدیت بشه
+    appData.results[matchId] = result;
+    renderAll();
+    showToast(`✅ نتیجه ثبت شد — ${matchId}`, 'success');
   } catch (e) {
-    console.error('Firebase result write:', e);
+    console.error('Firebase result write error:', e);
+    // نشون دادن خطای دقیق به ادمین
+    const errMsg = e.code === 'PERMISSION_DENIED'
+      ? '❌ Firebase: دسترسی رد شد — قوانین امنیتی بررسی شود'
+      : `❌ خطای Firebase: ${e.message || e.code || 'نامشخص'}`;
+    showToast(errMsg, 'error');
   }
 }
 
