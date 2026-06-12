@@ -1650,7 +1650,7 @@ auth.onAuthStateChanged(async (fbUser) => {
       _pendingRegName = null; // پاک کردن بعد از استفاده
     } else if (adminUser) {
       // ادمین همیشه approved
-      await ref.update({ approved: true, name: ADMIN_NAME, email }); // ensure email always stored for rules
+      await ref.update({ approved: true, email }); // اسم رو reset نمی‌کنیم — ادمین می‌تونه اسمشو عوض کنه
     }
 
     const updatedSnap = await ref.once('value');
