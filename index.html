@@ -1,0 +1,3099 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>پیش‌بینی جام‌جهانی ۲۰۲۶</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+<!-- Chart.js -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+
+<!-- ══ Firebase SDK (compat v9) ══ -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;600;700;800;900&display=swap');
+
+  :root {
+    --gold:        #C9A84C;
+    --gold-light:  #F0D080;
+    --gold-dim:    #8a6f2e;
+    --gold-glow:   rgba(201,168,76,0.15);
+    --dark:        #06080c;
+    --dark-2:      #0d1017;
+    --dark-3:      #131720;
+    --dark-4:      #181d28;
+    --surface:     #1e2535;
+    --surface-2:   #252d40;
+    --glass:       rgba(255,255,255,0.03);
+    --glass-hover: rgba(255,255,255,0.055);
+    --border:      rgba(201,168,76,0.12);
+    --border-bright: rgba(201,168,76,0.38);
+    --border-subtle: rgba(255,255,255,0.06);
+    --text:        #eee8d8;
+    --text-dim:    #7a7570;
+    --text-mid:    #a89e90;
+    --green:       #00d68f;
+    --red:         #ff4d4d;
+    --blue:        #4a9eff;
+    --orange:      #ff8c42;
+    --radius:      16px;
+    --radius-sm:   10px;
+    --radius-xs:   6px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Vazirmatn', sans-serif;
+    background: var(--dark);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ── PREMIUM BACKGROUND ── */
+  body::before {
+    content: '';
+    position: fixed; inset: 0; z-index: 0;
+    background:
+      radial-gradient(ellipse 90% 60% at 15% -5%,  rgba(201,168,76,0.09) 0%, transparent 55%),
+      radial-gradient(ellipse 70% 50% at 85% 105%, rgba(201,168,76,0.06) 0%, transparent 50%),
+      radial-gradient(ellipse 50% 40% at 50%  50%, rgba(30,37,53,0.5)    0%, transparent 70%);
+    pointer-events: none;
+  }
+
+  body::after {
+    content: '';
+    position: fixed; inset: 0; z-index: 0;
+    background-image: radial-gradient(rgba(201,168,76,0.06) 1px, transparent 1px);
+    background-size: 32px 32px;
+    pointer-events: none;
+    opacity: 0.5;
+  }
+
+  /* ── SCREENS ── */
+  .screen { display: none; position: relative; z-index: 1; min-height: 100vh; }
+  .screen.active { display: flex; flex-direction: column; animation: fadeIn 0.35s ease; }
+
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+  @keyframes float  { 0%,100% { transform: translateY(0) rotate(-2deg); } 50% { transform: translateY(-12px) rotate(2deg); } }
+  @keyframes pulse  { 0%,100% { opacity:1; } 50% { opacity:0.4; } }
+  @keyframes shimmer {
+    0%   { background-position: -200% center; }
+    100% { background-position:  200% center; }
+  }
+  @keyframes blink  { 0%,100%{opacity:1} 50%{opacity:0.25} }
+  @keyframes slideUp { from { opacity:0; transform:translateY(12px); } to { opacity:1; transform:none; } }
+
+  /* ══ LOADING ══ */
+  #screen-loading { align-items: center; justify-content: center; }
+
+  /* ══ LOGIN ══ */
+  #screen-login { align-items: center; justify-content: center; padding: 2rem; }
+
+  .login-card {
+    width: 100%; max-width: 400px; text-align: center;
+    animation: slideUp 0.5s ease;
+  }
+
+  .trophy-icon {
+    font-size: 5.5rem; line-height: 1; margin-bottom: 1.5rem;
+    filter: drop-shadow(0 0 40px rgba(201,168,76,0.5)) drop-shadow(0 0 80px rgba(201,168,76,0.2));
+    animation: float 3.5s ease-in-out infinite;
+    display: block;
+  }
+
+  .login-title {
+    font-size: 2rem; font-weight: 900; line-height: 1.2; margin-bottom: 0.4rem;
+    background: linear-gradient(135deg, var(--gold-light) 0%, var(--gold) 40%, var(--gold-dim) 100%);
+    background-size: 200% auto;
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    background-clip: text;
+    animation: shimmer 4s linear infinite;
+  }
+
+  .login-subtitle { color: var(--text-dim); font-size: 0.88rem; margin-bottom: 2.2rem; letter-spacing: 0.3px; }
+
+  /* Auth tab switcher */
+  .auth-tabs {
+    display: flex;
+    background: var(--dark-3);
+    border-radius: var(--radius-sm);
+    padding: 4px;
+    margin-bottom: 1.2rem;
+    border: 1px solid var(--border);
+    gap: 4px;
+  }
+
+  .auth-tab-btn {
+    flex: 1; padding: 0.55rem; border: none; border-radius: var(--radius-xs);
+    font-family: 'Vazirmatn', sans-serif; font-weight: 700; font-size: 0.85rem;
+    cursor: pointer; transition: all 0.2s; color: var(--text-dim); background: transparent;
+  }
+
+  .auth-tab-btn.active {
+    background: linear-gradient(135deg, var(--gold), var(--gold-dim));
+    color: #060810;
+    box-shadow: 0 2px 12px rgba(201,168,76,0.3);
+  }
+
+  /* Inputs */
+  .auth-input {
+    width: 100%;
+    background: var(--dark-3);
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 0.9rem 1.2rem;
+    color: var(--text);
+    font-family: 'Vazirmatn', sans-serif;
+    font-size: 0.95rem;
+    margin-bottom: 0.75rem;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    outline: none;
+  }
+  .auth-input:focus {
+    border-color: var(--gold);
+    box-shadow: 0 0 0 3px rgba(201,168,76,0.12);
+  }
+  .auth-input::placeholder { color: var(--text-dim); }
+
+  .btn-login {
+    width: 100%;
+    background: linear-gradient(135deg, var(--gold-light) 0%, var(--gold) 50%, var(--gold-dim) 100%);
+    background-size: 200% auto;
+    border: none; border-radius: var(--radius-sm);
+    padding: 1rem; color: #06080c;
+    font-family: 'Vazirmatn', sans-serif; font-size: 1rem; font-weight: 800;
+    cursor: pointer; transition: all 0.25s;
+    box-shadow: 0 4px 20px rgba(201,168,76,0.3);
+    display: flex; align-items: center; justify-content: center; gap: 0.5rem;
+  }
+  .btn-login:hover {
+    background-position: right center;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 28px rgba(201,168,76,0.45);
+  }
+  .btn-login:active { transform: translateY(0); }
+
+  .login-hint { font-size: 0.76rem; color: var(--text-dim); line-height: 1.7; margin-top: 1rem; }
+
+  /* ══ PENDING ══ */
+  #screen-pending { align-items: center; justify-content: center; padding: 2rem; text-align: center; }
+
+  .pending-icon { font-size: 4rem; margin-bottom: 1.5rem; animation: pulse 2s infinite; }
+
+  .btn-pending-action {
+    margin-top: 1.2rem; padding: 0.7rem 1.8rem;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius-sm); color: var(--text);
+    font-family: 'Vazirmatn', sans-serif; font-size: 0.9rem;
+    cursor: pointer; transition: all 0.2s; display: block;
+    width: fit-content; margin-left: auto; margin-right: auto;
+  }
+  .btn-pending-action:hover { border-color: var(--border-bright); background: var(--surface-2); }
+
+  .btn-signout-pending {
+    margin-top: 0.7rem; padding: 0.55rem 1.2rem;
+    background: transparent; border: 1px solid rgba(255,77,77,0.2);
+    border-radius: var(--radius-sm); color: var(--red);
+    font-family: 'Vazirmatn', sans-serif; font-size: 0.82rem;
+    cursor: pointer; opacity: 0.7; transition: all 0.2s;
+    display: block; width: fit-content; margin-left: auto; margin-right: auto;
+  }
+  .btn-signout-pending:hover { opacity: 1; border-color: var(--red); }
+
+  /* ══ APP ══ */
+  #screen-app { flex-direction: column; }
+
+  .app-header {
+    position: sticky; top: 0; z-index: 100;
+    background: rgba(6,8,12,0.88);
+    backdrop-filter: blur(24px) saturate(1.5);
+    -webkit-backdrop-filter: blur(24px) saturate(1.5);
+    border-bottom: 1px solid var(--border);
+    padding: 0 1.4rem;
+    display: flex; align-items: center; justify-content: space-between;
+    height: 58px;
+  }
+
+  .header-logo {
+    font-size: 1rem; font-weight: 800; letter-spacing: -0.3px;
+    background: linear-gradient(135deg, var(--gold-light), var(--gold));
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+  }
+
+  .header-user { display: flex; align-items: center; gap: 0.7rem; }
+
+  .header-username { font-size: 0.82rem; color: var(--text-mid); font-weight: 500; }
+
+  .avatar {
+    width: 34px; height: 34px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--gold-light), var(--gold-dim));
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.85rem; font-weight: 800; color: #060810;
+    border: 2px solid rgba(201,168,76,0.3);
+    box-shadow: 0 0 12px rgba(201,168,76,0.2);
+  }
+
+  .btn-signout {
+    background: none; border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-xs); padding: 0.42rem 0.55rem;
+    color: var(--text-dim); cursor: pointer;
+    transition: all 0.2s; display: flex; align-items: center; justify-content: center;
+    width: 34px; height: 34px;
+  }
+  .btn-signout:hover { border-color: var(--red); color: var(--red); background: rgba(255,77,77,0.08); }
+  .btn-signout svg { display: block; }
+
+  /* ══ NAV TABS ══ */
+  .nav-tabs {
+    display: flex; background: rgba(6,8,12,0.92);
+    backdrop-filter: blur(20px) saturate(1.4);
+    -webkit-backdrop-filter: blur(20px) saturate(1.4);
+    border-bottom: 1px solid var(--border);
+    overflow-x: auto; scrollbar-width: none;
+    padding: 0 0.5rem;
+    position: sticky; top: 58px; z-index: 99;
+  }
+  .nav-tabs::-webkit-scrollbar { display: none; }
+
+  .nav-tab {
+    flex: 1; min-width: 72px; padding: 0.85rem 0.5rem;
+    text-align: center; font-size: 0.78rem; font-weight: 700;
+    color: var(--text-dim); cursor: pointer;
+    border-bottom: 2px solid transparent;
+    border-top: none; border-right: none; border-left: none;
+    background: none; font-family: 'Vazirmatn', sans-serif;
+    transition: all 0.2s; white-space: nowrap; letter-spacing: 0.2px;
+  }
+  .nav-tab.active { color: var(--gold); border-bottom-color: var(--gold); }
+  .nav-tab:hover:not(.active) { color: var(--text-mid); }
+
+  /* ══ CONTENT ══ */
+  .tab-content { display: none; flex: 1; overflow-y: auto; padding: 1.2rem; }
+  .tab-content.active { display: block; }
+
+  /* ══ MATCH CARD ══ */
+  .match-card {
+    background: var(--glass);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius);
+    margin-bottom: 0.85rem;
+    overflow: hidden;
+    transition: border-color 0.25s, transform 0.2s, box-shadow 0.25s;
+    backdrop-filter: blur(8px);
+  }
+  .match-card:hover {
+    border-color: var(--border);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 32px rgba(0,0,0,0.3), 0 0 0 1px rgba(201,168,76,0.08);
+  }
+
+  .match-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0.65rem 1rem;
+    background: rgba(0,0,0,0.25);
+    font-size: 0.72rem; color: var(--text-dim);
+    border-bottom: 1px solid var(--border-subtle);
+  }
+
+  .match-stage {
+    display: inline-block; padding: 0.18rem 0.65rem;
+    border-radius: 20px; font-size: 0.68rem; font-weight: 700;
+    letter-spacing: 0.3px;
+  }
+  .stage-group  { background: rgba(74,158,255,0.15);  color: #7eb8ff; border: 1px solid rgba(74,158,255,0.2); }
+  .stage-r32    { background: rgba(255,180,66,0.15);  color: #ffcc70; border: 1px solid rgba(255,180,66,0.2); }
+  .stage-r16    { background: rgba(255,140,66,0.15);  color: #ffaa70; border: 1px solid rgba(255,140,66,0.2); }
+  .stage-qf     { background: rgba(255,77,77,0.15);   color: #ff8888; border: 1px solid rgba(255,77,77,0.2); }
+  .stage-sf     { background: rgba(180,110,255,0.15); color: #c990ff; border: 1px solid rgba(180,110,255,0.2); }
+  .stage-final  { background: rgba(201,168,76,0.18);  color: var(--gold-light); border: 1px solid rgba(201,168,76,0.3); }
+  .stage-3rd    { background: rgba(0,214,143,0.12);   color: #40e0a0; border: 1px solid rgba(0,214,143,0.2); }
+
+  .match-teams {
+    display: flex; align-items: center; padding: 1.1rem 1rem; gap: 0.5rem;
+  }
+
+  .team { flex: 1; text-align: center; }
+  .team-flag { font-size: 2.2rem; line-height: 1; margin-bottom: 0.4rem; }
+  .team-name  { font-size: 0.82rem; font-weight: 700; color: var(--text); }
+
+  .match-vs {
+    display: flex; flex-direction: column; align-items: center;
+    gap: 0.25rem; min-width: 64px;
+  }
+
+  .vs-text { font-size: 0.68rem; color: var(--text-dim); font-weight: 700; letter-spacing: 1px; }
+
+  .score-display {
+    font-size: 1.5rem; font-weight: 900; color: var(--gold);
+    letter-spacing: 3px; text-shadow: 0 0 20px rgba(201,168,76,0.4);
+  }
+
+  /* ══ PREDICTION SECTION ══ */
+  .prediction-section {
+    padding: 0.85rem 1rem;
+    border-top: 1px solid var(--border-subtle);
+    background: rgba(0,0,0,0.2);
+  }
+
+  .prediction-label {
+    font-size: 0.72rem; color: var(--text-dim);
+    margin-bottom: 0.65rem; font-weight: 700; letter-spacing: 0.3px;
+  }
+
+  .score-input-row {
+    display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.6rem;
+  }
+
+  .score-input {
+    width: 56px; height: 52px;
+    background: var(--surface);
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--text); font-family: 'Vazirmatn', sans-serif;
+    font-size: 1.4rem; font-weight: 900; text-align: center;
+    transition: border-color 0.2s, box-shadow 0.2s; outline: none;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .score-input:focus {
+    border-color: var(--gold);
+    box-shadow: 0 0 0 3px rgba(201,168,76,0.15);
+  }
+
+  .score-dash { font-size: 1.3rem; color: var(--text-dim); font-weight: 700; }
+
+  .knockout-extras { display: none; margin-top: 0.7rem; padding-top: 0.7rem; border-top: 1px dashed var(--border); }
+  .knockout-extras.visible { display: block; }
+
+  .extra-section-title {
+    font-size: 0.68rem; color: var(--gold-dim); font-weight: 700;
+    margin-bottom: 0.5rem; letter-spacing: 0.5px; text-transform: uppercase;
+  }
+
+  .btn-submit-prediction {
+    width: 100%;
+    background: linear-gradient(135deg, var(--gold), var(--gold-dim));
+    border: none; border-radius: var(--radius-sm);
+    padding: 0.7rem; color: #060810;
+    font-family: 'Vazirmatn', sans-serif; font-size: 0.85rem; font-weight: 800;
+    cursor: pointer; transition: all 0.2s; margin-top: 0.6rem;
+    box-shadow: 0 2px 12px rgba(201,168,76,0.25);
+  }
+  .btn-submit-prediction:hover { filter: brightness(1.12); transform: translateY(-1px); box-shadow: 0 4px 18px rgba(201,168,76,0.4); }
+  .btn-submit-prediction:disabled { background: var(--surface-2); color: var(--text-dim); cursor: not-allowed; filter: none; box-shadow: none; transform: none; }
+
+  .prediction-submitted {
+    display: flex; align-items: center; gap: 0.5rem;
+    font-size: 0.82rem; color: var(--green); font-weight: 700;
+  }
+
+  .prediction-locked {
+    font-size: 0.78rem; color: var(--text-dim);
+    text-align: center; padding: 0.4rem;
+  }
+
+  /* ══ LEADERBOARD ══ */
+  .leaderboard-row {
+    display: flex; align-items: center;
+    padding: 0.95rem 1.1rem;
+    border-radius: var(--radius);
+    margin-bottom: 0.6rem;
+    background: var(--glass);
+    border: 1px solid var(--border-subtle);
+    transition: all 0.2s; gap: 0.9rem;
+    backdrop-filter: blur(8px);
+  }
+  .leaderboard-row.me {
+    border-color: rgba(201,168,76,0.3);
+    background: rgba(201,168,76,0.05);
+    box-shadow: 0 0 20px rgba(201,168,76,0.08);
+  }
+  .leaderboard-row:hover { border-color: var(--border); transform: translateX(-2px); }
+
+  .rank-num { font-size: 1.1rem; font-weight: 900; color: var(--text-dim); min-width: 30px; text-align: center; }
+  .rank-1 { color: #FFD700; text-shadow: 0 0 12px rgba(255,215,0,0.5); }
+  .rank-2 { color: #C8C8C8; }
+  .rank-3 { color: #CD7F32; }
+
+  .player-info { flex: 1; }
+  .player-name  { font-size: 0.9rem; font-weight: 700; }
+  .player-stats { font-size: 0.7rem; color: var(--text-dim); margin-top: 0.25rem; }
+  .player-balance { font-size: 1rem; font-weight: 900; text-align: left; }
+
+  .balance-pos  { color: var(--green); text-shadow: 0 0 10px rgba(0,214,143,0.3); }
+  .balance-neg  { color: var(--red); }
+  .balance-zero { color: var(--text-dim); }
+
+  /* ══ RESULTS ══ */
+  .result-card {
+    background: var(--glass);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius);
+    margin-bottom: 0.85rem; overflow: hidden;
+    backdrop-filter: blur(8px);
+  }
+
+  .result-match-row { display: flex; align-items: center; padding: 0.9rem 1rem; gap: 0.5rem; }
+  .result-team { flex: 1; text-align: center; }
+  .result-flag { font-size: 1.6rem; }
+  .result-name { font-size: 0.75rem; font-weight: 700; margin-top: 0.25rem; }
+
+  .result-score {
+    font-size: 1.5rem; font-weight: 900; color: var(--gold);
+    min-width: 76px; text-align: center; letter-spacing: 3px;
+    text-shadow: 0 0 20px rgba(201,168,76,0.4);
+  }
+
+  .predictions-breakdown { border-top: 1px solid var(--border-subtle); padding: 0.8rem 1rem; }
+  .breakdown-title { font-size: 0.7rem; color: var(--text-dim); font-weight: 700; margin-bottom: 0.6rem; letter-spacing: 0.3px; }
+
+  .breakdown-row {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0.38rem 0; font-size: 0.8rem;
+    border-bottom: 1px solid rgba(255,255,255,0.03);
+  }
+  .breakdown-row:last-child { border-bottom: none; }
+  .breakdown-player { color: var(--text-mid); }
+  .breakdown-pred   { color: var(--text-dim); font-size: 0.75rem; font-weight: 700; }
+  .breakdown-result { font-weight: 800; font-size: 0.8rem; }
+
+  .res-exact { color: var(--gold); text-shadow: 0 0 8px rgba(201,168,76,0.4); }
+  .res-win   { color: var(--green); }
+  .res-zero  { color: var(--text-dim); }
+  .res-neg   { color: var(--red); }
+
+  /* ══ ADMIN ══ */
+  .admin-match-card {
+    background: var(--glass);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius);
+    margin-bottom: 0.85rem; overflow: hidden;
+    backdrop-filter: blur(8px);
+  }
+
+  .admin-match-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0.75rem 1rem;
+    background: rgba(0,0,0,0.25);
+    border-bottom: 1px solid var(--border-subtle);
+  }
+
+  .admin-match-title { font-size: 0.85rem; font-weight: 700; }
+
+  .admin-result-input {
+    padding: 0.85rem 1rem;
+    display: flex; align-items: center; gap: 0.8rem; flex-wrap: wrap;
+  }
+
+  .input-group { display: flex; flex-direction: column; gap: 0.3rem; }
+  .input-group label { font-size: 0.68rem; color: var(--text-dim); font-weight: 700; letter-spacing: 0.3px; }
+
+  .input-group input, .input-group select {
+    background: var(--surface); border: 1.5px solid var(--border);
+    border-radius: var(--radius-sm); padding: 0.5rem 0.7rem;
+    color: var(--text); font-family: 'Vazirmatn', sans-serif;
+    font-size: 0.9rem; width: 70px; text-align: center; outline: none;
+    transition: border-color 0.2s;
+  }
+  .input-group select { width: auto; cursor: pointer; }
+  .input-group input:focus, .input-group select:focus { border-color: var(--gold); }
+
+  .btn-confirm {
+    background: var(--green); border: none; border-radius: var(--radius-sm);
+    padding: 0.7rem 1.2rem; color: #060810;
+    font-family: 'Vazirmatn', sans-serif; font-size: 0.85rem; font-weight: 800;
+    cursor: pointer; transition: all 0.2s; margin-top: auto;
+    box-shadow: 0 2px 10px rgba(0,214,143,0.2);
+    touch-action: manipulation; min-height: 44px;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .btn-confirm:hover { filter: brightness(1.1); transform: translateY(-1px); }
+
+  .btn-approve {
+    background: var(--blue); border: none; border-radius: var(--radius-sm);
+    padding: 0.55rem 1rem; color: white;
+    font-family: 'Vazirmatn', sans-serif; font-size: 0.82rem; font-weight: 800;
+    cursor: pointer; transition: all 0.2s;
+    touch-action: manipulation; min-height: 44px;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .btn-approve:hover { filter: brightness(1.1); }
+
+  .btn-reject {
+    background: transparent; border: 1px solid rgba(255,77,77,0.4);
+    border-radius: var(--radius-sm); padding: 0.55rem 1rem; color: var(--red);
+    font-family: 'Vazirmatn', sans-serif; font-size: 0.82rem; font-weight: 700;
+    cursor: pointer; transition: all 0.2s;
+    touch-action: manipulation; min-height: 44px;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .btn-reject:hover { background: rgba(255,77,77,0.1); border-color: var(--red); }
+
+  .btn-delete-user {
+    background: transparent; border: 1px solid rgba(255,77,77,0.25);
+    border-radius: var(--radius-xs); padding: 0.3rem 0.6rem; color: var(--red);
+    font-family: 'Vazirmatn', sans-serif; font-size: 0.72rem; font-weight: 700;
+    cursor: pointer; transition: all 0.2s; opacity: 0.7;
+  }
+  .btn-delete-user:hover { opacity: 1; background: rgba(255,77,77,0.1); border-color: var(--red); }
+
+  .pending-users-list { display: flex; flex-direction: column; gap: 0.6rem; }
+
+  .pending-user-row {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0.8rem 1rem;
+    background: var(--glass); border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-sm); font-size: 0.85rem;
+    backdrop-filter: blur(8px);
+  }
+
+  /* ══ SHARE CARD ══ */
+  .share-card-modal {
+    display: none; position: fixed; inset: 0;
+    background: rgba(0,0,0,0.85); z-index: 300;
+    align-items: center; justify-content: center;
+    padding: 1rem; backdrop-filter: blur(6px);
+  }
+  .share-card-modal.active { display: flex; }
+  .share-card-inner {
+    background: var(--dark-3); border: 1px solid var(--border);
+    border-radius: var(--radius); width: 100%; max-width: 520px;
+    padding: 1.25rem; max-height: 90vh; overflow-y: auto;
+  }
+  .share-card-preview {
+    background: #0d1017; border-radius: 12px; padding: 20px;
+    margin-bottom: 1rem; font-family: 'Vazirmatn', sans-serif;
+  }
+  .share-card-header {
+    text-align: center; margin-bottom: 16px;
+    border-bottom: 1px solid rgba(201,168,76,0.2); padding-bottom: 14px;
+  }
+  .share-card-teams {
+    display: flex; align-items: center; justify-content: center;
+    gap: 12px; margin-bottom: 8px;
+  }
+  .share-card-team { text-align: center; }
+  .share-card-flag { font-size: 2rem; display: block; }
+  .share-card-name { font-size: 0.78rem; font-weight: 700; color: #e8e2dc; margin-top: 4px; }
+  .share-card-vs { font-size: 0.7rem; color: #5a5450; font-weight: 700; }
+  .share-card-date { font-size: 0.72rem; color: #5a5450; margin-top: 6px; }
+  .share-card-rows { display: flex; flex-direction: column; gap: 6px; }
+  .share-card-row {
+    display: flex; align-items: center; justify-content: space-between;
+    background: rgba(255,255,255,0.04); border-radius: 8px; padding: 8px 12px;
+  }
+  .share-card-pname { font-size: 0.82rem; color: #e8e2dc; font-weight: 600; }
+  .share-card-pred {
+    font-size: 1rem; font-weight: 900; color: #C9A84C;
+    background: rgba(201,168,76,0.1); padding: 3px 12px;
+    border-radius: 6px; direction: ltr;
+  }
+  .share-card-no-pred { font-size: 0.72rem; color: #5a5450; font-style: italic; }
+  .share-card-footer {
+    text-align: center; margin-top: 14px; padding-top: 12px;
+    border-top: 1px solid rgba(201,168,76,0.15);
+    font-size: 0.68rem; color: #5a5450; letter-spacing: 0.5px;
+  }
+  .btn-share-download {
+    width: 100%; padding: 0.75rem; background: var(--gold);
+    border: none; border-radius: var(--radius-sm); color: #06080c;
+    font-family: 'Vazirmatn', sans-serif; font-size: 0.9rem; font-weight: 800;
+    cursor: pointer; margin-bottom: 0.5rem; touch-action: manipulation;
+  }
+  .btn-share-cancel {
+    width: 100%; padding: 0.6rem; background: transparent;
+    border: 1px solid var(--border); border-radius: var(--radius-sm); color: var(--text-dim);
+    font-family: 'Vazirmatn', sans-serif; font-size: 0.85rem;
+    cursor: pointer; touch-action: manipulation;
+  }
+
+  /* ══ MODAL ══ */
+  .modal-overlay {
+    display: none; position: fixed; inset: 0;
+    background: rgba(0,0,0,0.75); z-index: 200;
+    align-items: center; justify-content: center; padding: 1rem;
+    backdrop-filter: blur(4px);
+  }
+  .modal-overlay.active { display: flex; animation: fadeIn 0.2s ease; }
+
+  .modal {
+    background: var(--dark-3);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    width: 100%; max-width: 460px;
+    max-height: 80vh; overflow-y: auto; padding: 1.5rem;
+    box-shadow: 0 24px 80px rgba(0,0,0,0.6), 0 0 0 1px rgba(201,168,76,0.1);
+  }
+
+  .modal-title { font-size: 1.1rem; font-weight: 900; color: var(--gold); margin-bottom: 1.2rem; }
+
+  .settlement-row {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0.75rem 0; border-bottom: 1px solid var(--border-subtle); font-size: 0.88rem;
+  }
+  .settlement-row:last-child { border-bottom: none; }
+
+  .btn-close-modal {
+    width: 100%; background: var(--surface-2); border: none;
+    border-radius: var(--radius-sm); padding: 0.75rem; color: var(--text);
+    font-family: 'Vazirmatn', sans-serif; font-size: 0.9rem; font-weight: 700;
+    cursor: pointer; margin-top: 1rem; transition: all 0.2s;
+  }
+  .btn-close-modal:hover { background: var(--surface); }
+
+  /* ══ BADGES ══ */
+  .badge {
+    display: inline-block; padding: 0.2rem 0.6rem;
+    border-radius: 20px; font-size: 0.67rem; font-weight: 700; letter-spacing: 0.3px;
+    border: 1px solid transparent;
+  }
+  .badge-admin  { background: rgba(201,168,76,0.15); color: var(--gold); border-color: rgba(201,168,76,0.25); }
+  .badge-open   { background: rgba(0,214,143,0.12);  color: var(--green); border-color: rgba(0,214,143,0.2); }
+  .badge-closed { background: rgba(255,77,77,0.12);  color: var(--red); border-color: rgba(255,77,77,0.2); }
+  .badge-done   { background: rgba(74,158,255,0.12); color: var(--blue); border-color: rgba(74,158,255,0.2); }
+
+  /* ══ SECTION DIVIDER ══ */
+  .section-divider { display: flex; align-items: center; gap: 0.8rem; margin: 1.3rem 0 0.9rem; }
+  .section-divider-line { flex: 1; height: 1px; background: var(--border); }
+  .section-divider-text {
+    font-size: 0.68rem; font-weight: 800; color: var(--text-dim);
+    text-transform: uppercase; letter-spacing: 1px;
+  }
+
+  /* ══ STAT BOXES ══ */
+  .stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.65rem; margin-bottom: 1.2rem; }
+
+  .stat-box {
+    background: var(--glass);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-sm); padding: 0.9rem 0.7rem;
+    text-align: center; transition: all 0.2s;
+    backdrop-filter: blur(8px);
+  }
+  .stat-box:hover { border-color: var(--border); transform: translateY(-2px); }
+
+  .stat-value {
+    font-size: 1.3rem; font-weight: 900; color: var(--gold); display: block;
+    text-shadow: 0 0 16px rgba(201,168,76,0.3);
+  }
+  .stat-label { font-size: 0.65rem; color: var(--text-dim); margin-top: 0.25rem; letter-spacing: 0.3px; }
+
+  /* ══ TOAST ══ */
+  .toast {
+    position: fixed; bottom: 1.5rem; left: 50%;
+    transform: translateX(-50%) translateY(120px);
+    background: var(--dark-3);
+    border: 1px solid var(--border);
+    border-radius: 30px; padding: 0.72rem 1.6rem;
+    font-size: 0.84rem; font-weight: 700; color: var(--text);
+    z-index: 300; transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    white-space: nowrap; backdrop-filter: blur(16px);
+    box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+  }
+  .toast.show    { transform: translateX(-50%) translateY(0); }
+  .toast.success { border-color: var(--green); color: var(--green); background: rgba(0,214,143,0.08); }
+  .toast.error   { border-color: var(--red);   color: var(--red);   background: rgba(255,77,77,0.08); }
+
+  /* ══ EMPTY STATE ══ */
+  .empty-state { text-align: center; padding: 3rem 1rem; color: var(--text-dim); }
+  .empty-icon { font-size: 3rem; margin-bottom: 0.8rem; opacity: 0.5; }
+  .empty-text { font-size: 0.9rem; }
+
+  /* ══ MISC ══ */
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+  .btn-settlement {
+    background: transparent; border: 1px solid var(--border);
+    border-radius: var(--radius-sm); padding: 0.65rem 1.2rem;
+    color: var(--gold); font-family: 'Vazirmatn', sans-serif;
+    font-size: 0.82rem; font-weight: 700; cursor: pointer; transition: all 0.2s;
+  }
+  .btn-settlement:hover { background: rgba(201,168,76,0.08); border-color: var(--border-bright); }
+
+  .zero-sum-check {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0.6rem 0.85rem;
+    background: rgba(0,214,143,0.06); border-radius: var(--radius-sm);
+    font-size: 0.76rem; color: var(--green); margin-top: 0.8rem;
+    border: 1px solid rgba(0,214,143,0.12);
+  }
+
+  .card {
+    background: var(--glass);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius); padding: 1.2rem; margin-bottom: 1rem;
+    backdrop-filter: blur(8px);
+  }
+
+  /* Badge روی تب ادمین */
+  .tab-badge {
+    display: inline-flex; align-items: center; justify-content: center;
+    background: var(--red); color: white;
+    font-size: 0.6rem; font-weight: 900;
+    width: 16px; height: 16px; border-radius: 50%;
+    margin-right: 4px; vertical-align: middle;
+    animation: pulse 1.5s ease-in-out infinite;
+  }
+
+  .live-dot {
+    display: inline-block; width: 7px; height: 7px;
+    background: var(--green); border-radius: 50%; margin-right: 4px;
+    box-shadow: 0 0 6px rgba(0,214,143,0.6);
+    animation: blink 2.5s ease-in-out infinite;
+  }
+
+  /* ══ SCORECARD ══ */
+  .scorecard-match {
+    display: flex; align-items: center; gap: 0.7rem;
+    padding: 0.9rem 1rem;
+    background: var(--glass);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius);
+    margin-bottom: 0.6rem;
+    transition: all 0.2s;
+    backdrop-filter: blur(8px);
+  }
+  .scorecard-match:hover { border-color: var(--border); transform: translateX(-2px); }
+
+  .sc-teams { flex: 1; font-size: 0.82rem; font-weight: 700; color: var(--text); }
+  .sc-sub   { font-size: 0.68rem; color: var(--text-dim); margin-top: 0.2rem; font-weight: 400; }
+
+  .sc-pred  { font-size: 0.82rem; font-weight: 700; color: var(--text-mid);
+               background: var(--surface); padding: 0.25rem 0.6rem;
+               border-radius: var(--radius-xs); min-width: 52px; text-align: center; }
+
+  .sc-result { font-size: 0.82rem; font-weight: 700; color: var(--gold);
+                background: rgba(201,168,76,0.1); padding: 0.25rem 0.6rem;
+                border-radius: var(--radius-xs); min-width: 52px; text-align: center; }
+
+  .sc-outcome { font-size: 1rem; min-width: 28px; text-align: center; }
+
+  .sc-pay { font-size: 0.85rem; font-weight: 900; min-width: 90px; text-align: left; }
+  .sc-pay.pos { color: var(--green); text-shadow: 0 0 8px rgba(0,214,143,0.3); }
+  .sc-pay.neg { color: var(--red); }
+  .sc-pay.zero { color: var(--text-dim); }
+
+  .chart-wrap {
+    background: var(--glass); border: 1px solid var(--border-subtle);
+    border-radius: var(--radius); padding: 1rem;
+    margin-bottom: 1.2rem; backdrop-filter: blur(8px);
+  }
+
+  .chart-title { font-size: 0.78rem; font-weight: 700; color: var(--text-dim);
+                  margin-bottom: 0.8rem; letter-spacing: 0.3px; }
+
+  .sc-empty { text-align: center; padding: 2.5rem 1rem; color: var(--text-dim); }
+
+
+  /* Twemoji flag images */
+  img.emoji {
+    height: 1em; width: 1em;
+    margin: 0 1px; vertical-align: -0.1em;
+    display: inline-block;
+  }
+  .team-flag img.emoji {
+    height: 2.2rem; width: 2.2rem;
+    vertical-align: middle;
+  }
+  .share-card-flag img.emoji {
+    height: 2rem; width: 2rem;
+  }
+
+  /* Rejection screen */
+  #screen-rejected {
+    align-items: center; justify-content: center;
+    padding: 2rem; text-align: center;
+  }
+  .rejection-icon { font-size: 4rem; margin-bottom: 1.2rem; }
+  .btn-reapply {
+    margin-top: 1.2rem; padding: 0.7rem 1.8rem;
+    background: linear-gradient(135deg, var(--gold), var(--gold-dim));
+    border: none; border-radius: var(--radius-sm);
+    color: #06080c; font-family: 'Vazirmatn', sans-serif;
+    font-size: 0.9rem; font-weight: 800; cursor: pointer;
+    display: block; width: fit-content; margin-left: auto; margin-right: auto;
+    box-shadow: 0 2px 12px rgba(201,168,76,0.3); transition: all 0.2s;
+  }
+  .btn-reapply:hover { filter: brightness(1.1); transform: translateY(-1px); }
+
+  /* ══ TEST PANEL ══ */
+  .test-panel {
+    background: rgba(255,140,66,0.06);
+    border: 1px dashed rgba(255,140,66,0.3);
+    border-radius: var(--radius); padding: 1rem;
+    margin-bottom: 1rem;
+  }
+  .test-panel-title {
+    font-size: 0.75rem; font-weight: 800; color: var(--orange);
+    margin-bottom: 0.7rem; letter-spacing: 0.3px;
+  }
+  .test-panel-desc { font-size: 0.72rem; color: var(--text-dim); margin-bottom: 0.8rem; line-height: 1.6; }
+  .test-btns { display: flex; gap: 0.6rem; flex-wrap: wrap; }
+  .btn-test-inject {
+    background: var(--orange); border: none; border-radius: var(--radius-sm);
+    padding: 0.7rem 1rem; color: white; flex: 1;
+    font-family: 'Vazirmatn', sans-serif; font-size: 0.8rem; font-weight: 800;
+    cursor: pointer; transition: all 0.2s;
+    touch-action: manipulation; min-height: 44px;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .btn-test-inject:hover { filter: brightness(1.1); }
+  .btn-test-clear {
+    background: transparent; border: 1px solid rgba(255,77,77,0.4);
+    border-radius: var(--radius-sm); padding: 0.7rem 1rem; color: var(--red); flex: 1;
+    font-family: 'Vazirmatn', sans-serif; font-size: 0.8rem; font-weight: 700;
+    cursor: pointer; transition: all 0.2s;
+    touch-action: manipulation; min-height: 44px;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .btn-test-clear:hover { background: rgba(255,77,77,0.08); }
+
+  .sc-summary-grid {
+    display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.6rem;
+    margin-bottom: 1.2rem;
+  }
+
+  .sc-summary-card {
+    background: var(--glass); border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-sm); padding: 0.8rem;
+    text-align: center; backdrop-filter: blur(8px);
+  }
+  .sc-summary-val   { font-size: 1.15rem; font-weight: 900; display: block; }
+  .sc-summary-label { font-size: 0.65rem; color: var(--text-dim); margin-top: 0.2rem; }
+
+  /* Pool card */
+  #total-pool {
+    font-size: 2rem; font-weight: 900; color: var(--gold);
+    text-shadow: 0 0 30px rgba(201,168,76,0.4);
+  }
+
+  /* ══ MOBILE OPTIMIZATIONS ══ */
+  @media (max-width: 480px) {
+
+    /* Nav tabs - scrollable on mobile */
+    .app-nav {
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+    }
+    .app-nav::-webkit-scrollbar { display: none; }
+    .nav-tab { font-size: 0.78rem; padding: 0.85rem 0.7rem; white-space: nowrap; flex-shrink: 0; }
+
+    /* Match cards */
+    .match-header { padding: 0.5rem 0.8rem; }
+    .match-teams { padding: 0.9rem 0.6rem; }
+    .team-flag { font-size: 1.8rem; }
+    .team-name { font-size: 0.75rem; }
+    .match-vs { min-width: 52px; }
+    .score-display { font-size: 1.3rem; letter-spacing: 2px; }
+
+    /* Prediction form */
+    .prediction-section { padding: 0.75rem 0.8rem; }
+    .score-input { width: 58px; height: 54px; font-size: 1.4rem; }
+    .score-input-row { justify-content: center; }
+
+    /* Pending user rows */
+    .pending-user-row {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 0.7rem;
+    }
+    .pending-user-row > div:last-child {
+      width: 100%;
+      display: flex;
+      gap: 0.5rem;
+    }
+    .btn-approve, .btn-reject { flex: 1; justify-content: center; }
+
+    /* Admin result input */
+    .admin-result-input {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+    .admin-result-input > div { width: 100%; }
+
+    /* Test panel */
+    .test-btns { flex-direction: column; }
+    .btn-test-inject, .btn-test-clear { flex: unset; width: 100%; text-align: center; }
+
+    /* Leaderboard */
+    .lb-row { font-size: 0.78rem; }
+    .lb-row td { padding: 0.6rem 0.5rem; }
+
+    /* Settlement */
+    .settlement-row { font-size: 0.78rem; flex-wrap: wrap; gap: 0.3rem; }
+
+    /* Results breakdown */
+    .breakdown-row { font-size: 0.78rem; padding: 0.45rem 0.7rem; }
+
+    /* Remove hover transform on touch */
+    .match-card:hover { transform: none; box-shadow: none; }
+    .btn-confirm:hover { transform: none; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ══ LOADING SCREEN ══ -->
+<div id="screen-loading" class="screen active">
+  <div style="text-align:center">
+    <div class="trophy-icon">🏆</div>
+    <div style="color:var(--text-dim);font-size:0.88rem;margin-top:0.5rem;">در حال اتصال به Firebase...</div>
+  </div>
+</div>
+
+<!-- ══ LOGIN SCREEN ══ -->
+<div id="screen-login" class="screen">
+  <div class="login-card">
+    <div class="trophy-icon">🏆</div>
+    <h1 class="login-title">جام‌جهانی ۲۰۲۶</h1>
+    <p class="login-subtitle">لیگ پیش‌بینی خصوصی</p>
+
+    <div style="display:flex;background:var(--dark-3);border-radius:var(--radius-sm);padding:4px;margin-bottom:1.2rem;border:1px solid var(--border)">
+      <button id="tab-signin-btn" onclick="switchAuthTab('signin')" style="flex:1;padding:0.55rem;border:none;border-radius:6px;background:linear-gradient(135deg,var(--gold),var(--gold-dim));color:#0a0c10;font-family:'Vazirmatn',sans-serif;font-weight:700;font-size:0.85rem;cursor:pointer;">ورود</button>
+      <button id="tab-register-btn" onclick="switchAuthTab('register')" style="flex:1;padding:0.55rem;border:none;border-radius:6px;background:transparent;color:var(--text-dim);font-family:'Vazirmatn',sans-serif;font-weight:600;font-size:0.85rem;cursor:pointer;">ثبت‌نام</button>
+    </div>
+
+    <div id="form-signin">
+      <input type="email" id="si-email" placeholder="ایمیل" dir="ltr" class="auth-input">
+      <input type="password" id="si-pass" placeholder="رمز عبور" dir="ltr" class="auth-input">
+      <button class="btn-login" onclick="handleLogin()">🔐 ورود</button>
+    </div>
+
+    <div id="form-register" style="display:none">
+      <input type="text" id="reg-name" placeholder="نام نمایشی (مثلاً امیر)" class="auth-input">
+      <input type="email" id="reg-email" placeholder="ایمیل" dir="ltr" class="auth-input">
+      <input type="password" id="reg-pass" placeholder="رمز عبور (حداقل ۶ کاراکتر)" dir="ltr" class="auth-input">
+      <button class="btn-login" onclick="handleRegister()">✅ ثبت‌نام</button>
+    </div>
+
+    <p class="login-hint" style="margin-top:1rem">
+      فقط دعوت‌شده‌ها وارد می‌شوند<br>
+      پس از ثبت‌نام، ادمین حساب شما را تأیید می‌کند
+    </p>
+  </div>
+</div>
+
+<!-- ══ REJECTED SCREEN ══ -->
+<div id="screen-rejected" class="screen">
+  <div class="rejection-icon">🚫</div>
+  <h2 style="font-size:1.3rem;font-weight:800;margin-bottom:0.5rem;color:var(--red)">درخواست رد شد</h2>
+  <p style="color:var(--text-dim);font-size:0.9rem;max-width:300px;line-height:1.7">
+    ادمین درخواست شما را رد کرده است.<br>
+    می‌توانید مجدداً درخواست دهید.
+  </p>
+  <button class="btn-reapply" onclick="requestAgain()">🔄 ارسال مجدد درخواست</button>
+  <button class="btn-signout-pending" onclick="handleSignOut()" style="margin-top:0.8rem">🚪 خروج</button>
+</div>
+
+<!-- ══ PENDING SCREEN ══ -->
+<div id="screen-pending" class="screen">
+  <div class="pending-icon">⏳</div>
+  <h2 style="font-size:1.3rem;font-weight:800;margin-bottom:0.5rem;">در انتظار تأیید</h2>
+  <p style="color:var(--text-dim);font-size:0.9rem;max-width:280px;">ادمین باید حساب شما را تأیید کند. لطفاً صبور باشید.</p>
+  <button class="btn-pending-action" onclick="checkApproval()">🔄 بررسی مجدد</button>
+  <button class="btn-signout-pending" onclick="handleSignOut()">خروج از حساب</button>
+</div>
+
+<!-- ══ MAIN APP SCREEN ══ -->
+<div id="screen-app" class="screen">
+
+  <header class="app-header">
+    <div class="header-logo">🏆 جام‌جهانی ۲۰۲۶ <span class="live-dot" title="متصل به Firebase"></span></div>
+    <div class="header-user">
+      <span class="header-username" id="header-username"></span>
+      <div class="avatar" id="header-avatar"></div>
+      <button class="btn-signout" onclick="handleSignOut()" title="خروج" id="btn-signout-header"></button>
+    </div>
+  </header>
+
+  <nav class="nav-tabs">
+    <button class="nav-tab active" onclick="switchTab('matches')">بازی‌ها</button>
+    <button class="nav-tab" onclick="switchTab('leaderboard')">جدول</button>
+    <button class="nav-tab" onclick="switchTab('results')">نتایج</button>
+    <button class="nav-tab" onclick="switchTab('scorecard')">کارنامه</button>
+    <button class="nav-tab admin-only" onclick="switchTab('admin')" style="display:none" id="tab-btn-admin">ادمین <span id="admin-badge" class="tab-badge" style="display:none">0</span></button>
+  </nav>
+
+  <!-- TAB: MATCHES -->
+  <div class="tab-content active" id="tab-matches">
+    <div class="stats-grid">
+      <div class="stat-box">
+        <span class="stat-value" id="my-balance-stat">۰</span>
+        <div class="stat-label">موجودی (تومان)</div>
+      </div>
+      <div class="stat-box">
+        <span class="stat-value" id="my-pred-count">۰</span>
+        <div class="stat-label">پیش‌بینی‌ها</div>
+      </div>
+      <div class="stat-box">
+        <span class="stat-value" id="my-exact-count">۰</span>
+        <div class="stat-label">نتیجه دقیق</div>
+      </div>
+    </div>
+    <div id="matches-list"></div>
+  </div>
+
+  <!-- TAB: LEADERBOARD -->
+  <div class="tab-content" id="tab-leaderboard">
+
+    <div id="leaderboard-list"></div>
+    <div style="margin-top:1rem;text-align:center;">
+      <button class="btn-settlement" onclick="showSettlement()">📊 مشاهده تسویه نهایی</button>
+    </div>
+  </div>
+
+  <!-- TAB: RESULTS -->
+  <div class="tab-content" id="tab-results">
+    <div id="results-list">
+      <div class="empty-state">
+        <div class="empty-icon">⚽</div>
+        <div class="empty-text">بازی‌ای هنوز پایان نیافته</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB: SCORECARD -->
+  <div class="tab-content" id="tab-scorecard">
+    <div id="scorecard-content">
+      <div class="sc-empty">
+        <div style="font-size:2.5rem;margin-bottom:0.8rem;opacity:0.4">📊</div>
+        <div style="font-size:0.9rem">بعد از اولین بازی، کارنامه شما اینجا نمایش داده می‌شود</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB: ADMIN -->
+  <div class="tab-content" id="tab-admin">
+    <!-- TELEGRAM SHARE PANEL -->
+    <div class="test-panel" style="border-color:rgba(37,167,228,0.3);background:rgba(37,167,228,0.05)">
+      <div class="test-panel-title" style="color:#25A7E4">📢 اطلاع‌رسانی تلگرام</div>
+      <div class="test-panel-desc">وقتی بازی باز یا قفل بشه یا نتیجه ثبت بشه، متن آماده برای گروه تلگرامت اینجا ظاهر میشه.</div>
+      <div id="tg-messages-list"></div>
+    </div>
+
+        <!-- TEST PANEL -->
+    <div class="test-panel">
+      <div class="test-panel-title">🧪 پنل تست — فقط برای ادمین</div>
+      <div class="test-panel-desc">
+        بازی تست: <strong>🇮🇷 ایران vs عراق 🇮🇶 (یک‌شانزدهم نهایی)</strong> — فرم OT و پنالتی دارد<br>
+        <strong>قدم ۰:</strong> باز کن — مساوی پیش‌بینی کن تا فیلد وقت اضافه/پنالتی بیاد<br>
+        <strong>قدم ۱:</strong> قفل کن — پیش‌بینی همه ظاهر میشه<br>
+        <strong>قدم ۲:</strong> یکی از سه نتیجه رو تزریق کن
+      </div>
+      <div class="test-btns">
+        <button class="btn-test-inject" style="background:var(--green);color:#06080c" onclick="injectTestOpen()">📝 قدم ۰ — باز کردن</button>
+        <button class="btn-test-inject" onclick="lockTestMatch()">🔒 قدم ۱ — قفل</button>
+      </div>
+      <div class="test-btns" style="margin-top:0.5rem">
+        <button class="btn-test-inject" style="background:var(--blue);line-height:1.4;padding:0.5rem 0.6rem" onclick="injectTestResult('90')">⚽ ۹۰ دقیقه<br><small style="font-weight:400">ایران ۲–۱</small></button>
+        <button class="btn-test-inject" style="background:#7c3aed;line-height:1.4;padding:0.5rem 0.6rem" onclick="injectTestResult('ot')">⏱️ وقت اضافه<br><small style="font-weight:400">۱–۱ → ۲–۱</small></button>
+        <button class="btn-test-inject" style="background:#b45309;line-height:1.4;padding:0.5rem 0.6rem" onclick="injectTestResult('pen')">🥅 پنالتی<br><small style="font-weight:400">۱–۱ → OT ۱–۱ → ۵–۴</small></button>
+      </div>
+      <div class="test-btns" style="margin-top:0.4rem">
+        <button class="btn-test-clear" onclick="clearTestData()">🗑️ پاک کردن</button>
+      </div>
+    </div>
+
+    <div class="section-divider">
+      <div class="section-divider-line"></div>
+      <div class="section-divider-text">کاربران در انتظار تأیید</div>
+      <div class="section-divider-line"></div>
+      <button onclick="refreshAdminData()" style="background:none;border:1px solid var(--border);border-radius:var(--radius-xs);padding:0.2rem 0.6rem;color:var(--text-dim);font-family:'Vazirmatn',sans-serif;font-size:0.7rem;cursor:pointer;" title="بروزرسانی">🔄</button>
+    </div>
+    <div class="pending-users-list" id="pending-users-list">
+      <div style="font-size:0.85rem;color:var(--text-dim);padding:0.5rem;">هیچ کاربر در انتظاری وجود ندارد</div>
+    </div>
+    <div class="section-divider">
+      <div class="section-divider-line"></div>
+      <div class="section-divider-text">کاربران فعال (تأیید شده)</div>
+      <div class="section-divider-line"></div>
+    </div>
+    <div id="approved-users-list" style="margin-bottom:0.5rem"></div>
+
+    <div class="section-divider">
+      <div class="section-divider-line"></div>
+      <div class="section-divider-text">تیم‌های مرحله بعد (TBD)</div>
+      <div class="section-divider-line"></div>
+    </div>
+    <div id="tbd-teams-list" style="margin-bottom:0.5rem"></div>
+
+    <div class="section-divider">
+      <div class="section-divider-line"></div>
+      <div class="section-divider-text">ثبت نتایج بازی‌ها</div>
+      <div class="section-divider-line"></div>
+    </div>
+    <div id="missed-results-badge" style="display:none;margin-bottom:0.75rem;display:flex;flex-direction:column;gap:0.4rem"></div>
+    <div id="admin-matches-list"></div>
+  </div>
+
+</div>
+
+<!-- ══ SETTLEMENT MODAL ══ -->
+<div class="modal-overlay" id="settlement-modal">
+  <div class="modal">
+    <div class="modal-title">📊 تسویه نهایی</div>
+    <div id="settlement-content"></div>
+    <button class="btn-close-modal" onclick="closeModal()">بستن</button>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ════════════════════════════════════════════════════════════
+//  FIREBASE INITIALIZATION
+// ════════════════════════════════════════════════════════════
+const firebaseConfig = {
+  apiKey:            "AIzaSyCP2gWtfTLCjO9bBCQuqm77STK0HtgcC-I",
+  authDomain:        "incredible-halva-1384d5.netlify.app",
+  databaseURL:       "https://worldcup-2026-e2195-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId:         "worldcup-2026-e2195",
+  storageBucket:     "worldcup-2026-e2195.firebasestorage.app",
+  messagingSenderId: "704002992107",
+  appId:             "1:704002992107:web:fbf7eb15371c11d588dbae"
+};
+
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db   = firebase.database();
+
+// ════════════════════════════════════════════════════════════
+//  CONSTANTS
+// ════════════════════════════════════════════════════════════
+const ADMIN_EMAIL = "nematiamir17@gmail.com";
+const ADMIN_NAME  = "Amir";
+
+const UNIT = {
+  group: 20000,
+  r32:   25000,
+  r16:   30000,
+  qf:    35000,
+  sf:    40000,
+  "3rd": 40000,
+  final: 50000
+};
+
+const WEIGHTS = {
+  exact:           5,
+  winner:          1,
+  draw_exact:      5,
+  draw_correct:    1,
+  neutral:         0,
+  wrong:          -3,
+  ot_exact:        5,
+  ot_winner:       1,
+  ot_draw:         1,
+  penalty_exact:  10,
+  penalty_winner:  1   // برنده پنالتی رو درست پیش‌بینی کردی
+};
+
+// ════════════════════════════════════════════════════════════
+//  MATCHES — برنامه جام‌جهانی ۲۰۲۶
+// ════════════════════════════════════════════════════════════
+const MATCHES = [
+  { id:"gA1", stage:"group", stageLabel:"مرحله گروهی - گروه A", home:{name:"مکزیک", flag:"🇲🇽"}, away:{name:"آفریقای جنوبی", flag:"🇿🇦"}, datetime:"2026-06-11T22:30:00", group:"A" },
+  { id:"gA2", stage:"group", stageLabel:"مرحله گروهی - گروه A", home:{name:"کره‌جنوبی", flag:"🇰🇷"}, away:{name:"چک", flag:"🇨🇿"}, datetime:"2026-06-12T05:30:00", group:"A" },
+  { id:"gA3", stage:"group", stageLabel:"مرحله گروهی - گروه A", home:{name:"چک", flag:"🇨🇿"}, away:{name:"آفریقای جنوبی", flag:"🇿🇦"}, datetime:"2026-06-18T20:30:00", group:"A" },
+  { id:"gA4", stage:"group", stageLabel:"مرحله گروهی - گروه A", home:{name:"مکزیک", flag:"🇲🇽"}, away:{name:"کره‌جنوبی", flag:"🇰🇷"}, datetime:"2026-06-19T06:30:00", group:"A" },
+  { id:"gA5", stage:"group", stageLabel:"مرحله گروهی - گروه A", home:{name:"چک", flag:"🇨🇿"}, away:{name:"مکزیک", flag:"🇲🇽"}, datetime:"2026-06-25T06:30:00", group:"A" },
+  { id:"gA6", stage:"group", stageLabel:"مرحله گروهی - گروه A", home:{name:"آفریقای جنوبی", flag:"🇿🇦"}, away:{name:"کره‌جنوبی", flag:"🇰🇷"}, datetime:"2026-06-25T06:30:00", group:"A" },
+  { id:"gB1", stage:"group", stageLabel:"مرحله گروهی - گروه B", home:{name:"کانادا", flag:"🇨🇦"}, away:{name:"بوسنی", flag:"🇧🇦"}, datetime:"2026-06-12T22:30:00", group:"B" },
+  { id:"gB2", stage:"group", stageLabel:"مرحله گروهی - گروه B", home:{name:"قطر", flag:"🇶🇦"}, away:{name:"سوئیس", flag:"🇨🇭"}, datetime:"2026-06-13T22:30:00", group:"B" },
+  { id:"gB3", stage:"group", stageLabel:"مرحله گروهی - گروه B", home:{name:"سوئیس", flag:"🇨🇭"}, away:{name:"بوسنی", flag:"🇧🇦"}, datetime:"2026-06-19T02:30:00", group:"B" },
+  { id:"gB4", stage:"group", stageLabel:"مرحله گروهی - گروه B", home:{name:"کانادا", flag:"🇨🇦"}, away:{name:"قطر", flag:"🇶🇦"}, datetime:"2026-06-19T05:30:00", group:"B" },
+  { id:"gB5", stage:"group", stageLabel:"مرحله گروهی - گروه B", home:{name:"سوئیس", flag:"🇨🇭"}, away:{name:"کانادا", flag:"🇨🇦"}, datetime:"2026-06-25T02:30:00", group:"B" },
+  { id:"gB6", stage:"group", stageLabel:"مرحله گروهی - گروه B", home:{name:"بوسنی", flag:"🇧🇦"}, away:{name:"قطر", flag:"🇶🇦"}, datetime:"2026-06-25T02:30:00", group:"B" },
+  { id:"gC1", stage:"group", stageLabel:"مرحله گروهی - گروه C", home:{name:"برزیل", flag:"🇧🇷"}, away:{name:"مراکش", flag:"🇲🇦"}, datetime:"2026-06-14T02:30:00", group:"C" },
+  { id:"gC2", stage:"group", stageLabel:"مرحله گروهی - گروه C", home:{name:"هائیتی", flag:"🇭🇹"}, away:{name:"اسکاتلند", flag:"🏴󠁧󠁢󠁳󠁣󠁴󠁿"}, datetime:"2026-06-14T04:30:00", group:"C" },
+  { id:"gC3", stage:"group", stageLabel:"مرحله گروهی - گروه C", home:{name:"اسکاتلند", flag:"🏴󠁧󠁢󠁳󠁣󠁴󠁿"}, away:{name:"مراکش", flag:"🇲🇦"}, datetime:"2026-06-20T02:30:00", group:"C" },
+  { id:"gC4", stage:"group", stageLabel:"مرحله گروهی - گروه C", home:{name:"برزیل", flag:"🇧🇷"}, away:{name:"هائیتی", flag:"🇭🇹"}, datetime:"2026-06-20T05:30:00", group:"C" },
+  { id:"gC5", stage:"group", stageLabel:"مرحله گروهی - گروه C", home:{name:"اسکاتلند", flag:"🏴󠁧󠁢󠁳󠁣󠁴󠁿"}, away:{name:"برزیل", flag:"🇧🇷"}, datetime:"2026-06-25T02:30:00", group:"C" },
+  { id:"gC6", stage:"group", stageLabel:"مرحله گروهی - گروه C", home:{name:"مراکش", flag:"🇲🇦"}, away:{name:"هائیتی", flag:"🇭🇹"}, datetime:"2026-06-25T02:30:00", group:"C" },
+  { id:"gD1", stage:"group", stageLabel:"مرحله گروهی - گروه D", home:{name:"آمریکا", flag:"🇺🇸"}, away:{name:"پاراگوئه", flag:"🇵🇾"}, datetime:"2026-06-13T04:30:00", group:"D" },
+  { id:"gD2", stage:"group", stageLabel:"مرحله گروهی - گروه D", home:{name:"استرالیا", flag:"🇦🇺"}, away:{name:"ترکیه", flag:"🇹🇷"}, datetime:"2026-06-14T07:30:00", group:"D" },
+  { id:"gD3", stage:"group", stageLabel:"مرحله گروهی - گروه D", home:{name:"آمریکا", flag:"🇺🇸"}, away:{name:"استرالیا", flag:"🇦🇺"}, datetime:"2026-06-20T02:30:00", group:"D" },
+  { id:"gD4", stage:"group", stageLabel:"مرحله گروهی - گروه D", home:{name:"ترکیه", flag:"🇹🇷"}, away:{name:"پاراگوئه", flag:"🇵🇾"}, datetime:"2026-06-20T11:30:00", group:"D" },
+  { id:"gD5", stage:"group", stageLabel:"مرحله گروهی - گروه D", home:{name:"ترکیه", flag:"🇹🇷"}, away:{name:"آمریکا", flag:"🇺🇸"}, datetime:"2026-06-26T09:30:00", group:"D" },
+  { id:"gD6", stage:"group", stageLabel:"مرحله گروهی - گروه D", home:{name:"پاراگوئه", flag:"🇵🇾"}, away:{name:"استرالیا", flag:"🇦🇺"}, datetime:"2026-06-26T09:30:00", group:"D" },
+  { id:"gE1", stage:"group", stageLabel:"مرحله گروهی - گروه E", home:{name:"آلمان", flag:"🇩🇪"}, away:{name:"کوراسائو", flag:"🇨🇼"}, datetime:"2026-06-14T21:30:00", group:"E" },
+  { id:"gE2", stage:"group", stageLabel:"مرحله گروهی - گروه E", home:{name:"ساحل عاج", flag:"🇨🇮"}, away:{name:"اکوادور", flag:"🇪🇨"}, datetime:"2026-06-15T03:30:00", group:"E" },
+  { id:"gE3", stage:"group", stageLabel:"مرحله گروهی - گروه E", home:{name:"آلمان", flag:"🇩🇪"}, away:{name:"ساحل عاج", flag:"🇨🇮"}, datetime:"2026-06-21T00:30:00", group:"E" },
+  { id:"gE4", stage:"group", stageLabel:"مرحله گروهی - گروه E", home:{name:"اکوادور", flag:"🇪🇨"}, away:{name:"کوراسائو", flag:"🇨🇼"}, datetime:"2026-06-21T07:30:00", group:"E" },
+  { id:"gE5", stage:"group", stageLabel:"مرحله گروهی - گروه E", home:{name:"اکوادور", flag:"🇪🇨"}, away:{name:"آلمان", flag:"🇩🇪"}, datetime:"2026-06-26T00:30:00", group:"E" },
+  { id:"gE6", stage:"group", stageLabel:"مرحله گروهی - گروه E", home:{name:"کوراسائو", flag:"🇨🇼"}, away:{name:"ساحل عاج", flag:"🇨🇮"}, datetime:"2026-06-26T00:30:00", group:"E" },
+  { id:"gF1", stage:"group", stageLabel:"مرحله گروهی - گروه F", home:{name:"هلند", flag:"🇳🇱"}, away:{name:"ژاپن", flag:"🇯🇵"}, datetime:"2026-06-15T00:30:00", group:"F" },
+  { id:"gF2", stage:"group", stageLabel:"مرحله گروهی - گروه F", home:{name:"سوئد", flag:"🇸🇪"}, away:{name:"تونس", flag:"🇹🇳"}, datetime:"2026-06-15T07:30:00", group:"F" },
+  { id:"gF3", stage:"group", stageLabel:"مرحله گروهی - گروه F", home:{name:"هلند", flag:"🇳🇱"}, away:{name:"سوئد", flag:"🇸🇪"}, datetime:"2026-06-20T22:30:00", group:"F" },
+  { id:"gF4", stage:"group", stageLabel:"مرحله گروهی - گروه F", home:{name:"تونس", flag:"🇹🇳"}, away:{name:"ژاپن", flag:"🇯🇵"}, datetime:"2026-06-21T09:30:00", group:"F" },
+  { id:"gF5", stage:"group", stageLabel:"مرحله گروهی - گروه F", home:{name:"ژاپن", flag:"🇯🇵"}, away:{name:"سوئد", flag:"🇸🇪"}, datetime:"2026-06-26T04:30:00", group:"F" },
+  { id:"gF6", stage:"group", stageLabel:"مرحله گروهی - گروه F", home:{name:"تونس", flag:"🇹🇳"}, away:{name:"هلند", flag:"🇳🇱"}, datetime:"2026-06-26T04:30:00", group:"F" },
+  { id:"gG1", stage:"group", stageLabel:"مرحله گروهی - گروه G", home:{name:"بلژیک", flag:"🇧🇪"}, away:{name:"مصر", flag:"🇪🇬"}, datetime:"2026-06-16T02:30:00", group:"G" },
+  { id:"gG2", stage:"group", stageLabel:"مرحله گروهی - گروه G", home:{name:"ایران", flag:"🇮🇷"}, away:{name:"نیوزیلند", flag:"🇳🇿"}, datetime:"2026-06-16T08:30:00", group:"G" },
+  { id:"gG3", stage:"group", stageLabel:"مرحله گروهی - گروه G", home:{name:"بلژیک", flag:"🇧🇪"}, away:{name:"ایران", flag:"🇮🇷"}, datetime:"2026-06-22T02:30:00", group:"G" },
+  { id:"gG4", stage:"group", stageLabel:"مرحله گروهی - گروه G", home:{name:"نیوزیلند", flag:"🇳🇿"}, away:{name:"مصر", flag:"🇪🇬"}, datetime:"2026-06-22T08:30:00", group:"G" },
+  { id:"gG5", stage:"group", stageLabel:"مرحله گروهی - گروه G", home:{name:"مصر", flag:"🇪🇬"}, away:{name:"ایران", flag:"🇮🇷"}, datetime:"2026-06-27T10:30:00", group:"G" },
+  { id:"gG6", stage:"group", stageLabel:"مرحله گروهی - گروه G", home:{name:"نیوزیلند", flag:"🇳🇿"}, away:{name:"بلژیک", flag:"🇧🇪"}, datetime:"2026-06-27T10:30:00", group:"G" },
+  { id:"gH1", stage:"group", stageLabel:"مرحله گروهی - گروه H", home:{name:"اسپانیا", flag:"🇪🇸"}, away:{name:"کیپ‌ورد", flag:"🇨🇻"}, datetime:"2026-06-15T20:30:00", group:"H" },
+  { id:"gH2", stage:"group", stageLabel:"مرحله گروهی - گروه H", home:{name:"عربستان", flag:"🇸🇦"}, away:{name:"اروگوئه", flag:"🇺🇾"}, datetime:"2026-06-16T02:30:00", group:"H" },
+  { id:"gH3", stage:"group", stageLabel:"مرحله گروهی - گروه H", home:{name:"اسپانیا", flag:"🇪🇸"}, away:{name:"عربستان", flag:"🇸🇦"}, datetime:"2026-06-21T20:30:00", group:"H" },
+  { id:"gH4", stage:"group", stageLabel:"مرحله گروهی - گروه H", home:{name:"اروگوئه", flag:"🇺🇾"}, away:{name:"کیپ‌ورد", flag:"🇨🇻"}, datetime:"2026-06-22T02:30:00", group:"H" },
+  { id:"gH5", stage:"group", stageLabel:"مرحله گروهی - گروه H", home:{name:"کیپ‌ورد", flag:"🇨🇻"}, away:{name:"عربستان", flag:"🇸🇦"}, datetime:"2026-06-27T05:30:00", group:"H" },
+  { id:"gH6", stage:"group", stageLabel:"مرحله گروهی - گروه H", home:{name:"اروگوئه", flag:"🇺🇾"}, away:{name:"اسپانیا", flag:"🇪🇸"}, datetime:"2026-06-27T05:30:00", group:"H" },
+  { id:"gI1", stage:"group", stageLabel:"مرحله گروهی - گروه I", home:{name:"فرانسه", flag:"🇫🇷"}, away:{name:"سنگال", flag:"🇸🇳"}, datetime:"2026-06-16T23:30:00", group:"I" },
+  { id:"gI2", stage:"group", stageLabel:"مرحله گروهی - گروه I", home:{name:"عراق", flag:"🇮🇶"}, away:{name:"نروژ", flag:"🇳🇴"}, datetime:"2026-06-17T02:30:00", group:"I" },
+  { id:"gI3", stage:"group", stageLabel:"مرحله گروهی - گروه I", home:{name:"فرانسه", flag:"🇫🇷"}, away:{name:"عراق", flag:"🇮🇶"}, datetime:"2026-06-23T01:30:00", group:"I" },
+  { id:"gI4", stage:"group", stageLabel:"مرحله گروهی - گروه I", home:{name:"نروژ", flag:"🇳🇴"}, away:{name:"سنگال", flag:"🇸🇳"}, datetime:"2026-06-23T04:30:00", group:"I" },
+  { id:"gI5", stage:"group", stageLabel:"مرحله گروهی - گروه I", home:{name:"نروژ", flag:"🇳🇴"}, away:{name:"فرانسه", flag:"🇫🇷"}, datetime:"2026-06-26T23:30:00", group:"I" },
+  { id:"gI6", stage:"group", stageLabel:"مرحله گروهی - گروه I", home:{name:"سنگال", flag:"🇸🇳"}, away:{name:"عراق", flag:"🇮🇶"}, datetime:"2026-06-26T23:30:00", group:"I" },
+  { id:"gJ1", stage:"group", stageLabel:"مرحله گروهی - گروه J", home:{name:"آرژانتین", flag:"🇦🇷"}, away:{name:"الجزایر", flag:"🇩🇿"}, datetime:"2026-06-17T06:30:00", group:"J" },
+  { id:"gJ2", stage:"group", stageLabel:"مرحله گروهی - گروه J", home:{name:"اتریش", flag:"🇦🇹"}, away:{name:"اردن", flag:"🇯🇴"}, datetime:"2026-06-17T11:30:00", group:"J" },
+  { id:"gJ3", stage:"group", stageLabel:"مرحله گروهی - گروه J", home:{name:"آرژانتین", flag:"🇦🇷"}, away:{name:"اتریش", flag:"🇦🇹"}, datetime:"2026-06-22T22:30:00", group:"J" },
+  { id:"gJ4", stage:"group", stageLabel:"مرحله گروهی - گروه J", home:{name:"اردن", flag:"🇯🇴"}, away:{name:"الجزایر", flag:"🇩🇿"}, datetime:"2026-06-23T10:30:00", group:"J" },
+  { id:"gJ5", stage:"group", stageLabel:"مرحله گروهی - گروه J", home:{name:"الجزایر", flag:"🇩🇿"}, away:{name:"اتریش", flag:"🇦🇹"}, datetime:"2026-06-28T07:30:00", group:"J" },
+  { id:"gJ6", stage:"group", stageLabel:"مرحله گروهی - گروه J", home:{name:"اردن", flag:"🇯🇴"}, away:{name:"آرژانتین", flag:"🇦🇷"}, datetime:"2026-06-28T07:30:00", group:"J" },
+  { id:"gK1", stage:"group", stageLabel:"مرحله گروهی - گروه K", home:{name:"پرتغال", flag:"🇵🇹"}, away:{name:"کنگو", flag:"🇨🇩"}, datetime:"2026-06-17T22:30:00", group:"K" },
+  { id:"gK2", stage:"group", stageLabel:"مرحله گروهی - گروه K", home:{name:"ازبکستان", flag:"🇺🇿"}, away:{name:"کلمبیا", flag:"🇨🇴"}, datetime:"2026-06-18T07:30:00", group:"K" },
+  { id:"gK3", stage:"group", stageLabel:"مرحله گروهی - گروه K", home:{name:"پرتغال", flag:"🇵🇹"}, away:{name:"ازبکستان", flag:"🇺🇿"}, datetime:"2026-06-23T22:30:00", group:"K" },
+  { id:"gK4", stage:"group", stageLabel:"مرحله گروهی - گروه K", home:{name:"کلمبیا", flag:"🇨🇴"}, away:{name:"کنگو", flag:"🇨🇩"}, datetime:"2026-06-24T07:30:00", group:"K" },
+  { id:"gK5", stage:"group", stageLabel:"مرحله گروهی - گروه K", home:{name:"کلمبیا", flag:"🇨🇴"}, away:{name:"پرتغال", flag:"🇵🇹"}, datetime:"2026-06-28T06:00:00", group:"K" },
+  { id:"gK6", stage:"group", stageLabel:"مرحله گروهی - گروه K", home:{name:"کنگو", flag:"🇨🇩"}, away:{name:"ازبکستان", flag:"🇺🇿"}, datetime:"2026-06-28T06:00:00", group:"K" },
+  { id:"gL1", stage:"group", stageLabel:"مرحله گروهی - گروه L", home:{name:"انگلیس", flag:"🏴󠁧󠁢󠁥󠁮󠁧󠁿"}, away:{name:"کرواسی", flag:"🇭🇷"}, datetime:"2026-06-18T01:30:00", group:"L" },
+  { id:"gL2", stage:"group", stageLabel:"مرحله گروهی - گروه L", home:{name:"غنا", flag:"🇬🇭"}, away:{name:"پاناما", flag:"🇵🇦"}, datetime:"2026-06-18T03:30:00", group:"L" },
+  { id:"gL3", stage:"group", stageLabel:"مرحله گروهی - گروه L", home:{name:"انگلیس", flag:"🏴󠁧󠁢󠁥󠁮󠁧󠁿"}, away:{name:"غنا", flag:"🇬🇭"}, datetime:"2026-06-24T00:30:00", group:"L" },
+  { id:"gL4", stage:"group", stageLabel:"مرحله گروهی - گروه L", home:{name:"پاناما", flag:"🇵🇦"}, away:{name:"کرواسی", flag:"🇭🇷"}, datetime:"2026-06-24T03:30:00", group:"L" },
+  { id:"gL5", stage:"group", stageLabel:"مرحله گروهی - گروه L", home:{name:"پاناما", flag:"🇵🇦"}, away:{name:"انگلیس", flag:"🏴󠁧󠁢󠁥󠁮󠁧󠁿"}, datetime:"2026-06-28T01:30:00", group:"L" },
+  { id:"gL6", stage:"group", stageLabel:"مرحله گروهی - گروه L", home:{name:"کرواسی", flag:"🇭🇷"}, away:{name:"غنا", flag:"🇬🇭"}, datetime:"2026-06-28T01:30:00", group:"L" },
+  { id:"r32_01", stage:"r32", stageLabel:"یک‌شانزدهم نهایی", home:{name:"؟", flag:"🏳️"}, away:{name:"؟", flag:"🏳️"}, datetime:"2026-06-29T02:30:00" },
+  { id:"r32_02", stage:"r32", stageLabel:"یک‌شانزدهم نهایی", home:{name:"؟", flag:"🏳️"}, away:{name:"؟", flag:"🏳️"}, datetime:"2026-06-29T22:30:00" },
+  { id:"r32_03", stage:"r32", stageLabel:"یک‌شانزدهم نهایی", home:{name:"؟", flag:"🏳️"}, away:{name:"؟", flag:"🏳️"}, datetime:"2026-06-30T02:00:00" },
+  { id:"r32_04", stage:"r32", stageLabel:"یک‌شانزدهم نهایی", home:{name:"؟", flag:"🏳️"}, away:{name:"؟", flag:"🏳️"}, datetime:"2026-06-30T06:30:00" },
+  { id:"r32_05", stage:"r32", stageLabel:"یک‌شانزدهم نهایی", home:{name:"؟", flag:"🏳️"}, away:{name:"؟", flag:"🏳️"}, datetime:"2026-06-30T22:30:00" },
+  { id:"r32_06", stage:"r32", stageLabel:"یک‌شانزدهم نهایی", home:{name:"؟", flag:"🏳️"}, away:{name:"؟", flag:"🏳️"}, datetime:"2026-07-01T01:30:00" },
+  { id:"r32_07", stage:"r32", stageLabel:"یک‌شانزدهم نهایی", home:{name:"؟", flag:"🏳️"}, away:{name:"؟", flag:"🏳️"}, datetime:"2026-07-01T06:30:00" },
+  { id:"r32_08", stage:"r32", stageLabel:"یک‌شانزدهم نهایی", home:{name:"؟", flag:"🏳️"}, away:{name:"؟", flag:"🏳️"}, datetime:"2026-07-01T20:30:00" },
+  { id:"r32_09", stage:"r32", stageLabel:"یک‌شانزدهم نهایی", home:{name:"؟", flag:"🏳️"}, away:{name:"؟", flag:"🏳️"}, datetime:"2026-07-01T03:30:00" },
+  { id:"r32_10", stage:"r32", stageLabel:"یک‌شانزدهم نهایی", home:{name:"؟", flag:"🏳️"}, away:{name:"؟", flag:"🏳️"}, datetime:"2026-07-02T07:30:00" },
+  { id:"r32_11", stage:"r32", stageLabel:"یک‌شانزدهم نهایی", home:{name:"؟", flag:"🏳️"}, away:{name:"؟", flag:"🏳️"}, datetime:"2026-07-03T02:30:00" },
+  { id:"r32_12", stage:"r32", stageLabel:"یک‌شانزدهم نهایی", home:{name:"؟", flag:"🏳️"}, away:{name:"؟", flag:"🏳️"}, datetime:"2026-07-03T03:30:00" },
+  { id:"r32_13", stage:"r32", stageLabel:"یک‌شانزدهم نهایی", home:{name:"؟", flag:"🏳️"}, away:{name:"؟", flag:"🏳️"}, datetime:"2026-07-03T10:30:00" },
+  { id:"r32_14", stage:"r32", stageLabel:"یک‌شانزدهم نهایی", home:{name:"؟", flag:"🏳️"}, away:{name:"؟", flag:"🏳️"}, datetime:"2026-07-04T00:30:00" },
+  { id:"r32_15", stage:"r32", stageLabel:"یک‌شانزدهم نهایی", home:{name:"؟", flag:"🏳️"}, away:{name:"؟", flag:"🏳️"}, datetime:"2026-07-04T02:30:00" },
+  { id:"r32_16", stage:"r32", stageLabel:"یک‌شانزدهم نهایی", home:{name:"؟", flag:"🏳️"}, away:{name:"؟", flag:"🏳️"}, datetime:"2026-07-04T07:00:00" },
+  { id:"r16_01", stage:"r16", stageLabel:"یک‌هشتم نهایی", home:{name:"؟", flag:"🏳️"}, away:{name:"؟", flag:"🏳️"}, datetime:"2026-07-04T22:30:00" },
+  { id:"r16_02", stage:"r16", stageLabel:"یک‌هشتم نهایی", home:{name:"؟", flag:"🏳️"}, away:{name:"؟", flag:"🏳️"}, datetime:"2026-07-05T01:30:00" },
+  { id:"r16_03", stage:"r16", stageLabel:"یک‌هشتم نهایی", home:{name:"؟", flag:"🏳️"}, away:{name:"؟", flag:"🏳️"}, datetime:"2026-07-06T00:30:00" },
+  { id:"r16_04", stage:"r16", stageLabel:"یک‌هشتم نهایی", home:{name:"؟", flag:"🏳️"}, away:{name:"؟", flag:"🏳️"}, datetime:"2026-07-06T05:30:00" },
+  { id:"r16_05", stage:"r16", stageLabel:"یک‌هشتم نهایی", home:{name:"؟", flag:"🏳️"}, away:{name:"؟", flag:"🏳️"}, datetime:"2026-07-07T00:30:00" },
+  { id:"r16_06", stage:"r16", stageLabel:"یک‌هشتم نهایی", home:{name:"؟", flag:"🏳️"}, away:{name:"؟", flag:"🏳️"}, datetime:"2026-07-07T07:30:00" },
+  { id:"r16_07", stage:"r16", stageLabel:"یک‌هشتم نهایی", home:{name:"؟", flag:"🏳️"}, away:{name:"؟", flag:"🏳️"}, datetime:"2026-07-07T20:30:00" },
+  { id:"r16_08", stage:"r16", stageLabel:"یک‌هشتم نهایی", home:{name:"؟", flag:"🏳️"}, away:{name:"؟", flag:"🏳️"}, datetime:"2026-07-08T03:30:00" },
+  { id:"qf_01", stage:"qf", stageLabel:"یک‌چهارم نهایی", home:{name:"؟", flag:"🏳️"}, away:{name:"؟", flag:"🏳️"}, datetime:"2026-07-10T00:30:00" },
+  { id:"qf_02", stage:"qf", stageLabel:"یک‌چهارم نهایی", home:{name:"؟", flag:"🏳️"}, away:{name:"؟", flag:"🏳️"}, datetime:"2026-07-11T02:30:00" },
+  { id:"qf_03", stage:"qf", stageLabel:"یک‌چهارم نهایی", home:{name:"؟", flag:"🏳️"}, away:{name:"؟", flag:"🏳️"}, datetime:"2026-07-12T01:30:00" },
+  { id:"qf_04", stage:"qf", stageLabel:"یک‌چهارم نهایی", home:{name:"؟", flag:"🏳️"}, away:{name:"؟", flag:"🏳️"}, datetime:"2026-07-12T06:30:00" },
+  { id:"sf_01", stage:"sf", stageLabel:"نیمه‌نهایی", home:{name:"؟", flag:"🏳️"}, away:{name:"؟", flag:"🏳️"}, datetime:"2026-07-15T00:30:00" },
+  { id:"sf_02", stage:"sf", stageLabel:"نیمه‌نهایی", home:{name:"؟", flag:"🏳️"}, away:{name:"؟", flag:"🏳️"}, datetime:"2026-07-15T23:30:00" },
+  { id:"3rd", stage:"3rd", stageLabel:"رده‌بندی سوم", home:{name:"؟", flag:"🏳️"}, away:{name:"؟", flag:"🏳️"}, datetime:"2026-07-19T01:30:00" },
+  { id:"final", stage:"final", stageLabel:"فینال", home:{name:"؟", flag:"🏳️"}, away:{name:"؟", flag:"🏳️"}, datetime:"2026-07-19T23:30:00" }
+];
+
+// ════════════════════════════════════════════════════════════
+//  FLAG HELPER — circle-flags (دایره‌ای، یکنواخت، همه پلتفرم)
+// ════════════════════════════════════════════════════════════
+
+function flagImg(emoji, size = 32) {
+  const chars = [...(emoji || '')];
+  if (chars.length >= 2 && chars[0].codePointAt(0) >= 0x1F1E6 && chars[0].codePointAt(0) <= 0x1F1FF) {
+    const code = chars.slice(0, 2)
+      .map(c => String.fromCharCode(c.codePointAt(0) - 0x1F1E6 + 65))
+      .join('').toLowerCase();
+    // کانتینر مربعی ثابت + object-fit:cover = همه پرچم‌ها یک اندازه
+    // onerror: اگه لود نشد emoji رو نشون بده
+    return `<span style="display:inline-block;width:${size}px;height:${size}px;overflow:hidden;border-radius:5px;vertical-align:middle;flex-shrink:0"><img src="https://flagcdn.com/w${size*2}/${code}.png" style="width:100%;height:100%;object-fit:cover;display:block" onerror="this.parentElement.textContent='${emoji}'" alt="${emoji}"></span>`;
+  }
+  return emoji || '';
+}
+
+// ════════════════════════════════════════════════════════════
+//  TEAM HELPERS
+// ════════════════════════════════════════════════════════════
+
+// پرچم تیم‌ها (برای lookup)
+const flagMap = {};
+MATCHES.forEach(m => {
+  if (m.home.name !== '؟') flagMap[m.home.name] = m.home.flag;
+  if (m.away.name !== '؟') flagMap[m.away.name] = m.away.flag;
+});
+
+// گرفتن اطلاعات تیم با در نظر گرفتن override ادمین
+function getTeamInfo(matchId, side) {
+  const ov = (appData.teamOverrides || {})[matchId];
+  if (ov && ov[side] && ov[side].name && ov[side].name !== '؟') return ov[side];
+  const match = MATCHES.find(m => m.id === matchId);
+  return match ? match[side] : { name: '؟', flag: '🏳️' };
+}
+
+
+// ══ CUSTOM SVG ICONS ══
+const ICONS = {
+  // خروج: فلش به راست از یه مربع گرد
+  signout: `<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M6 2H3a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3"/>
+    <polyline points="10 11 14 8 10 5"/>
+    <line x1="14" y1="8" x2="5" y2="8"/>
+  </svg>`,
+
+  // تأیید: دایره با تیک درون
+  approve: `<svg width="15" height="15" viewBox="0 0 15 15" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="7.5" cy="7.5" r="6"/>
+    <polyline points="5 7.5 6.8 9.5 10.5 5.5"/>
+  </svg>`,
+
+  // رد: دایره با X درون
+  reject: `<svg width="15" height="15" viewBox="0 0 15 15" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="7.5" cy="7.5" r="6"/>
+    <line x1="5.5" y1="5.5" x2="9.5" y2="9.5"/>
+    <line x1="9.5" y1="5.5" x2="5.5" y2="9.5"/>
+  </svg>`,
+
+  // حذف: سطل با درپوش مثلثی
+  trash: `<svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+    <polyline points="3 4 11 4"/>
+    <path d="M5.5 4V3a.5.5 0 0 1 .5-.5h2a.5.5 0 0 1 .5.5v1"/>
+    <path d="M4.5 4l.5 7h4l.5-7"/>
+  </svg>`,
+
+  // ذخیره: مربع با تیر پایین
+  save: `<svg width="15" height="15" viewBox="0 0 15 15" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+    <rect x="2" y="2" width="11" height="11" rx="2"/>
+    <line x1="7.5" y1="5" x2="7.5" y2="10"/>
+    <polyline points="5.5 8 7.5 10 9.5 8"/>
+  </svg>`,
+
+  // رفرش
+  refresh: `<svg width="15" height="15" viewBox="0 0 15 15" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M12 7A5 5 0 1 1 7 2.1"/>
+    <polyline points="7 1 10 2 9 5"/>
+  </svg>`,
+
+  // API دریافت از
+  api: `<svg width="15" height="15" viewBox="0 0 15 15" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="7.5" cy="7.5" r="5.5"/>
+    <path d="M7.5 2C7.5 2 5 4.5 5 7.5s2.5 5.5 2.5 5.5"/>
+    <path d="M7.5 2C7.5 2 10 4.5 10 7.5s-2.5 5.5-2.5 5.5"/>
+    <line x1="2" y1="7.5" x2="13" y2="7.5"/>
+  </svg>`,
+};
+// ════════════════════════════════════════════════════════════
+//  APP STATE
+// ════════════════════════════════════════════════════════════
+let currentUser  = null;
+let isAdmin      = false;
+let appData      = { users: {}, predictions: {}, results: {}, teamOverrides: {} };
+let dbListeners  = [];
+let _renderTimer = null;
+
+// ════════════════════════════════════════════════════════════
+//  AUTH — Google Sign-In
+// ════════════════════════════════════════════════════════════
+function switchAuthTab(tab) {
+  const signin = document.getElementById('form-signin');
+  const register = document.getElementById('form-register');
+  const btnSignin = document.getElementById('tab-signin-btn');
+  const btnReg = document.getElementById('tab-register-btn');
+  if (tab === 'signin') {
+    signin.style.display = 'block';
+    register.style.display = 'none';
+    btnSignin.classList.add('active');
+    btnReg.classList.remove('active');
+  } else {
+    signin.style.display = 'none';
+    register.style.display = 'block';
+    btnReg.classList.add('active');
+    btnSignin.classList.remove('active');
+  }
+}
+
+async function handleLogin() {
+  const email = document.getElementById('si-email').value.trim();
+  const pass  = document.getElementById('si-pass').value;
+  if (!email || !pass) { showToast('ایمیل و رمز عبور را وارد کنید', 'error'); return; }
+  try {
+    await auth.signInWithEmailAndPassword(email, pass);
+  } catch (err) {
+    const msgs = {
+      'auth/user-not-found':   'حساب یافت نشد. ابتدا ثبت‌نام کنید',
+      'auth/wrong-password':   'رمز عبور اشتباه است',
+      'auth/invalid-email':    'ایمیل معتبر نیست',
+      'auth/invalid-credential': 'ایمیل یا رمز عبور اشتباه است'
+    };
+    showToast(msgs[err.code] || 'خطا در ورود', 'error');
+  }
+}
+
+let _pendingRegName = null; // ذخیره اسم قبل از onAuthStateChanged
+
+async function handleRegister() {
+  const name  = document.getElementById('reg-name').value.trim();
+  const email = document.getElementById('reg-email').value.trim();
+  const pass  = document.getElementById('reg-pass').value;
+  if (!name || !email || !pass) { showToast('همه فیلدها را پر کنید', 'error'); return; }
+  if (pass.length < 6) { showToast('رمز عبور باید حداقل ۶ کاراکتر باشد', 'error'); return; }
+  try {
+    _pendingRegName = name; // ذخیره اسم برای استفاده در onAuthStateChanged
+    const cred = await auth.createUserWithEmailAndPassword(email, pass);
+    await cred.user.updateProfile({ displayName: name });
+  } catch (err) {
+    _pendingRegName = null;
+    const msgs = {
+      'auth/email-already-in-use': 'این ایمیل قبلاً ثبت شده — از تب ورود وارد شوید',
+      'auth/invalid-email':        'ایمیل معتبر نیست',
+      'auth/weak-password':        'رمز عبور ضعیف است'
+    };
+    showToast(msgs[err.code] || 'خطا در ثبت‌نام', 'error');
+  }
+}
+
+async function handleSignOut() {
+  clearListeners();
+  currentUser = null;
+  isAdmin     = false;
+  appData     = { users: {}, predictions: {}, results: {} };
+  await auth.signOut();
+  // onAuthStateChanged(null) will call showScreen('login')
+}
+
+// حذف کاربر توسط ادمین (از لیست کاربران فعال)
+async function editUserName(uid, currentName) {
+  const newName = prompt(`اسم جدید برای "${currentName}":`, currentName);
+  if (!newName || newName.trim() === currentName) return;
+  const trimmed = newName.trim();
+  if (!trimmed) return;
+  try {
+    await db.ref(`users/${uid}/name`).set(trimmed);
+    showToast(`✅ اسم "${currentName}" به "${trimmed}" تغییر کرد`, 'success');
+  } catch(e) {
+    showToast('خطا در تغییر اسم', 'error');
+  }
+}
+
+async function deleteUser(uid, name) {
+  if (!confirm(`حذف "${name}" از بازی؟\n\nتمام پیش‌بینی‌های او هم پاک می‌شود.`)) return;
+
+  // حذف فوری از حافظه
+  delete appData.users[uid];
+  // پاک کردن پیش‌بینی‌هایش از حافظه
+  for (const mid of Object.keys(appData.predictions)) {
+    delete appData.predictions[mid][uid];
+  }
+  renderAll();
+  showToast(`${name} از بازی حذف شد 🗑️`, 'success');
+
+  // حذف از Firebase
+  try {
+    await db.ref(`users/${uid}`).remove();
+    // پاک کردن پیش‌بینی‌ها از Firebase
+    for (const mid of Object.keys(appData.predictions)) {
+      await db.ref(`predictions/${mid}/${uid}`).remove();
+    }
+  } catch (e) {
+    console.warn('Firebase delete failed:', e.code, e.message);
+  }
+}
+
+async function requestAgain() {
+  const user = auth.currentUser;
+  if (!user) { showScreen('login'); return; }
+  try {
+    // کاربر می‌تونه رکوردِ خودش رو ویرایش کنه (auth.uid == $uid)
+    await db.ref(`users/${user.uid}`).update({ rejected: false, approved: false });
+    showScreen('pending');
+    showToast('درخواست مجدد ارسال شد ✅', 'success');
+  } catch (e) {
+    showToast('خطا در ارسال درخواست', 'error');
+  }
+}
+
+async function checkApproval() {
+  const fbUser = auth.currentUser;
+  if (!fbUser) { showScreen('login'); return; }
+
+  showToast('در حال بررسی...', '');
+  try {
+    const snap = await db.ref(`users/${fbUser.uid}`).once('value');
+    const data = snap.val();
+    if (data?.approved) {
+      // Re-enter app
+      await enterApp(fbUser, data);
+    } else {
+      showToast('هنوز تأیید نشده‌اید. با ادمین در تماس باشید 🙏', '');
+    }
+  } catch (e) {
+    showToast('خطا در بررسی وضعیت', 'error');
+  }
+}
+
+// ── Auth State Observer ──
+auth.onAuthStateChanged(async (fbUser) => {
+  if (!fbUser) {
+    showScreen('login');
+    return;
+  }
+
+  showScreen('loading');
+
+  const { uid, email, displayName } = fbUser;
+  const adminUser = email === ADMIN_EMAIL;
+  const ref       = db.ref(`users/${uid}`);
+
+  try {
+    const snap = await ref.once('value');
+
+    if (!snap.exists()) {
+      // اولین ورود — ساخت پروفایل
+      await ref.set({
+        name:      adminUser ? ADMIN_NAME : (_pendingRegName || displayName || email.split('@')[0]),
+        email,
+        approved:  adminUser,  // ادمین فوری تأیید می‌شود
+        createdAt: firebase.database.ServerValue.TIMESTAMP
+      });
+      _pendingRegName = null; // پاک کردن بعد از استفاده
+    } else if (adminUser) {
+      // ادمین همیشه approved
+      await ref.update({ approved: true, name: ADMIN_NAME, email }); // ensure email always stored for rules
+    }
+
+    const updatedSnap = await ref.once('value');
+    const userData    = updatedSnap.val();
+
+    if (userData.rejected) {
+      showScreen('rejected');
+      return;
+    }
+
+    if (!userData.approved) {
+      showScreen('pending');
+      return;
+    }
+
+    await enterApp(fbUser, userData);
+
+  } catch (err) {
+    console.error('Auth flow error:', err);
+    showToast('خطا در اتصال به سرور', 'error');
+    showScreen('login');
+  }
+});
+
+function injectIcons() {
+  // header logout icon
+  const signoutBtn = document.getElementById('btn-signout-header');
+  if (signoutBtn) signoutBtn.innerHTML = ICONS.signout;
+
+  // تأیید / رد / حذف / ذخیره are rendered dynamically in renderAdmin
+}
+
+async function enterApp(fbUser, userData) {
+  // درخواست مجوز نوتیفیکیشن
+  if ('Notification' in window && Notification.permission === 'default') {
+    Notification.requestPermission();
+  }
+
+  currentUser = { uid: fbUser.uid, email: fbUser.email, name: userData.name };
+  isAdmin     = fbUser.email === ADMIN_EMAIL;
+
+  // نمایش اطلاعات کاربر در هدر
+  document.getElementById('header-username').textContent = userData.name;
+  document.getElementById('header-avatar').textContent   = (userData.name || '?')[0].toUpperCase();
+
+  // نمایش/پنهان تب ادمین
+  document.querySelectorAll('.admin-only').forEach(el => {
+    el.style.display = isAdmin ? 'block' : 'none';
+  });
+
+  // شروع listeners واقعی
+  clearListeners();
+  startListeners();
+
+  showScreen('app');
+}
+
+// ════════════════════════════════════════════════════════════
+//  REALTIME LISTENERS — همگام‌سازی زنده با Firebase
+// ════════════════════════════════════════════════════════════
+let testModeActive = false;
+let showDoneMatches = false; // بازی‌های پایان یافته پیش‌فرض مخفی
+const _rejectedUids = new Set(); // کاربرانی که ادمین رد کرده — پایدار می‌مونه
+
+function startListeners() {
+  // شنیدن نوتیف‌های ادمین
+  db.ref('admin_push').on('value', snap => {
+    const data = snap.val();
+    if (!data || !data.ts) return;
+    const age = Date.now() - data.ts;
+    if (age < 20000 && Notification.permission === 'granted') {
+      new Notification(data.title || '⚽ جام جهانی ۲۰۲۶', {
+        body: data.body || '',
+        icon: 'https://em-content.zobj.net/source/apple/391/soccer-ball_26bd.png',
+        tag: 'wc26-admin-push',
+        renotify: true
+      });
+    }
+  });
+
+  ['users', 'predictions', 'results', 'teamOverrides'].forEach(path => {
+    const ref = db.ref(path);
+    ref.on('value', snap => {
+      if (testModeActive) return; // تست فعاله — Firebase رو نادیده بگیر
+      const fresh = snap.val() || {};
+
+      // برای users: ریجکت‌شده‌ها رو کاملاً حذف کن
+      if (path === 'users') {
+        for (const uid of _rejectedUids) {
+          delete fresh[uid]; // از لیست کاربران حذف بشن
+        }
+        // کاربرایی که Firebase هم rejected:true داره رو حذف کن
+        for (const uid of Object.keys(fresh)) {
+          if (fresh[uid]?.rejected === true) {
+            _rejectedUids.add(uid);
+            delete fresh[uid];
+          }
+        }
+      }
+
+      appData[path] = fresh;
+      debouncedRenderAll();
+    }, err => {
+      console.error(`Firebase listener error [${path}]:`, err);
+    });
+    dbListeners.push(ref);
+  });
+}
+
+function clearListeners() {
+  dbListeners.forEach(ref => ref.off());
+  dbListeners = [];
+}
+
+function debouncedRenderAll() {
+  clearTimeout(_renderTimer);
+  _renderTimer = setTimeout(() => {
+    if (currentUser) renderAll();
+  }, 80);
+}
+
+// ════════════════════════════════════════════════════════════
+//  FIREBASE WRITES
+// ════════════════════════════════════════════════════════════
+
+// ثبت پیش‌بینی کاربر
+async function submitPrediction(matchId) {
+  const ph = parseInt(document.getElementById(`ph-${matchId}`)?.value);
+  const pa = parseInt(document.getElementById(`pa-${matchId}`)?.value);
+
+  if (isNaN(ph) || isNaN(pa)) {
+    showToast('لطفاً گل‌ها را وارد کنید', 'error');
+    return;
+  }
+
+  const pred = { homeGoals: ph, awayGoals: pa, timestamp: Date.now() };
+
+  const othEl = document.getElementById(`oth-${matchId}`);
+  const otaEl = document.getElementById(`ota-${matchId}`);
+  if (othEl && otaEl && othEl.value !== '' && otaEl.value !== '') {
+    pred.otPrediction = {
+      homeGoals: parseInt(othEl.value),
+      awayGoals: parseInt(otaEl.value)
+    };
+  }
+
+  const penEl = document.getElementById(`pen-${matchId}`);
+  if (penEl && penEl.value !== '') pred.penaltyGoals = parseInt(penEl.value);
+  const penWinnerEl = document.querySelector(`input[name="pen-winner-${matchId}"]:checked`);
+  if (penWinnerEl) pred.penWinner = penWinnerEl.value;
+
+  // آپدیت فوری در حافظه (در هر حالتی، حتی test mode)
+  if (!appData.predictions[matchId]) appData.predictions[matchId] = {};
+  appData.predictions[matchId][currentUser.uid] = pred;
+  renderMatches();
+  showToast('پیش‌بینی ثبت شد ✅', 'success');
+
+  // ذخیره در Firebase (اگه test mode نباشه)
+  if (!testModeActive) {
+    try {
+      await db.ref(`predictions/${matchId}/${currentUser.uid}`).set(pred);
+    } catch (e) {
+      console.error('Firebase prediction write:', e);
+    }
+  }
+}
+
+// تأیید کاربر توسط ادمین
+async function approveUser(uid) {
+  // آپدیت فوری در حافظه
+  if (appData.users[uid]) appData.users[uid].approved = true;
+  renderAdmin();
+  showToast('کاربر تأیید شد ✅', 'success');
+
+  // نوشتن در Firebase
+  try {
+    await db.ref(`users/${uid}`).update({ approved: true });
+  } catch (e) {
+    console.warn('Firebase approve write failed (memory updated anyway):', e.message);
+  }
+}
+
+// رد کاربر توسط ادمین
+async function rejectUser(uid, name) {
+  if (!confirm(`آیا می‌خواهید "${name}" را رد کنید؟`)) return;
+
+  // ۱. حذف فوری از حافظه + Set دائمی
+  _rejectedUids.add(uid);
+  delete appData.users[uid];
+  renderAdmin();
+  showToast(`${name} رد شد ❌`, 'error');
+
+  // ۲. ثبت در Firebase (با auth.token.email rule کار می‌کنه)
+  try {
+    await db.ref(`users/${uid}`).update({ rejected: true, approved: false });
+  } catch (e) {
+    // حتی اگه Firebase write fail بشه، Set دائمی جلوی نمایش رو می‌گیره
+    console.warn('Firebase reject write:', e.code, e.message);
+  }
+}
+
+// نمایش/مخفی فیلدهای OT و پنالتی در فرم ادمین
+function toggleAdminOTFields(matchId) {
+  const type = document.getElementById(`rt-${matchId}`)?.value;
+  const otDiv = document.getElementById(`ot-admin-${matchId}`);
+  if (otDiv) otDiv.style.display = (type === 'ot' || type === 'pen') ? 'contents' : 'none';
+}
+
+// ثبت نتیجه بازی توسط ادمین
+async function confirmResult(matchId) {
+  const rh = parseInt(document.getElementById(`rh-${matchId}`)?.value);
+  const ra = parseInt(document.getElementById(`ra-${matchId}`)?.value);
+
+  if (isNaN(rh) || isNaN(ra)) {
+    showToast('لطفاً نتیجه را وارد کنید', 'error');
+    return;
+  }
+
+  const result = { homeGoals: rh, awayGoals: ra, type: '90' };
+
+  const typeEl = document.getElementById(`rt-${matchId}`);
+  if (typeEl) {
+    result.type = typeEl.value;
+    const othEl = document.getElementById(`oth-r-${matchId}`);
+    const otaEl = document.getElementById(`ota-r-${matchId}`);
+    if (othEl?.value !== '' && otaEl?.value !== '') {
+      result.otResult = {
+        homeGoals: parseInt(othEl.value),
+        awayGoals: parseInt(otaEl.value)
+      };
+    }
+    const penEl = document.getElementById(`pen-r-${matchId}`);
+    if (penEl?.value !== '') result.penaltyGoals = parseInt(penEl.value);
+    const penH = parseInt(document.getElementById(`pen-home-r-${matchId}`)?.value);
+    const penA = parseInt(document.getElementById(`pen-away-r-${matchId}`)?.value);
+    if (!isNaN(penH) && !isNaN(penA)) {
+      result.homePenGoals = penH;
+      result.awayPenGoals = penA;
+      result.penaltyGoals = penH + penA; // مجموع برای پیش‌بینی تعداد
+      result.penWinner    = penH > penA ? 'home' : 'away'; // برنده خودکار
+    }
+  }
+
+  // آپدیت فوری حافظه (کار می‌کنه حتی در test mode)
+  appData.results[matchId] = result;
+  renderAll();
+  showToast('نتیجه ثبت شد ✅ محاسبات به‌روز شد', 'success');
+
+  // ذخیره در Firebase
+  try {
+    await db.ref(`results/${matchId}`).set(result);
+  } catch (e) {
+    console.error('Firebase result write:', e);
+  }
+}
+
+// ════════════════════════════════════════════════════════════
+//  CALCULATION ENGINE
+// ════════════════════════════════════════════════════════════
+function calcWeight(prediction, result, stage) {
+  const { homeGoals: ph, awayGoals: pa } = prediction;
+  const { homeGoals: rh, awayGoals: ra } = result;
+
+  let weight = 0;
+
+  if (ph === rh && pa === ra) {
+    weight += (rh === ra) ? WEIGHTS.draw_exact : WEIGHTS.exact;
+  } else if (rh !== ra) {
+    const realWinner = rh > ra ? 'home' : 'away';
+    const predWinner = ph > pa ? 'home' : (ph < pa ? 'away' : 'draw');
+    if (predWinner === realWinner) weight += WEIGHTS.winner;
+    else if (predWinner === 'draw') weight += WEIGHTS.neutral;
+    else weight += WEIGHTS.wrong;
+  } else {
+    if (ph === pa) weight += WEIGHTS.draw_correct;
+    else           weight += WEIGHTS.neutral;
+  }
+
+  if (stage !== 'group' && result.type !== '90') {
+    if (prediction.otPrediction && result.otResult) {
+      const op  = prediction.otPrediction;
+      const or_ = result.otResult;
+      if (op.homeGoals === or_.homeGoals && op.awayGoals === or_.awayGoals) {
+        weight += WEIGHTS.ot_exact;
+      } else if (or_.homeGoals !== or_.awayGoals) {
+        const realOTW = or_.homeGoals > or_.awayGoals ? 'home' : 'away';
+        const predOTW = op.homeGoals > op.awayGoals ? 'home' : (op.homeGoals < op.awayGoals ? 'away' : 'draw');
+        if (predOTW === realOTW) weight += WEIGHTS.ot_winner;
+        else if (predOTW === 'draw') weight += WEIGHTS.ot_draw;
+      } else {
+        if (op.homeGoals === op.awayGoals) weight += WEIGHTS.ot_draw;
+      }
+    }
+    if (prediction.penaltyGoals !== undefined && result.penaltyGoals !== undefined) {
+      if (prediction.penaltyGoals === result.penaltyGoals) weight += WEIGHTS.penalty_exact;
+    }
+    // برنده پنالتی
+    if (prediction.penWinner && result.penWinner) {
+      if (prediction.penWinner === result.penWinner) weight += WEIGHTS.penalty_winner;
+    }
+  }
+
+  return weight;
+}
+
+function get90Category(pred, result) {
+  const {homeGoals: ph, awayGoals: pa} = pred;
+  const {homeGoals: rh, awayGoals: ra} = result;
+  if (ph === rh && pa === ra) return 'exact';
+  if (rh !== ra) {
+    const rw = rh > ra ? 'H' : 'A';
+    const pw = ph > pa ? 'H' : ph < pa ? 'A' : 'D';
+    if (pw === rw) return 'correct';
+    if (pw === 'D') return 'neutral';
+    return 'wrong';
+  }
+  return ph === pa ? 'correct' : 'neutral';
+}
+
+function getOTCategory(pred, result) {
+  const op = pred.otPrediction, or_ = result.otResult;
+  if (!op || !or_) return null;
+  const {homeGoals: ph, awayGoals: pa} = op;
+  const {homeGoals: rh, awayGoals: ra} = or_;
+  if (ph === rh && pa === ra) return 'exact';
+  if (rh !== ra) {
+    const rw = rh > ra ? 'H' : 'A';
+    const pw = ph > pa ? 'H' : ph < pa ? 'A' : 'D';
+    return pw === rw ? 'correct' : null;
+  }
+  return ph === pa ? 'correct' : null;
+}
+
+function getPenCategory(pred, result) {
+  if (!pred.penWinner || !result.penWinner) return null;
+  if (pred.penWinner !== result.penWinner) return null;
+  return (pred.penaltyGoals !== undefined && pred.penaltyGoals === result.penaltyGoals)
+    ? 'exact' : 'correct';
+}
+
+function calcSettlementForMatch(matchId, result) {
+  const match = MATCHES.find(m => m.id === matchId);
+  if (!match) return { payments: {}, weights: {}, totalPool: 0, cat90: {}, catOT: {}, catPen: {} };
+
+  const isKO        = match.stage !== 'group';
+  const approvedUsers = Object.entries(appData.users).filter(([, u]) => u.approved);
+  const matchPreds   = appData.predictions[matchId] || {};
+
+  // ── دسته‌بندی هر بازیکن ──
+  const cat90 = {}, catOT = {}, catPen = {}, weights = {};
+  for (const [uid] of approvedUsers) {
+    const pred = matchPreds[uid];
+    if (!pred) continue;
+    cat90[uid] = get90Category(pred, result);
+    catOT[uid]  = (isKO && result.type !== '90') ? getOTCategory(pred, result) : null;
+    catPen[uid] = (isKO && result.type === 'pen') ? getPenCategory(pred, result) : null;
+    weights[uid] = ({ exact:5, correct:1, neutral:0, wrong:-3 }[cat90[uid]] || 0)
+                 + (catOT[uid]  === 'exact' ? 5 : catOT[uid]  === 'correct' ? 1 : 0)
+                 + (catPen[uid] === 'exact' ? 10 : catPen[uid] === 'correct' ? 1 : 0);
+  }
+
+  const payments = {};
+  for (const [uid] of approvedUsers) payments[uid] = 0;
+
+  const uids = Object.keys(cat90);
+  if (uids.length < 2) return { payments, weights, totalPool: 0, cat90, catOT, catPen };
+
+  // ── آمار دسته‌ها ──
+  const N   = uids.length;
+  const n_e = uids.filter(u => cat90[u] === 'exact').length;
+  const n_c = uids.filter(u => cat90[u] === 'correct').length;
+  const n_n = uids.filter(u => cat90[u] === 'neutral').length;
+  const n_w = uids.filter(u => cat90[u] === 'wrong').length;
+
+  // ── نرخ‌ها ──
+  const R = { e90:25000, c90:7000, w90:3000, eOT:8000, cOT:4000, ePen:20000, cPen:5000 };
+
+  // ── محاسبه مستقیم (همان فرمول اکسل) ──
+  for (const uid of uids) {
+    const cat = cat90[uid];
+    const ne_o = n_e - (cat === 'exact'   ? 1 : 0);
+    const nc_o = n_c - (cat === 'correct' ? 1 : 0);
+
+    let pay = 0;
+    if      (cat === 'exact')   pay = (N-1)*R.e90 + n_w*R.w90 - ne_o*R.e90 - n_c*R.c90;
+    else if (cat === 'correct') pay = (N-1)*R.c90 + n_w*R.w90 - n_e*R.e90  - nc_o*R.c90;
+    else if (cat === 'neutral') pay = n_w*R.w90   - n_e*R.e90 - n_c*R.c90;
+    else if (cat === 'wrong')   pay = -n_e*R.e90  - n_c*R.c90 - (n_e+n_c+n_n)*R.w90;
+
+    // ── وقت اضافه ──
+    if (isKO && result.type !== '90') {
+      const n_oe = uids.filter(u => catOT[u] === 'exact').length;
+      const n_oc = uids.filter(u => catOT[u] === 'correct').length;
+      const cOT  = catOT[uid];
+      if (cOT === 'exact') {
+        pay += (N-1)*R.eOT - (n_oe-1)*R.eOT - n_oc*R.cOT;
+      } else if (cOT === 'correct') {
+        pay += (N-1)*R.cOT - n_oe*R.eOT - (n_oc-1)*R.cOT;
+      } else {
+        pay -= n_oe*R.eOT + n_oc*R.cOT;
+      }
+    }
+
+    // ── پنالتی ──
+    if (isKO && result.type === 'pen') {
+      const n_pe = uids.filter(u => catPen[u] === 'exact').length;
+      const n_pc = uids.filter(u => catPen[u] === 'correct').length;
+      const cPen = catPen[uid];
+      if (cPen === 'exact') {
+        pay += (N-1)*R.ePen - (n_pe-1)*R.ePen - n_pc*R.cPen;
+      } else if (cPen === 'correct') {
+        pay += (N-1)*R.cPen - n_pe*R.ePen - (n_pc-1)*R.cPen;
+      } else {
+        pay -= n_pe*R.ePen + n_pc*R.cPen;
+      }
+    }
+
+    payments[uid] = pay;
+  }
+
+  const totalPool = uids.filter(u => payments[u] > 0).reduce((s, u) => s + payments[u], 0);
+  return { payments, weights, totalPool, cat90, catOT, catPen };
+}
+
+// ════════════════════════════════════════════════════════════
+//  UI HELPERS
+// ════════════════════════════════════════════════════════════
+function toPersianNum(n) {
+  return String(n).replace(/\d/g, d => '۰۱۲۳۴۵۶۷۸۹'[d]);
+}
+
+function formatMoney(n) {
+  const abs = Math.abs(n);
+  const fmt = toPersianNum(abs.toLocaleString('fa-IR'));
+  if (n > 0) return `<span class="balance-pos">${fmt}+ تومان</span>`;
+  if (n < 0) return `<span class="balance-neg">${fmt}- تومان</span>`;
+  return `<span class="balance-zero">—</span>`;
+}
+
+function getMatchStatus(match) {
+  // در حالت تست: وضعیت بازی تست رو مستقیم برمی‌گردونه
+  if (testModeActive && match.id === TEST_MID && _testMatchStatus) {
+    if (_testMatchStatus === 'done' && !appData.results[match.id]) return 'locked';
+    return _testMatchStatus;
+  }
+
+  const now       = new Date();
+  const matchTime = new Date(match.datetime + '+03:30'); // ساعت ایران
+  const openTime  = new Date(matchTime.getTime() - 24 * 60 * 60 * 1000);
+  const closeTime = new Date(matchTime.getTime() - 5  * 60 * 60 * 1000);
+
+  if (now < openTime)  return 'upcoming';
+  if (now < closeTime) return 'open';
+  if (!appData.results[match.id]) return 'locked';
+  return 'done';
+}
+
+function getStageClass(stage) {
+  const map = {
+    group:'stage-group', r32:'stage-r32', r16:'stage-r16',
+    qf:'stage-qf', sf:'stage-sf', "3rd":'stage-3rd', final:'stage-final'
+  };
+  return map[stage] || 'stage-group';
+}
+
+function showToast(msg, type = '') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = `toast show ${type}`;
+  setTimeout(() => { t.className = 'toast'; }, 2600);
+}
+
+function switchTab(name) {
+  document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById(`tab-${name}`).classList.add('active');
+  event.target.classList.add('active');
+}
+
+function showScreen(name) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(`screen-${name}`).classList.add('active');
+}
+
+// ════════════════════════════════════════════════════════════
+//  RENDER: MATCHES TAB
+// ════════════════════════════════════════════════════════════
+function renderMatches() {
+  const container = document.getElementById('matches-list');
+  let html = '';
+  let lastDate = '';
+
+  const sorted = [...MATCHES].sort((a, b) => new Date(a.datetime) - new Date(b.datetime));
+  const doneCount = sorted.filter(m => getMatchStatus(m) === 'done').length;
+  const visible   = showDoneMatches ? sorted : sorted.filter(m => getMatchStatus(m) !== 'done');
+
+  visible.forEach(match => {
+    const home    = getTeamInfo(match.id, 'home');
+    const away    = getTeamInfo(match.id, 'away');
+    const status  = getMatchStatus(match);
+    const result  = appData.results[match.id];
+    const myPred  = (appData.predictions[match.id] || {})[currentUser?.uid];
+
+    const dt      = new Date(match.datetime);
+    const dateKey = dt.toLocaleDateString('fa-IR', { weekday:'long', month:'long', day:'numeric' });
+    const dateStr = dt.toLocaleTimeString('fa-IR', { hour:'2-digit', minute:'2-digit' });
+
+    if (dateKey !== lastDate) {
+      html += `<div class="section-divider">
+        <div class="section-divider-line"></div>
+        <div class="section-divider-text">📅 ${dateKey}</div>
+        <div class="section-divider-line"></div>
+      </div>`;
+      lastDate = dateKey;
+    }
+
+    let statusBadge = '';
+    if (status === 'upcoming') statusBadge = '<span class="badge" style="background:rgba(255,255,255,0.06);color:var(--text-dim)">به‌زودی باز می‌شود</span>';
+    if (status === 'open')     statusBadge = '<span class="badge badge-open">باز برای پیش‌بینی</span>';
+    if (status === 'locked')   statusBadge = '<span class="badge badge-closed">بسته</span>';
+    if (status === 'done')     statusBadge = '<span class="badge badge-done">پایان یافت</span>';
+
+    html += `<div class="match-card">
+      <div class="match-header">
+        <span class="match-stage ${getStageClass(match.stage)}">${match.stageLabel.split(' - ')[0]}</span>
+        <span style="font-size:0.73rem">${dateStr}</span>
+        ${statusBadge}
+      </div>
+      <div class="match-teams" dir="ltr">
+        <div class="team">
+          <div class="team-flag">${flagImg(home.flag, 42)}</div>
+          <div class="team-name" dir="rtl">${home.name}</div>
+        </div>
+        <div class="match-vs">
+          <div class="vs-text">VS</div>
+          <div class="score-display">${result ? `${toPersianNum(result.homeGoals)}&ndash;${toPersianNum(result.awayGoals)}` : '–'}</div>
+        </div>
+        <div class="team">
+          <div class="team-flag">${flagImg(away.flag, 42)}</div>
+          <div class="team-name" dir="rtl">${away.name}</div>
+        </div>
+      </div>
+      ${renderPredictionSection(match, status, myPred)}
+    </div>`;
+  });
+
+  container.innerHTML = html;
+  updateMyStats();
+}
+
+function renderPredictionSection(match, status, myPred) {
+  const isKnockout = match.stage !== 'group';
+
+  if (status === 'upcoming') {
+    return `<div class="prediction-section"><div class="prediction-locked">🕐 پیش‌بینی ۲۴ ساعت قبل از بازی باز می‌شود</div></div>`;
+  }
+
+  if (status === 'locked') {
+    // بازی شروع شده — پیش‌بینی همه نمایش داده می‌شه
+    const matchPreds    = appData.predictions[match.id] || {};
+    const approvedUsers = Object.entries(appData.users).filter(([,u]) => u.approved);
+    let predRows = '';
+    for (const [uid, user] of approvedUsers) {
+      const pred = matchPreds[uid];
+      if (!pred) continue;
+      const isMe = uid === currentUser?.uid;
+      predRows += `<div class="breakdown-row">
+        <span class="breakdown-player">${user.name}</span>
+        <span class="breakdown-pred" dir="ltr">${toPersianNum(pred.homeGoals)}–${toPersianNum(pred.awayGoals)}</span>
+        <span class="breakdown-result res-zero">در انتظار نتیجه</span>
+      </div>`;
+    }
+    if (!predRows) predRows = '<div style="font-size:0.78rem;color:var(--text-dim)">هنوز کسی پیش‌بینی نکرده</div>';
+    return `<div class="prediction-section">
+      <div class="prediction-label">📋 پیش‌بینی‌ها — بازی شروع شد</div>
+      <div style="margin-top:0.4rem">${predRows}</div>
+    </div>`;
+  }
+
+  if (status === 'done') {
+    if (myPred) {
+      return `<div class="prediction-section">
+        <div class="prediction-submitted">✅ پیش‌بینی شما: <span dir="ltr">${toPersianNum(myPred.homeGoals)} – ${toPersianNum(myPred.awayGoals)}</span></div>
+      </div>`;
+    }
+    return `<div class="prediction-section"><div class="prediction-locked">🔒 پیش‌بینی بسته شد</div></div>`;
+  }
+
+  const hasExisting = !!myPred;
+  return `<div class="prediction-section">
+    <div class="prediction-label">🎯 پیش‌بینی نتیجه ${hasExisting ? '(ویرایش)' : ''}</div>
+    <div class="score-input-row" dir="ltr">
+      <div style="flex:1;text-align:center;font-size:0.75rem;color:var(--text-dim)" dir="rtl">${getTeamInfo(match.id,'home').name}</div>
+      <input type="number" inputmode="numeric" pattern="[0-9]*" class="score-input" id="ph-${match.id}" min="0" max="20" value="${hasExisting ? myPred.homeGoals : ''}" placeholder="۰">
+      <div class="score-dash">–</div>
+      <input type="number" inputmode="numeric" pattern="[0-9]*" class="score-input" id="pa-${match.id}" min="0" max="20" value="${hasExisting ? myPred.awayGoals : ''}" placeholder="۰">
+      <div style="flex:1;text-align:center;font-size:0.75rem;color:var(--text-dim)" dir="rtl">${getTeamInfo(match.id,'away').name}</div>
+    </div>
+    ${isKnockout ? renderKnockoutExtras(match, myPred) : ''}
+    <button class="btn-submit-prediction" onclick="submitPrediction('${match.id}')">
+      ${hasExisting ? '✏️ به‌روزرسانی' : '✅ ثبت پیش‌بینی'}
+    </button>
+  </div>`;
+}
+
+function renderKnockoutExtras(match, myPred) {
+  const ot  = myPred?.otPrediction;
+  const mid = match.id;
+  // تعیین اینکه آیا بخش‌ها از ابتدا نمایش داده بشن
+  const showOT  = myPred && myPred.homeGoals !== undefined && myPred.homeGoals === myPred.awayGoals;
+  const showPen = showOT && ot && ot.homeGoals !== undefined && ot.homeGoals === ot.awayGoals;
+
+  return `<div class="knockout-extras visible" id="ko-wrap-${mid}">
+    <!-- ── OT Section ── -->
+    <div id="ot-section-${mid}" style="display:${showOT ? 'block' : 'none'}">
+      <div class="extra-section-title" style="margin-top:0.4rem">⏱️ نتیجه بعد از وقت اضافه</div>
+      <div style="font-size:0.72rem;color:var(--text-dim);margin-bottom:0.4rem" id="ot-hint-${mid}">
+        نتیجه کل رو بنویس — مثلاً اگه ۲–۲ دادی و فکر می‌کنی میزبان یک گل میزنه: ۳–۲ بنویس
+      </div>
+      <div class="score-input-row" dir="ltr">
+        <div style="flex:1;text-align:center;font-size:0.7rem;color:var(--text-dim)" dir="rtl">${getTeamInfo(mid,'home').name}</div>
+        <input type="number" inputmode="numeric" pattern="[0-9]*" class="score-input"
+          id="oth-${mid}" min="0" max="20" value="${ot?.homeGoals ?? ''}" placeholder="–"
+          oninput="updateKnockoutVisibility('${mid}')">
+        <div class="score-dash">–</div>
+        <input type="number" inputmode="numeric" pattern="[0-9]*" class="score-input"
+          id="ota-${mid}" min="0" max="20" value="${ot?.awayGoals ?? ''}" placeholder="–"
+          oninput="updateKnockoutVisibility('${mid}')">
+        <div style="flex:1;text-align:center;font-size:0.7rem;color:var(--text-dim)" dir="rtl">${getTeamInfo(mid,'away').name}</div>
+      </div>
+      <div style="font-size:0.7rem;color:var(--text-dim);margin-top:0.3rem;text-align:center" id="ot-equal-hint-${mid}" style="display:none">
+        ↓ اگه وقت اضافه هم مساوی بمونه، بازی به پنالتی می‌ره
+      </div>
+    </div>
+    <!-- ── Penalty Section ── -->
+    <div id="pen-section-${mid}" style="display:${showPen ? 'block' : 'none'}">
+      <div class="extra-section-title" style="margin-top:0.6rem">🥅 پنالتی — اگه وقت اضافه هم مساوی بمونه</div>
+      <div style="display:flex;align-items:center;gap:0.75rem;flex-wrap:wrap;margin-top:0.4rem">
+        <div style="font-size:0.8rem;color:var(--text-dim)">تعداد گل:</div>
+        <input type="number" inputmode="numeric" pattern="[0-9]*" class="score-input"
+          id="pen-${mid}" min="0" max="30" value="${myPred?.penaltyGoals ?? ''}" placeholder="–"
+          style="width:70px">
+        <div style="font-size:0.75rem;color:var(--text-dim)">مجموع</div>
+      </div>
+      <div style="margin-top:0.6rem;font-size:0.8rem;color:var(--text-dim)">🏆 برنده پنالتی:</div>
+      <div style="display:flex;gap:1rem;margin-top:0.35rem">
+        <label style="display:flex;align-items:center;gap:0.4rem;cursor:pointer;font-size:0.85rem;color:var(--text-mid)">
+          <input type="radio" name="pen-winner-${mid}" value="home"
+            ${myPred?.penWinner==='home'?'checked':''} style="accent-color:var(--gold);width:16px;height:16px">
+          ${getTeamInfo(mid,'home').name}
+        </label>
+        <label style="display:flex;align-items:center;gap:0.4rem;cursor:pointer;font-size:0.85rem;color:var(--text-mid)">
+          <input type="radio" name="pen-winner-${mid}" value="away"
+            ${myPred?.penWinner==='away'?'checked':''} style="accent-color:var(--gold);width:16px;height:16px">
+          ${getTeamInfo(mid,'away').name}
+        </label>
+      </div>
+    </div>
+  </div>`;
+}
+
+// نمایش/مخفی کردن بخش‌های وقت اضافه و پنالتی بر اساس مقادیر فعلی
+function updateKnockoutVisibility(mid) {
+  const ph  = parseInt(document.getElementById('ph-' + mid)?.value);
+  const pa  = parseInt(document.getElementById('pa-' + mid)?.value);
+  const oth = parseInt(document.getElementById('oth-' + mid)?.value);
+  const ota = parseInt(document.getElementById('ota-' + mid)?.value);
+
+  const otSec      = document.getElementById('ot-section-'    + mid);
+  const penSec     = document.getElementById('pen-section-'   + mid);
+  const otHint     = document.getElementById('ot-hint-'       + mid);
+  const otEqHint   = document.getElementById('ot-equal-hint-' + mid);
+
+  const isDraw90 = !isNaN(ph) && !isNaN(pa) && ph === pa;
+  const isDrawOT = !isNaN(oth) && !isNaN(ota) && oth === ota;
+
+  // نمایش/مخفی بخش وقت اضافه
+  if (otSec) otSec.style.display = isDraw90 ? 'block' : 'none';
+
+  // اگه ۹۰ دقیقه مساوی نبود، مقادیر OT رو پاک کن
+  if (!isDraw90) {
+    const othEl = document.getElementById('oth-' + mid);
+    const otaEl = document.getElementById('ota-' + mid);
+    if (othEl) othEl.value = '';
+    if (otaEl) otaEl.value = '';
+  }
+
+  // آپدیت hint وقت اضافه با نتیجه ۹۰ دقیقه
+  if (otHint && isDraw90) {
+    otHint.textContent = `نتیجه کل رو بنویس — پایه: ${toPersianNum(ph)}–${toPersianNum(pa)} (نتیجه ۹۰ دقیقه‌ات). اگه میزبان گل بزنه: ${toPersianNum(ph+1)}–${toPersianNum(pa)} بنویس`;
+  }
+
+  // نمایش hint پنالتی اگه OT هم مساوی باشه
+  if (otEqHint) otEqHint.style.display = isDraw90 && isDrawOT ? 'block' : 'none';
+
+  // نمایش/مخفی بخش پنالتی
+  if (penSec) penSec.style.display = isDraw90 && isDrawOT ? 'block' : 'none';
+}
+
+// ════════════════════════════════════════════════════════════
+//  RENDER: LEADERBOARD
+// ════════════════════════════════════════════════════════════
+function renderLeaderboard() {
+  const container    = document.getElementById('leaderboard-list');
+  const approvedList = Object.entries(appData.users)
+    .filter(([, u]) => u.approved)
+    .map(([uid, u]) => ({ uid, ...u, balance: 0, predCount: 0, exactCount: 0 }));
+
+  for (const [matchId, result] of Object.entries(appData.results)) {
+    const { payments, weights } = calcSettlementForMatch(matchId, result);
+    for (const user of approvedList) {
+      const pay = payments[user.uid] || 0;
+      const w   = weights[user.uid];
+      user.balance += pay;
+      if (w !== undefined) {
+        user.predCount++;
+        if (w >= WEIGHTS.exact) user.exactCount++;
+      }
+    }
+  }
+
+  approvedList.sort((a, b) => b.balance - a.balance);
+
+
+
+
+
+  let html = '';
+  approvedList.forEach((user, i) => {
+    const rank      = i + 1;
+    const rankClass = rank <= 3 ? `rank-${rank}` : '';
+    const rankEmoji = rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : '';
+    const isMe      = currentUser?.uid === user.uid;
+
+    html += `<div class="leaderboard-row ${isMe ? 'me' : ''}">
+      <div class="rank-num ${rankClass}">${rankEmoji || toPersianNum(rank)}</div>
+      <div class="avatar" style="width:36px;height:36px">${(user.name || '?')[0]}</div>
+      <div class="player-info">
+        <div class="player-name">${user.name} </div>
+        <div class="player-stats">پیش‌بینی‌ها: ${toPersianNum(user.predCount)} &nbsp;|&nbsp; دقیق: ${toPersianNum(user.exactCount)}</div>
+      </div>
+      <div class="player-balance">${formatMoney(user.balance)}</div>
+    </div>`;
+  });
+
+  container.innerHTML = html || '<div class="empty-state"><div class="empty-icon">📊</div><div class="empty-text">هنوز نتیجه‌ای ثبت نشده</div></div>';
+}
+
+// ════════════════════════════════════════════════════════════
+//  RENDER: RESULTS TAB
+// ════════════════════════════════════════════════════════════
+function renderResults() {
+  const container = document.getElementById('results-list');
+  const allGroupSorted = MATCHES.filter(m => m.stage==='group' && appData.results[m.id]);
+  const doneMatches = MATCHES.filter(m => appData.results[m.id]);
+
+  if (!doneMatches.length) {
+    container.innerHTML = '<div class="empty-state"><div class="empty-icon">⚽</div><div class="empty-text">بازی‌ای هنوز پایان نیافته</div></div>';
+    return;
+  }
+
+  const ROUNDS = [
+    { key:'g1', label:'دور اول',    short:'G1', matches: allGroupSorted.slice(0,24) },
+    { key:'g2', label:'دور دوم',    short:'G2', matches: allGroupSorted.slice(24,48) },
+    { key:'g3', label:'دور سوم',    short:'G3', matches: allGroupSorted.slice(48,72) },
+    { key:'r32',label:'یک‌شانزدهم', short:'R32',matches: doneMatches.filter(m=>m.stage==='r32') },
+    { key:'r16',label:'یک‌هشتم',    short:'R16',matches: doneMatches.filter(m=>m.stage==='r16') },
+    { key:'qf', label:'یک‌چهارم',   short:'QF', matches: doneMatches.filter(m=>m.stage==='qf') },
+    { key:'sf', label:'نیمه‌نهایی', short:'SF', matches: doneMatches.filter(m=>m.stage==='sf') },
+    { key:'3rd',label:'رده‌بندی',   short:'3rd',matches: doneMatches.filter(m=>m.stage==='3rd') },
+    { key:'fin',label:'فینال',      short:'FIN',matches: doneMatches.filter(m=>m.stage==='final') },
+  ].filter(r => r.matches.length > 0);
+
+  if (!ROUNDS.length) { container.innerHTML = ''; return; }
+
+  // آخرین دور فعال
+  const lastKey = ROUNDS[ROUNDS.length - 1].key;
+
+  // ساخت pills
+  const pillsHtml = `<div class="res-rounds-nav" id="res-nav">
+    ${ROUNDS.map(r => `<button class="res-round-pill${r.key===lastKey?' active':''}"
+      onclick="switchRound('${r.key}')" id="pill-${r.key}">
+      ${r.label} <span style="font-size:0.65rem;opacity:0.6">${toPersianNum(r.matches.length)}</span>
+    </button>`).join('')}
+  </div>`;
+
+  // ساخت محتوای هر دور
+  const approvedUsers = Object.entries(appData.users).filter(([,u]) => u.approved);
+
+  const roundBodies = ROUNDS.map(round => {
+    const cards = round.matches.map(match => {
+      const result = appData.results[match.id];
+      const settlement = calcSettlementForMatch(match.id, result) || {};
+      const { payments = {}, cat90 = {}, catOT = {}, catPen = {} } = settlement;
+
+      const home = getTeamInfo(match.id, 'home');
+      const away = getTeamInfo(match.id, 'away');
+
+      // نوع نتیجه
+      let scoreBadge = '';
+      if (result.type === 'ot')  scoreBadge = '<span class="res-score-badge">وقت اضافه</span>';
+      if (result.type === 'pen') scoreBadge = '<span class="res-score-badge">پنالتی</span>';
+
+      // ردیف‌های بازیکنان
+      let rows = '';
+      for (const [uid, user] of approvedUsers) {
+        const pred = (appData.predictions[match.id] || {})[uid];
+        if (!pred) continue;
+        const pay = payments[uid] || 0;
+        const c90 = cat90[uid];
+        const isMe = uid === currentUser?.uid;
+
+        // برچسب
+        const catLabel = c90==='exact'  ? '🎯 دقیق'
+                       : c90==='correct'? '✅ درست'
+                       : c90==='neutral'? '➖ خنثی'
+                       : c90==='wrong'  ? '❌ اشتباه' : '—';
+
+        // OT/Pen extra
+        const otC = catOT[uid], penC = catPen[uid];
+        const extra = (otC ? (otC==='exact'?'⏱🎯':'⏱✅') : '') + (penC ? (penC==='exact'?' 🥅🎯':' 🥅✅') : '');
+
+        // پرداخت
+        const payHtml = pay > 0
+          ? `<span class="rr-pos">${toPersianNum(Math.abs(pay).toLocaleString('fa-IR'))}+</span>`
+          : pay < 0
+          ? `<span class="rr-neg">${toPersianNum(Math.abs(pay).toLocaleString('fa-IR'))}-</span>`
+          : `<span class="rr-zero">—</span>`;
+
+        rows += `<div class="res-row${isMe?' highlight':''}">
+          <span class="rr-name">${user.name}</span>
+          <span class="rr-pred">${toPersianNum(pred.homeGoals)}–${toPersianNum(pred.awayGoals)}</span>
+          <span class="rr-cat">${catLabel}${extra}</span>
+          <span class="rr-pay">${payHtml}</span>
+        </div>`;
+      }
+
+      return `<div class="res-match-card">
+        <div class="res-match-head">
+          <div class="res-team">
+            <div style="font-size:1.5rem;line-height:1">${flagImg(home.flag, 28)}</div>
+            <div class="res-team-name">${home.name}</div>
+          </div>
+          <div class="res-score-box">
+            <div class="res-score-main" dir="ltr">${toPersianNum(result.homeGoals)} – ${toPersianNum(result.awayGoals)}</div>
+            ${scoreBadge}
+          </div>
+          <div class="res-team">
+            <div style="font-size:1.5rem;line-height:1">${flagImg(away.flag, 28)}</div>
+            <div class="res-team-name">${away.name}</div>
+          </div>
+        </div>
+        ${rows ? `<div class="res-rows">${rows}</div>` : ''}
+      </div>`;
+    }).join('');
+
+    return `<div class="res-round-body${round.key===lastKey?' active':''}" id="rbody-${round.key}">${cards}</div>`;
+  }).join('');
+
+  container.innerHTML = pillsHtml + roundBodies;
+}
+
+function switchRound(key) {
+  document.querySelectorAll('.res-round-pill').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.res-round-body').forEach(b => b.classList.remove('active'));
+  const pill = document.getElementById('pill-' + key);
+  const body = document.getElementById('rbody-' + key);
+  if (pill) pill.classList.add('active');
+  if (body) body.classList.add('active');
+}
+
+function toggleRound(key) { switchRound(key); }
+
+
+function toggleRound(key) {
+  const body  = document.getElementById('round-body-'+key);
+  const arrow = document.getElementById('rarrow-'+key);
+  const open  = body.style.display !== 'none';
+  body.style.display  = open ? 'none' : 'block';
+  arrow.textContent   = open ? '▼' : '▲';
+}
+
+
+function renderScorecard() {
+  const container = document.getElementById('scorecard-content');
+
+  const approvedUsers = Object.entries(appData.users)
+    .filter(([,u]) => u.approved)
+    .map(([uid,u]) => ({ uid, name:u.name, balance:0, perMatch:[], exact:0, correct:0, wrong:0 }));
+
+  const doneMatches = MATCHES.filter(m => appData.results[m.id]);
+
+  if (!doneMatches.length) {
+    container.innerHTML = `<div style="text-align:center;padding:2rem;color:var(--text-dim)">
+      <div style="font-size:2.5rem;margin-bottom:0.5rem">📊</div>
+      <div>بعد از اولین بازی نتیجه اینجا نمایش داده می‌شه</div>
+    </div>`;
+    return;
+  }
+
+  for (const match of doneMatches) {
+    const result = appData.results[match.id];
+    const { payments, cat90 = {} } = calcSettlementForMatch(match.id, result);
+    const home = getTeamInfo(match.id,'home');
+    const away = getTeamInfo(match.id,'away');
+    for (const u of approvedUsers) {
+      const pay = payments[u.uid] || 0;
+      u.balance += pay;
+      const c = cat90[u.uid];
+      if (c === 'exact')   u.exact++;
+      else if (c === 'correct') u.correct++;
+      else if (c === 'wrong')   u.wrong++;
+      if (c) u.perMatch.push({ pay, c, home: home.name, away: away.name, r: `${result.homeGoals}-${result.awayGoals}` });
+    }
+  }
+
+  approvedUsers.sort((a,b) => b.balance - a.balance);
+  const maxAbs = Math.max(...approvedUsers.map(u => Math.abs(u.balance)), 1);
+
+  const rankEmoji = ['🥇','🥈','🥉','4️⃣','5️⃣'];
+
+  const cards = approvedUsers.map((u, i) => {
+    const isMe = u.uid === currentUser?.uid;
+    const pct  = Math.round(Math.abs(u.balance) / maxAbs * 100);
+    const color = u.balance > 0 ? 'var(--green)' : u.balance < 0 ? 'var(--red)' : 'var(--text-dim)';
+    const balStr = u.balance > 0
+      ? `<span style="color:var(--green)">${toPersianNum(u.balance.toLocaleString('fa-IR'))}+ تومان</span>`
+      : u.balance < 0
+      ? `<span style="color:var(--red)">${toPersianNum(Math.abs(u.balance).toLocaleString('fa-IR'))}- تومان</span>`
+      : '<span style="color:var(--text-dim)">—</span>';
+
+    // سطرهای ریز بازی‌ها (۵ تای آخر)
+    const recentMatches = u.perMatch.slice(-5).reverse().map(m => {
+      const dot = m.c==='exact'?'#C9A84C': m.c==='correct'?'#00d68f': m.c==='wrong'?'#ff4d4d':'#5a5450';
+      const p = m.pay > 0
+        ? `+${toPersianNum(Math.abs(m.pay).toLocaleString('fa-IR'))}`
+        : m.pay < 0 ? `-${toPersianNum(Math.abs(m.pay).toLocaleString('fa-IR'))}` : '—';
+      return `<div class="sc-history-row">
+        <div class="sc-mini-dot" style="background:${dot}"></div>
+        <span style="flex:1;color:var(--text-dim)">${m.home} ${m.r} ${m.away}</span>
+        <span style="color:${dot};font-weight:700">${p}</span>
+      </div>`;
+    }).join('');
+
+    return `<div class="sc-player-card${isMe?' me':''}">
+      <div style="display:flex;align-items:center;gap:10px">
+        <div class="sc-rank-badge">${rankEmoji[i]||toPersianNum(i+1)}</div>
+        <div class="sc-bar-wrap">
+          <div class="sc-bar-label">
+            <span style="font-weight:700;font-size:0.85rem">${u.name}</span>
+            <span>${balStr}</span>
+          </div>
+          <div class="sc-bar-track">
+            <div class="sc-bar-fill" style="width:${pct}%;background:${color}"></div>
+          </div>
+          <div style="display:flex;gap:8px;margin-top:4px;font-size:0.68rem;color:var(--text-dim)">
+            <span>🎯 ${toPersianNum(u.exact)}</span>
+            <span>✅ ${toPersianNum(u.correct)}</span>
+            <span>❌ ${toPersianNum(u.wrong)}</span>
+            <span style="color:var(--text-dim)">از ${toPersianNum(u.perMatch.length)} بازی</span>
+          </div>
+        </div>
+      </div>
+      ${recentMatches ? `<div style="margin-top:6px">${recentMatches}</div>` : ''}
+    </div>`;
+  }).join('');
+
+  container.innerHTML = cards || '<div style="text-align:center;padding:2rem;color:var(--text-dim)">اطلاعاتی وجود ندارد</div>';
+}
+
+
+function renderTelegramMessages() {
+  const container = document.getElementById('tg-messages-list');
+  if (!container) return;
+
+  const appUrl = window.location.origin + window.location.pathname;
+  const now    = new Date();
+  const msgs   = [];
+
+  // ─ بازی‌هایی که الان باز هستن (status = open)
+  const openMatches = MATCHES.filter(m => getMatchStatus(m) === 'open');
+  openMatches.forEach(m => {
+    const h = getTeamInfo(m.id,'home'), a = getTeamInfo(m.id,'away');
+    const closeTime = new Date(new Date(m.datetime + '+03:30').getTime() - 5*60*60*1000);
+    const closeStr  = closeTime.toLocaleTimeString('fa-IR',{hour:'2-digit',minute:'2-digit'});
+    const dateStr   = new Date(m.datetime+'+03:30').toLocaleDateString('fa-IR',{month:'long',day:'numeric'});
+    msgs.push({
+      icon: '🔔',
+      label: `باز شد — ${h.name} vs ${a.name}`,
+      text: `🔔 پیش‌بینی بازی ${h.flag} ${h.name} - ${a.flag} ${a.name} باز شد!
+⏰ تا ساعت ${closeStr} (${dateStr}) وقت داری پیش‌بینیت رو ثبت کنی
+👉 ${appUrl}`,
+      color: '#00d68f'
+    });
+  });
+
+  // ─ بازی‌هایی که قفل شدن و نتیجه ندارن (status = locked)
+  const lockedMatches = MATCHES.filter(m => getMatchStatus(m) === 'locked');
+  lockedMatches.forEach(m => {
+    const h = getTeamInfo(m.id,'home'), a = getTeamInfo(m.id,'away');
+    msgs.push({
+      icon: '🔒',
+      label: `قفل شد — ${h.name} vs ${a.name}`,
+      text: `🔒 فرصت پیش‌بینی برای بازی ${h.flag} ${h.name} - ${a.flag} ${a.name} تمام شد!
+👀 ببین بقیه چی زدن و منتظر نتیجه باش
+👉 ${appUrl}`,
+      color: '#C9A84C'
+    });
+  });
+
+  // ─ بازی‌هایی که نتیجه دارن (آخرین ۳ تا)
+  const doneMatches = MATCHES
+    .filter(m => appData.results[m.id])
+    .sort((a,b) => new Date(b.datetime) - new Date(a.datetime))
+    .slice(0, 3);
+  doneMatches.forEach(m => {
+    const h = getTeamInfo(m.id,'home'), a = getTeamInfo(m.id,'away');
+    const r = appData.results[m.id];
+    msgs.push({
+      icon: '📊',
+      label: `نتیجه — ${h.name} ${r.homeGoals}–${r.awayGoals} ${a.name}`,
+      text: `⚽ نتیجه بازی: ${h.flag} ${h.name} ${r.homeGoals}–${r.awayGoals} ${a.name} ${a.flag}
+📊 جدول رقابت‌های پیش‌بینی به‌روز شد — ببین کی برد!
+👉 ${appUrl}`,
+      color: '#4a7afa'
+    });
+  });
+
+  if (msgs.length === 0) {
+    container.innerHTML = '<div style="font-size:0.8rem;color:var(--text-dim);text-align:center;padding:0.75rem 0">وقتی بازی‌ها باز بشن یا نتیجه ثبت بشه، متن‌های آماده اینجا ظاهر میشن</div>';
+    return;
+  }
+
+  container.innerHTML = msgs.map((msg, i) => `
+    <div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:var(--radius-sm);padding:0.75rem;margin-bottom:0.5rem">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.5rem">
+        <span style="font-size:0.8rem;font-weight:700;color:${msg.color}">${msg.icon} ${msg.label}</span>
+        <div style="display:flex;gap:0.4rem">
+          <button onclick="copyTgMsg(${i})" style="font-size:0.72rem;padding:0.3rem 0.65rem;background:rgba(37,167,228,0.12);border:1px solid rgba(37,167,228,0.25);border-radius:var(--radius-xs);color:#25A7E4;cursor:pointer;touch-action:manipulation">📋 کپی</button>
+          <button onclick="openTelegram(${i})" style="font-size:0.72rem;padding:0.3rem 0.65rem;background:#25A7E4;border:none;border-radius:var(--radius-xs);color:white;font-weight:700;cursor:pointer;touch-action:manipulation">✈️ تلگرام</button>
+        </div>
+      </div>
+      <div style="font-size:0.78rem;color:var(--text-dim);white-space:pre-line;line-height:1.6;background:var(--bg-2);padding:0.5rem 0.75rem;border-radius:var(--radius-xs)">${msg.text}</div>
+    </div>
+  `).join('');
+
+  // ذخیره متن‌ها برای استفاده در دکمه‌ها
+  window._tgMsgs = msgs;
+}
+
+function copyTgMsg(idx) {
+  const text = window._tgMsgs?.[idx]?.text || '';
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(text).then(() => showToast('متن کپی شد — در تلگرام paste کن ✅', 'success'));
+  } else {
+    const el = document.createElement('textarea');
+    el.value = text;
+    document.body.appendChild(el);
+    el.select();
+    document.execCommand('copy');
+    document.body.removeChild(el);
+    showToast('متن کپی شد ✅', 'success');
+  }
+}
+
+function openTelegram(idx) {
+  const text = window._tgMsgs?.[idx]?.text || '';
+  // روی موبایل اپ تلگرام رو باز می‌کنه، روی دسکتاپ web تلگرام
+  const url = 'https://t.me/share/url?url=' + encodeURIComponent(window.location.href) + '&text=' + encodeURIComponent(text.replace(window.location.href,'').trim());
+  window.open(url, '_blank');
+}
+
+// دریافت خودکار نتایج بازی‌های تموم‌شده بدون نتیجه
+let _autoFetchRunning = false;
+async function autoFetchMissingResults() {
+  if (_autoFetchRunning || testModeActive) return;
+  const missing = MATCHES.filter(m => {
+    const s = getMatchStatus(m);
+    return (s === 'locked') && !appData.results[m.id] && teamNameEN[getTeamInfo(m.id,'home').name];
+  });
+  if (!missing.length) return;
+
+  _autoFetchRunning = true;
+  try {
+    const TOKEN = '6950d4a5e44d4aca886b28a86e3928ec';
+    const directURL = `https://api.football-data.org/v4/competitions/WC/matches?status=FINISHED`;
+    const proxyURL  = `https://api.allorigins.win/raw?url=${encodeURIComponent(directURL + '&token=' + TOKEN)}`;
+
+    let data = null;
+    try {
+      const r = await fetch(directURL, { headers: { 'X-Auth-Token': TOKEN } });
+      if (r.ok) data = await r.json();
+    } catch(e) {}
+    if (!data) {
+      const r2 = await fetch(proxyURL);
+      if (r2.ok) data = await r2.json();
+    }
+    if (!data?.matches) return;
+
+    let saved = 0;
+    for (const match of missing) {
+      const homeEN = teamNameEN[getTeamInfo(match.id,'home').name];
+      const awayEN = teamNameEN[getTeamInfo(match.id,'away').name];
+      const apiMatch = data.matches.find(m => {
+        const hn = (m.homeTeam?.name||'').toLowerCase();
+        const an = (m.awayTeam?.name||'').toLowerCase();
+        return (hn.includes(homeEN.toLowerCase())||an.includes(homeEN.toLowerCase()))
+            && (hn.includes(awayEN.toLowerCase())||an.includes(awayEN.toLowerCase()));
+      });
+      if (!apiMatch?.score?.fullTime) continue;
+      const hg = apiMatch.score.fullTime.home;
+      const ag = apiMatch.score.fullTime.away;
+      if (hg === null || hg === undefined) continue;
+      const dur = apiMatch.score?.duration;
+      const result = { homeGoals: hg, awayGoals: ag, type: '90' };
+      if (dur === 'EXTRA_TIME') result.type = 'ot';
+      if (dur === 'PENALTY_SHOOTOUT') {
+        result.type = 'pen';
+        const etH = apiMatch.score?.extraTime?.home;
+        const etA = apiMatch.score?.extraTime?.away;
+        if (etH != null) { result.otResult = { homeGoals: etH, awayGoals: etA }; }
+      }
+      appData.results[match.id] = result;
+      await db.ref(`results/${match.id}`).set(result);
+      saved++;
+    }
+    if (saved > 0) {
+      renderAll();
+      showToast(`✅ ${toPersianNum(saved)} نتیجه از API دریافت شد`, 'success');
+    }
+  } catch(e) {
+    console.warn('autoFetch error:', e.message);
+  } finally {
+    _autoFetchRunning = false;
+  }
+}
+
+async function refreshAdminData() {
+  showToast('در حال بروزرسانی...', '');
+  try {
+    const snap = await db.ref('users').once('value');
+    appData.users = snap.val() || {};
+    renderAdmin();
+    showToast('بروزرسانی شد ✅', 'success');
+  } catch(e) {
+    showToast('خطا در بروزرسانی', 'error');
+  }
+}
+
+function _switchToTab(name) {
+  document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  const tabMap = { matches:'tab-matches', admin:'tab-admin', results:'tab-results', leaderboard:'tab-leaderboard', scorecard:'tab-scorecard' };
+  const tabLabelMap = { matches:'بازی‌ها', admin:'ادمین', results:'نتایج', leaderboard:'جدول', scorecard:'کارنامه' };
+  if (tabMap[name]) document.getElementById(tabMap[name])?.classList.add('active');
+  document.querySelectorAll('.nav-tab').forEach(t => {
+    if (t.textContent.trim() === tabLabelMap[name]) t.classList.add('active');
+  });
+}
+
+// قدم ۲: تزریق نتیجه — سه حالت
+function injectTestResult(mode) {
+  if (!_testInjected) { showToast('اول قدم ۰ رو بزن', 'error'); return; }
+  _testMatchStatus = 'done';
+  if (mode === '90') {
+    appData.results[TEST_MID] = { homeGoals: 2, awayGoals: 1, type: '90' };
+    showToast('قدم ۲ ✅ — نتیجه ۹۰ دقیقه: ایران ۲–۱ عراق', 'success');
+  } else if (mode === 'ot') {
+    appData.results[TEST_MID] = { homeGoals: 1, awayGoals: 1, type: 'ot', otResult: { homeGoals: 2, awayGoals: 1 } };
+    showToast('قدم ۲ ✅ — وقت اضافه: ۱–۱ → ۲–۱ ایران برنده', 'success');
+  } else if (mode === 'pen') {
+    appData.results[TEST_MID] = { homeGoals: 1, awayGoals: 1, type: 'pen', otResult: { homeGoals: 1, awayGoals: 1 }, penaltyGoals: 9, homePenGoals: 5, awayPenGoals: 4, penWinner: 'home' };
+    showToast('قدم ۲ ✅ — پنالتی: ۱–۱ → OT ۱–۱ → ایران ۵–۴', 'success');
+  }
+  renderAll();
+  document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('tab-results').classList.add('active');
+  document.querySelectorAll('.nav-tab').forEach(t => { if (t.textContent.trim() === 'نتایج') t.classList.add('active'); });
+}
+
+function clearTestData() {
+  testModeActive   = false;
+  _testMatchStatus = null;
+  // پاک کردن نتیجه تست از Firebase هم
+  db.ref(`results/${TEST_MID}`).remove().catch(()=>{});
+
+  // حذف بازی تست از MATCHES
+  if (_testInjected) {
+    const idx = MATCHES.findIndex(m => m.id === TEST_MID);
+    if (idx !== -1) MATCHES.splice(idx, 1);
+    _testInjected = false;
+  }
+
+  // حذف کاربران و داده‌های تست از حافظه
+  for (const uid of TEST_UIDS) {
+    delete appData.users[uid];
+  }
+  delete appData.predictions[TEST_MID];
+  delete appData.results[TEST_MID];
+
+  // بروزرسانی از Firebase
+  Promise.all(['users','predictions','results'].map(path =>
+    db.ref(path).once('value').then(snap => { appData[path] = snap.val() || {}; })
+  )).then(() => renderAll());
+
+  document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('tab-matches').classList.add('active');
+  document.querySelectorAll('.nav-tab').forEach(t => {
+    if (t.textContent.trim() === 'بازی‌ها') t.classList.add('active');
+  });
+
+  showToast('داده تست پاک شد 🗑️', 'success');
+}
+
+// ════════════════════════════════════════════════════════════
+//  RENDER ADMIN
+// ════════════════════════════════════════════════════════════
+function renderAdmin() {
+  autoFetchMissingResults();
+  renderTelegramMessages();
+
+  // badge تب ادمین
+  const pendingCount = Object.values(appData.users).filter(u => !u.approved && !u.rejected).length;
+  const adminTab = document.querySelector('.nav-tab[data-tab="admin"]');
+  if (adminTab) {
+    const existing = adminTab.querySelector('.admin-badge');
+    if (existing) existing.remove();
+    if (pendingCount > 0) {
+      const badge = document.createElement('span');
+      badge.className = 'admin-badge';
+      badge.textContent = pendingCount;
+      adminTab.appendChild(badge);
+    }
+  }
+
+  // کاربران در انتظار
+  const pendingContainer = document.getElementById('pending-users-list');
+  const pendingUsers = Object.entries(appData.users).filter(([,u]) => !u.approved && !u.rejected);
+  if (pendingUsers.length) {
+    pendingContainer.innerHTML = pendingUsers.map(([uid,u]) => `
+      <div class="pending-user-row">
+        <div>
+          <div style="font-weight:600">${u.name}</div>
+          <div style="font-size:0.75rem;color:var(--text-dim)">${u.email}</div>
+        </div>
+        <div style="display:flex;gap:0.5rem;align-items:center">
+          <button onclick="approveUser('${uid}')" style="display:inline-flex;align-items:center;gap:4px;padding:5px 12px;background:rgba(0,214,143,0.15);border:1px solid rgba(0,214,143,0.3);border-radius:6px;color:var(--green);font-size:0.78rem;cursor:pointer;font-family:inherit">✅ تأیید</button>
+          <button onclick="rejectUser('${uid}')" style="display:inline-flex;align-items:center;gap:4px;padding:5px 12px;background:rgba(255,77,77,0.1);border:1px solid rgba(255,77,77,0.25);border-radius:6px;color:var(--red);font-size:0.78rem;cursor:pointer;font-family:inherit">❌ رد</button>
+        </div>
+      </div>`).join('');
+  } else {
+    pendingContainer.innerHTML = '<div style="font-size:0.85rem;color:var(--text-dim);padding:0.5rem">هیچ کاربر در انتظاری وجود ندارد</div>';
+  }
+
+  // کاربران فعال
+  const approvedContainer = document.getElementById('approved-users-list');
+  const approvedUsers = Object.entries(appData.users).filter(([,u]) => u.approved);
+  if (approvedUsers.length) {
+    approvedContainer.innerHTML = approvedUsers.map(([uid, u]) => {
+      const predCount = Object.values(appData.predictions).filter(m => m[uid]).length;
+      const isMe = uid === currentUser?.uid;
+      return `<div class="pending-user-row">
+        <div>
+          <div style="font-weight:600">${u.name}</div>
+          <div style="font-size:0.75rem;color:var(--text-dim)">${u.email}</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:0.5rem">
+          <div style="font-size:0.72rem;color:var(--text-dim)">
+            <span style="color:var(--green)">✅ فعال</span> · ${toPersianNum(predCount)} پیش‌بینی
+          </div>
+          <button class="btn-rename-user" onclick="editUserName('${uid}','${u.name}')"
+            style="padding:3px 9px;background:rgba(74,122,250,0.12);border:1px solid rgba(74,122,250,0.3);border-radius:6px;color:#4a7afa;font-size:0.7rem;cursor:pointer;font-family:inherit">✏️</button>
+          ${isMe ? '' : `<button onclick="deleteUser('${uid}','${u.name}')" style="padding:3px 9px;background:rgba(255,77,77,0.1);border:1px solid rgba(255,77,77,0.25);border-radius:6px;color:var(--red);font-size:0.7rem;cursor:pointer;font-family:inherit">حذف</button>`}
+        </div>
+      </div>`;
+    }).join('');
+  } else {
+    approvedContainer.innerHTML = '<div style="font-size:0.85rem;color:var(--text-dim);padding:0.5rem">هیچ کاربر فعالی وجود ندارد</div>';
+  }
+
+  // تیم‌های TBD
+  const tbdContainer = document.getElementById('tbd-teams-list');
+  const tbdMatches = MATCHES.filter(m => {
+    const h = getTeamInfo(m.id,'home'); const a = getTeamInfo(m.id,'away');
+    return h.name === '؟' || a.name === '؟';
+  });
+  if (tbdMatches.length) {
+    tbdContainer.innerHTML = tbdMatches.map(m => {
+      const h = getTeamInfo(m.id,'home'); const a = getTeamInfo(m.id,'away');
+      const ov = (appData.teamOverrides||{})[m.id]||{};
+      return `<div class="pending-user-row" style="flex-direction:column;gap:0.4rem">
+        <div style="font-size:0.8rem;font-weight:600">${m.stageLabel.split(' - ')[0]} — بازی ${m.id}</div>
+        <div style="display:flex;gap:0.5rem;align-items:center;flex-wrap:wrap">
+          <input id="tbd-h-${m.id}" placeholder="${h.name==='؟'?'تیم میزبان':h.name}" value="${ov.home?.name||''}"
+            style="flex:1;min-width:100px;padding:0.4rem 0.6rem;background:var(--bg-2);border:1px solid var(--border);border-radius:var(--radius-xs);color:var(--text);font-family:'Vazirmatn',sans-serif;font-size:0.8rem">
+          <input id="tbd-a-${m.id}" placeholder="${a.name==='؟'?'تیم مهمان':a.name}" value="${ov.away?.name||''}"
+            style="flex:1;min-width:100px;padding:0.4rem 0.6rem;background:var(--bg-2);border:1px solid var(--border);border-radius:var(--radius-xs);color:var(--text);font-family:'Vazirmatn',sans-serif;font-size:0.8rem">
+          <button onclick="saveTBDTeams('${m.id}')"
+            style="padding:0.4rem 0.9rem;background:var(--gold);border:none;border-radius:var(--radius-xs);color:#000;font-weight:700;cursor:pointer;font-family:'Vazirmatn',sans-serif;font-size:0.78rem">ذخیره</button>
+        </div>
+      </div>`;
+    }).join('');
+  } else {
+    tbdContainer.innerHTML = '<div style="font-size:0.85rem;color:var(--text-dim);padding:0.5rem">همه تیم‌ها مشخص شده‌اند</div>';
+  }
+
+  // هشدار نتایج ثبت‌نشده
+  const missedBadge = document.getElementById('missed-results-badge');
+  const missedMatches = MATCHES.filter(m => {
+    const s = getMatchStatus(m);
+    return s === 'locked' && !appData.results[m.id];
+  });
+  if (missedMatches.length) {
+    missedBadge.style.display = 'flex';
+    missedBadge.innerHTML = missedMatches.map(m => {
+      const h = getTeamInfo(m.id,'home'), a = getTeamInfo(m.id,'away');
+      return `<div style="font-size:0.75rem;padding:0.4rem 0.75rem;background:rgba(255,77,77,0.1);border-radius:var(--radius-xs);color:var(--red)">
+        ⚠️ نتیجه ثبت نشده: ${h.name} vs ${a.name}
+        <span style="color:var(--text-dim);font-size:0.7rem">(${m.stageLabel.split(' - ')[0]})</span>
+      </div>`;
+    }).join('');
+  } else {
+    missedBadge.style.display = 'none';
+  }
+
+  // بازی‌های ثبت نتیجه
+  const matchesContainer = document.getElementById('admin-matches-list');
+  const eligibleMatches = MATCHES.filter(m => {
+    const s = getMatchStatus(m);
+    return s === 'locked' || s === 'done';
+  });
+  if (!eligibleMatches.length) {
+    matchesContainer.innerHTML = '<div style="font-size:0.85rem;color:var(--text-dim);padding:0.5rem">بازی‌ای در انتظار ثبت نتیجه نیست</div>';
+    return;
+  }
+  matchesContainer.innerHTML = eligibleMatches.map(match => {
+    const existing = appData.results[match.id];
+    const isKO = match.stage !== 'group';
+    const matchPreds = appData.predictions[match.id] || {};
+    const approvedUsrs = Object.entries(appData.users).filter(([,u]) => u.approved);
+    let predRows = '';
+    for (const [uid, user] of approvedUsrs) {
+      const pred = matchPreds[uid];
+      predRows += `<div class="breakdown-row">
+        <span class="breakdown-player">${user.name}</span>
+        <span class="breakdown-pred" dir="ltr">${pred ? toPersianNum(pred.homeGoals)+'–'+toPersianNum(pred.awayGoals) : '<span style="color:var(--text-dim);font-size:0.7rem">ثبت نشده</span>'}</span>
+      </div>`;
+    }
+    return `<div class="admin-match-card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.5rem">
+        <div class="admin-match-title">${getTeamInfo(match.id,'home').flag} ${getTeamInfo(match.id,'home').name} – ${getTeamInfo(match.id,'away').flag} ${getTeamInfo(match.id,'away').name}</div>
+        <span class="match-stage ${getStageClass(match.stage)}">${match.stageLabel.split(' - ')[0]}</span>
+      </div>
+      ${predRows ? `<div class="predictions-breakdown" style="padding:0.6rem 1rem;background:rgba(201,168,76,0.04)">
+        <div class="breakdown-title">👁️ پیش‌بینی‌ها (فقط ادمین)</div>
+        ${predRows}
+      </div>` : ''}
+      <div class="admin-result-input" dir="ltr">
+        <div class="input-group">
+          <label dir="rtl">${getTeamInfo(match.id,'home').name} (میزبان)</label>
+          <input type="number" inputmode="numeric" id="rh-${match.id}" min="0" max="20" value="${existing ? existing.homeGoals : ''}" placeholder="۰">
+        </div>
+        <div style="font-size:1.2rem;color:var(--text-dim);align-self:flex-end;padding-bottom:0.3rem">–</div>
+        <div class="input-group">
+          <label dir="rtl">${getTeamInfo(match.id,'away').name} (مهمان)</label>
+          <input type="number" inputmode="numeric" id="ra-${match.id}" min="0" max="20" value="${existing ? existing.awayGoals : ''}" placeholder="۰">
+        </div>
+        ${isKO ? `
+        <div class="input-group">
+          <label>نوع نتیجه</label>
+          <select id="rt-${match.id}" onchange="toggleAdminOTFields('${match.id}')">
+            <option value="90" ${existing?.type==='90'?'selected':''}>۹۰ دقیقه</option>
+            <option value="ot" ${existing?.type==='ot'?'selected':''}>وقت اضافه</option>
+            <option value="pen" ${existing?.type==='pen'?'selected':''}>پنالتی</option>
+          </select>
+        </div>
+        <div id="ot-admin-${match.id}" style="display:${(existing?.type==='ot'||existing?.type==='pen')?'contents':'none'}">
+          ${renderOTAdminInputs(match.id, existing)}
+        </div>` : ''}
+        <button class="btn-confirm" onclick="confirmResult('${match.id}')">${existing ? '🔄 به‌روزرسانی' : '✅ ثبت'}</button>
+        <button class="btn-confirm" style="background:var(--blue)" onclick="fetchResultFromAPI('${match.id}')">🌐 API</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function renderOTAdminInputs(matchId, existing) {
+  const ot = existing?.otResult;
+  return `<div class="input-group">
+    <label>گل OT میزبان</label>
+    <input type="number" inputmode="numeric" id="oth-r-${matchId}" min="0" max="10" value="${ot ? ot.homeGoals : ''}" placeholder="–">
+  </div>
+  <div class="input-group">
+    <label>گل OT مهمان</label>
+    <input type="number" inputmode="numeric" id="ota-r-${matchId}" min="0" max="10" value="${ot ? ot.awayGoals : ''}" placeholder="–">
+  </div>
+  <div class="input-group">
+    <label>پن میزبان</label>
+    <input type="number" inputmode="numeric" id="pen-home-r-${matchId}" min="0" max="20" value="${existing?.homePenGoals ?? ''}" placeholder="–" style="width:70px">
+  </div>
+  <div class="input-group">
+    <label>پن مهمان</label>
+    <input type="number" inputmode="numeric" id="pen-away-r-${matchId}" min="0" max="20" value="${existing?.awayPenGoals ?? ''}" placeholder="–" style="width:70px">
+  </div>`;
+}
+
+async function fetchResultFromAPI(matchId) {
+  const match = MATCHES.find(m => m.id === matchId);
+  const homeEN = teamNameEN[getTeamInfo(matchId,'home').name];
+  const awayEN = teamNameEN[getTeamInfo(matchId,'away').name];
+  if (!homeEN || !awayEN) { showToast('تیم‌ها هنوز مشخص نشدن', ''); return; }
+  showToast('در حال دریافت از API...', '');
+  async function callAPI() {
+    const TOKEN = '6950d4a5e44d4aca886b28a86e3928ec';
+    const directURL = 'https://api.football-data.org/v4/competitions/WC/matches?status=FINISHED';
+    const proxyURL  = `https://api.allorigins.win/raw?url=${encodeURIComponent(directURL + '&token=' + TOKEN)}`;
+    try { const r = await fetch(directURL, { headers: { 'X-Auth-Token': TOKEN } }); if (r.ok) return r.json(); } catch(e) {}
+    const r2 = await fetch(proxyURL); if (!r2.ok) throw new Error('proxy ' + r2.status); return r2.json();
+  }
+  try {
+    const data = await callAPI();
+    const apiMatch = (data.matches||[]).find(m => {
+      const hn=(m.homeTeam?.name||'').toLowerCase(), an=(m.awayTeam?.name||'').toLowerCase();
+      const h=homeEN.toLowerCase(), a=awayEN.toLowerCase();
+      return (hn.includes(h)||an.includes(h))&&(hn.includes(a)||an.includes(a));
+    });
+    if (!apiMatch) { showToast('بازی در API یافت نشد', 'error'); return; }
+    const hg=apiMatch.score?.fullTime?.home, ag=apiMatch.score?.fullTime?.away;
+    if (hg===null||hg===undefined) { showToast('نتیجه هنوز در API ثبت نشده', ''); return; }
+    const rhEl=document.getElementById(`rh-${matchId}`), raEl=document.getElementById(`ra-${matchId}`);
+    if (rhEl) rhEl.value=hg; if (raEl) raEl.value=ag;
+    const typeEl=document.getElementById(`rt-${matchId}`);
+    if (typeEl) {
+      const dur=apiMatch.score?.duration;
+      if (dur==='PENALTY_SHOOTOUT') { typeEl.value='pen'; toggleAdminOTFields(matchId); }
+      else if (dur==='EXTRA_TIME') { typeEl.value='ot'; toggleAdminOTFields(matchId); }
+      else typeEl.value='90';
+    }
+    showToast(`✅ نتیجه دریافت شد: ${hg} – ${ag} | بررسی و ثبت کنید`, 'success');
+  } catch(e) { showToast('خطا در API — نتیجه را دستی وارد کنید', 'error'); }
+}
+
+async function saveTBDTeams(matchId) {
+  const hn = document.getElementById(`tbd-h-${matchId}`)?.value.trim();
+  const an = document.getElementById(`tbd-a-${matchId}`)?.value.trim();
+  if (!hn && !an) return;
+  const ov = {};
+  if (hn) ov.home = { name: hn, flag: '🏳️' };
+  if (an) ov.away = { name: an, flag: '🏳️' };
+  await db.ref(`teamOverrides/${matchId}`).update(ov);
+  showToast('✅ تیم‌ها ذخیره شدند', 'success');
+}
+
+function showSettlement() {
+  const users = Object.entries(appData.users)
+    .filter(([, u]) => u.approved)
+    .map(([uid, u]) => ({ uid, name: u.name, balance: 0 }));
+  for (const [matchId, result] of Object.entries(appData.results)) {
+    const { payments } = calcSettlementForMatch(matchId, result);
+    for (const u of users) u.balance += payments[u.uid] || 0;
+  }
+  users.sort((a, b) => b.balance - a.balance);
+  const winners = users.filter(u => u.balance > 0);
+  const losers  = users.filter(u => u.balance < 0);
+  let html = '<div style="font-size:0.85rem">';
+  html += '<div style="font-weight:700;margin-bottom:0.75rem;color:var(--gold)">💰 تسویه نهایی</div>';
+  for (const w of winners) {
+    for (const l of losers) {
+      const amt = Math.min(w.balance, Math.abs(l.balance));
+      if (amt > 0) html += `<div style="padding:0.4rem 0;border-bottom:1px solid rgba(255,255,255,0.05)">
+        <span style="color:var(--red)">${l.name}</span> → 
+        <span style="color:var(--green)">${w.name}</span>: 
+        <strong>${toPersianNum(amt.toLocaleString('fa-IR'))} تومان</strong>
+      </div>`;
+    }
+  }
+  if (!winners.length) html += '<div style="color:var(--text-dim)">هنوز نتیجه‌ای ثبت نشده</div>';
+  html += '</div>';
+  document.getElementById('settlement-content').innerHTML = html;
+  document.getElementById('settlement-modal').style.display = 'flex';
+}
+
+// ════════════════════════════════════════════════════════════
+//  RENDER ALL
+// ════════════════════════════════════════════════════════════
+function renderAll() {
+  try { renderMatches();    } catch(e) { console.error('❌ renderMatches:', e); }
+  try { renderLeaderboard();} catch(e) { console.error('❌ renderLeaderboard:', e); }
+  try { renderResults();    } catch(e) { console.error('❌ renderResults:', e); }
+  try { renderScorecard();  } catch(e) { console.error('❌ renderScorecard:', e); }
+  if (isAdmin) { try { renderAdmin(); } catch(e) { console.error('❌ renderAdmin:', e); } }
+  try { injectIcons();      } catch(e) {}
+}
+</script>
+</body>
+</html>  /* ── RESULTS TAB ── */
+  .res-rounds-nav { display:flex; gap:6px; overflow-x:auto; padding-bottom:0.75rem; margin-bottom:0.5rem; scrollbar-width:none; }
+  .res-rounds-nav::-webkit-scrollbar { display:none; }
+  .res-round-pill { flex-shrink:0; padding:0.35rem 0.9rem; border-radius:20px; border:1px solid rgba(255,255,255,0.1); background:rgba(255,255,255,0.04); color:var(--text-dim); font-size:0.75rem; font-weight:600; cursor:pointer; font-family:inherit; transition:all 0.15s; white-space:nowrap; }
+  .res-round-pill:hover { background:rgba(255,255,255,0.08); color:var(--text); }
+  .res-round-pill.active { background:var(--gold); border-color:var(--gold); color:#000; }
+  .res-round-body { display:none; }
+  .res-round-body.active { display:block; }
+  .res-match-card { background:var(--bg-2); border-radius:12px; border:1px solid rgba(255,255,255,0.07); margin-bottom:0.75rem; overflow:hidden; }
+  .res-match-head { display:grid; grid-template-columns:1fr auto 1fr; align-items:center; gap:6px; padding:0.85rem 1rem 0.6rem; background:rgba(255,255,255,0.02); }
+  .res-team { display:flex; flex-direction:column; align-items:center; gap:3px; }
+  .res-team-name { font-size:0.75rem; font-weight:700; text-align:center; max-width:80px; line-height:1.2; }
+  .res-score-box { text-align:center; }
+  .res-score-main { font-size:1.9rem; font-weight:900; color:var(--gold); direction:ltr; line-height:1; letter-spacing:3px; }
+  .res-score-badge { display:inline-block; font-size:0.62rem; background:rgba(201,168,76,0.15); color:var(--gold); padding:1px 6px; border-radius:8px; margin-top:3px; }
+  .res-rows { border-top:1px solid rgba(255,255,255,0.05); }
+  .res-row { display:grid; grid-template-columns:72px 46px 1fr 96px; align-items:center; gap:4px; padding:0.45rem 0.75rem; border-bottom:1px solid rgba(255,255,255,0.04); }
+  .res-row:last-child { border-bottom:none; }
+  .res-row.highlight { background:rgba(201,168,76,0.05); }
+  .rr-name { font-size:0.78rem; font-weight:600; text-align:right; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .rr-pred { font-size:0.72rem; color:var(--text-dim); direction:ltr; text-align:center; font-weight:600; }
+  .rr-cat  { font-size:0.7rem; text-align:center; }
+  .rr-pay  { font-size:0.78rem; font-weight:800; text-align:left; direction:ltr; }
+  .rr-pos { color:var(--green); }
+  .rr-neg { color:#ff6b6b; }
+  .rr-zero { color:var(--text-dim); font-weight:400; }
+
+  
