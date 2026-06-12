@@ -2258,8 +2258,8 @@ function getMatchStatus(match) {
 
   const now       = new Date();
   const matchTime = new Date(match.datetime + '+03:30'); // ساعت ایران
-  const openTime  = new Date(matchTime.getTime() - 24 * 60 * 60 * 1000);
-  const closeTime = new Date(matchTime.getTime() - 5  * 60 * 60 * 1000);
+  const openTime  = new Date(matchTime.getTime() - 48 * 60 * 60 * 1000);
+  const closeTime = new Date(matchTime.getTime() - 1  * 60 * 60 * 1000);
 
   if (now < openTime)  return 'upcoming';
   if (now < closeTime) return 'open';
@@ -2446,27 +2446,24 @@ function renderPredictionSection(match, status, myPred) {
 
   const hasExisting = !!myPred;
 
-  // ادمین: تعداد ثبت‌شده‌ها رو نشون بده
-  let adminSubmitInfo = '';
-  if (isAdmin) {
-    const matchPredsOpen    = appData.predictions[match.id] || {};
-    const approvedUsersOpen = Object.entries(appData.users).filter(([,u]) => u.approved);
-    const submitted   = approvedUsersOpen.filter(([uid]) =>  matchPredsOpen[uid]).map(([,u]) => u.name);
-    const notSubmitted= approvedUsersOpen.filter(([uid]) => !matchPredsOpen[uid]).map(([,u]) => u.name);
-    const total       = approvedUsersOpen.length;
+  // نمایش وضعیت ثبت پیش‌بینی برای همه کاربرها
+  const matchPredsOpen    = appData.predictions[match.id] || {};
+  const approvedUsersOpen = Object.entries(appData.users).filter(([,u]) => u.approved);
+  const submitted    = approvedUsersOpen.filter(([uid]) =>  matchPredsOpen[uid]).map(([,u]) => u.name);
+  const notSubmitted = approvedUsersOpen.filter(([uid]) => !matchPredsOpen[uid]).map(([,u]) => u.name);
+  const total        = approvedUsersOpen.length;
 
-    const submittedDots = submitted.map(n =>
-      `<span style="color:var(--green);font-size:0.68rem">✅ ${n}</span>`
-    ).join(' · ');
-    const missingDots = notSubmitted.map(n =>
-      `<span style="color:var(--red);font-size:0.68rem">⏳ ${n}</span>`
-    ).join(' · ');
+  const submittedDots = submitted.map(n =>
+    `<span style="color:var(--green);font-size:0.68rem">✅ ${n}</span>`
+  ).join(' · ');
+  const missingDots = notSubmitted.map(n =>
+    `<span style="color:var(--text-dim);font-size:0.68rem">⏳ ${n}</span>`
+  ).join(' · ');
 
-    adminSubmitInfo = `<div style="font-size:0.72rem;color:var(--text-dim);margin-bottom:8px;text-align:center;line-height:1.9">
-      👁️ ${toPersianNum(submitted.length)} از ${toPersianNum(total)} نفر ثبت کردن
-      <br>${submittedDots}${missingDots ? ' · '+missingDots : ''}
-    </div>`;
-  }
+  const adminSubmitInfo = `<div style="font-size:0.72rem;color:var(--text-dim);margin-bottom:8px;text-align:center;line-height:1.9">
+    👁️ ${toPersianNum(submitted.length)} از ${toPersianNum(total)} نفر ثبت کردن
+    <br>${submittedDots}${missingDots ? (submitted.length ? ' · ' : '') + missingDots : ''}
+  </div>`;
 
   return `<div class="prediction-section">
     ${adminSubmitInfo}
