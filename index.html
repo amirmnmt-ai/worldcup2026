@@ -2351,7 +2351,23 @@ function renderMatches() {
   });
 
   container.innerHTML = html;
-  updateMyStats();
+
+  // آپدیت آمار شخصی
+  if (currentUser) {
+    let myBalance = 0, myPreds = 0, myExact = 0;
+    for (const [matchId, result] of Object.entries(appData.results)) {
+      const { payments, cat90={} } = calcSettlementForMatch(matchId, result);
+      myBalance += payments[currentUser.uid] || 0;
+      const c = cat90[currentUser.uid];
+      if (c) { myPreds++; if (c==='exact') myExact++; }
+    }
+    const balEl = document.getElementById('my-balance-stat');
+    const predEl = document.getElementById('my-pred-count');
+    const exEl   = document.getElementById('my-exact-count');
+    if (balEl) balEl.innerHTML = formatMoney(myBalance);
+    if (predEl) predEl.textContent = toPersianNum(myPreds);
+    if (exEl)   exEl.textContent  = toPersianNum(myExact);
+  }
 }
 
 function renderPredictionSection(match, status, myPred) {
