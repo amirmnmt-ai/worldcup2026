@@ -457,14 +457,15 @@
   .breakdown-title { font-size: 0.7rem; color: var(--text-dim); font-weight: 700; margin-bottom: 0.6rem; letter-spacing: 0.3px; }
 
   .breakdown-row {
-    display: flex; align-items: center; justify-content: space-between;
-    padding: 0.38rem 0; font-size: 0.8rem;
+    display: grid; grid-template-columns: 1fr 52px 1fr;
+    align-items: center; gap: 4px;
+    padding: 0.38rem 0.5rem; font-size: 0.8rem;
     border-bottom: 1px solid rgba(255,255,255,0.03);
   }
   .breakdown-row:last-child { border-bottom: none; }
-  .breakdown-player { color: var(--text-mid); }
-  .breakdown-pred   { color: var(--text-dim); font-size: 0.75rem; font-weight: 700; }
-  .breakdown-result { font-weight: 800; font-size: 0.8rem; }
+  .breakdown-player { color: var(--text-mid); text-align: right; }
+  .breakdown-pred   { color: var(--text-dim); font-size: 0.78rem; font-weight: 700; text-align: center; direction: ltr; }
+  .breakdown-result { font-weight: 800; font-size: 0.78rem; text-align: left; }
 
   .res-exact { color: var(--gold); text-shadow: 0 0 8px rgba(201,168,76,0.4); }
   .res-win   { color: var(--green); }
