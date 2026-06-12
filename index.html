@@ -1046,6 +1046,9 @@
       <input type="email" id="si-email" placeholder="ایمیل" dir="ltr" class="auth-input">
       <input type="password" id="si-pass" placeholder="رمز عبور" dir="ltr" class="auth-input">
       <button class="btn-login" onclick="handleLogin()">🔐 ورود</button>
+      <div style="text-align:center;margin-top:0.6rem">
+        <button onclick="handleForgotPassword()" style="background:none;border:none;color:var(--text-dim);font-size:0.78rem;cursor:pointer;font-family:inherit;text-decoration:underline">رمز عبور را فراموش کردم</button>
+      </div>
     </div>
 
     <div id="form-register" style="display:none">
@@ -1501,6 +1504,17 @@ function switchAuthTab(tab) {
     register.style.display = 'block';
     btnReg.classList.add('active');
     btnSignin.classList.remove('active');
+  }
+}
+
+async function handleForgotPassword() {
+  const email = document.getElementById('si-email')?.value.trim();
+  if (!email) { showToast('ابتدا ایمیلت رو وارد کن', 'error'); return; }
+  try {
+    await auth.sendPasswordResetEmail(email);
+    showToast('✅ لینک بازیابی به ایمیلت فرستاده شد', 'success');
+  } catch(e) {
+    showToast('ایمیل پیدا نشد یا خطایی رخ داد', 'error');
   }
 }
 
