@@ -1841,7 +1841,7 @@ function startListeners() {
   ['users', 'predictions', 'results', 'teamOverrides'].forEach(path => {
     const ref = db.ref(path);
     ref.on('value', snap => {
-      if (testModeActive) return; // تست فعاله — Firebase رو نادیده بگیر
+      if (testModeActive && path !== 'users') return; // تست فعاله — فقط users بخون
       const fresh = snap.val() || {};
 
       // برای users: ریجکت‌شده‌ها رو کاملاً حذف کن
@@ -1926,13 +1926,15 @@ async function submitPrediction(matchId) {
   renderMatches();
   showToast('پیش‌بینی ثبت شد ✅', 'success');
 
-  // ذخیره در Firebase (اگه test mode نباشه)
-  if (!testModeActive) {
-    try {
-      await db.ref(`predictions/${matchId}/${currentUser.uid}`).set(pred);
-    } catch (e) {
-      console.error('Firebase prediction write:', e);
-    }
+  // ذخیره در Firebase — همیشه
+  try {
+    await db.ref(`predictions/${matchId}/${currentUser.uid}`).set(pred);
+  } catch (e) {
+    console.error('Firebase prediction write:', e);
+    const msg = e.code === 'PERMISSION_DENIED'
+      ? '❌ دسترسی رد شد — Firebase Rules بررسی شود'
+      : `❌ خطای ذخیره: ${e.message || e.code}`;
+    showToast(msg, 'error');
   }
 }
 
