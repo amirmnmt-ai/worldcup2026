@@ -2364,9 +2364,9 @@ function renderResults() {
     { key:'g1', label:'دور اول گروهی',    short:'G1', matches: allGroupSorted.slice(0,24) },
     { key:'g2', label:'دور دوم گروهی',    short:'G2', matches: allGroupSorted.slice(24,48) },
     { key:'g3', label:'دور سوم گروهی',    short:'G3', matches: allGroupSorted.slice(48,72) },
-    { key:'r32',label:'یک‌شانزدهم', short:'R32',matches: doneMatches.filter(m=>m.stage==='r32') },
-    { key:'r16',label:'یک‌هشتم',    short:'R16',matches: doneMatches.filter(m=>m.stage==='r16') },
-    { key:'qf', label:'یک‌چهارم',   short:'QF', matches: doneMatches.filter(m=>m.stage==='qf') },
+    { key:'r32',label:'یک‌شانزدهم نهایی', short:'R32',matches: doneMatches.filter(m=>m.stage==='r32') },
+    { key:'r16',label:'یک‌هشتم نهایی',    short:'R16',matches: doneMatches.filter(m=>m.stage==='r16') },
+    { key:'qf', label:'یک‌چهارم نهایی',   short:'QF', matches: doneMatches.filter(m=>m.stage==='qf') },
     { key:'sf', label:'نیمه‌نهایی', short:'SF', matches: doneMatches.filter(m=>m.stage==='sf') },
     { key:'3rd',label:'رده‌بندی',   short:'3rd',matches: doneMatches.filter(m=>m.stage==='3rd') },
     { key:'fin',label:'فینال',      short:'FIN',matches: doneMatches.filter(m=>m.stage==='final') },
@@ -2381,7 +2381,7 @@ function renderResults() {
   const pillsHtml = `<div class="res-rounds-nav" id="res-nav">
     ${ROUNDS.map(r => `<button class="res-round-pill${r.key===lastKey?' active':''}"
       onclick="switchRound('${r.key}')" id="pill-${r.key}">
-      ${r.label} <span style="font-size:0.65rem;opacity:0.6">${toPersianNum(r.matches.length)}</span>
+      ${r.label}
     </button>`).join('')}
   </div>`;
 
