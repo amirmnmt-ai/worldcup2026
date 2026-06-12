@@ -938,6 +938,20 @@
     /* Remove hover transform on touch */
     .match-card:hover { transform: none; box-shadow: none; }
     .btn-confirm:hover { transform: none; }
+    /* ── Results tab mobile ── */
+    .res-rounds-nav { padding-bottom:0.5rem; }
+    .res-round-pill { font-size:0.72rem; padding:0.3rem 0.75rem; }
+    .res-match-head { padding:0.7rem 0.75rem 0.55rem; }
+    .res-score-main { font-size:1.6rem; letter-spacing:2px; }
+    .res-team-name  { font-size:0.7rem; }
+    .res-row        { padding:0.45rem 0.65rem; gap:4px; }
+    .rr-name        { min-width:52px; font-size:0.75rem; }
+    .rr-pred        { min-width:32px; font-size:0.68rem; }
+    .rr-pay         { min-width:70px; font-size:0.75rem; }
+
+    /* ── Scorecard mobile ── */
+    .sc-anim svg    { width:72px; height:72px; }
+
   }
 
   /* ── RESULTS TAB ── */
@@ -995,6 +1009,15 @@
   .sc-anim:nth-child(3){animation-delay:0.16s}
   .sc-anim:nth-child(4){animation-delay:0.24s}
   .sc-anim:nth-child(5){animation-delay:0.32s}
+
+  @media (max-width: 360px) {
+    .res-row { padding:0.4rem 0.5rem; }
+    .rr-name { min-width:44px; font-size:0.7rem; }
+    .rr-cat  { font-size:0.65rem; }
+    .rr-pay  { min-width:62px; font-size:0.7rem; }
+    .res-score-main { font-size:1.4rem; }
+    .nav-tab { font-size:0.72rem; padding:0.8rem 0.55rem; }
+  }
 </style>
 </head>
 <body>
