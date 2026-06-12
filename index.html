@@ -11,6 +11,7 @@
 
 <!-- Chart.js -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 
 <!-- ══ Firebase SDK (compat v9) ══ -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -1236,6 +1237,28 @@
     <div id="admin-matches-list"></div>
   </div>
 
+</div>
+
+<!-- ══ SCREENSHOT MODAL ══ -->
+<div class="modal-overlay" id="screenshot-modal" style="display:none">
+  <div class="modal" style="max-width:520px;width:94vw">
+    <div class="modal-title">📸 تصویر نتایج</div>
+    <div id="screenshot-preview" style="margin:0.75rem 0;border-radius:8px;overflow:hidden;max-height:60vh;overflow-y:auto"></div>
+    <div style="display:flex;gap:0.5rem;margin-top:0.75rem">
+      <button onclick="downloadScreenshot()"
+        style="flex:1;padding:0.6rem;background:var(--green);border:none;border-radius:8px;color:#000;font-weight:700;cursor:pointer;font-family:inherit;font-size:0.85rem">
+        ⬇️ دانلود
+      </button>
+      <button onclick="shareScreenshot()"
+        style="flex:1;padding:0.6rem;background:#25A7E4;border:none;border-radius:8px;color:#fff;font-weight:700;cursor:pointer;font-family:inherit;font-size:0.85rem">
+        ✈️ ارسال
+      </button>
+      <button onclick="closeScreenshotModal()"
+        style="padding:0.6rem 1rem;background:rgba(255,255,255,0.08);border:none;border-radius:8px;color:var(--text);cursor:pointer;font-family:inherit;font-size:0.85rem">
+        ✕
+      </button>
+    </div>
+  </div>
 </div>
 
 <!-- ══ SETTLEMENT MODAL ══ -->
@@ -3126,32 +3149,34 @@ function renderAdmin() {
       const dateStr = matchDt.toLocaleDateString('fa-IR', {weekday:'short', month:'long', day:'numeric'});
       const timeStr = matchDt.toLocaleTimeString('fa-IR', {hour:'2-digit', minute:'2-digit'});
 
-      return `<div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:0.75rem;margin-bottom:0.5rem">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.6rem">
+      return `<div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:0.7rem;margin-bottom:0.5rem">
+        <!-- هدر: مرحله + تاریخ -->
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:0.55rem;flex-wrap:wrap;gap:2px">
           <div style="font-size:0.75rem;color:var(--gold);font-weight:700">${stageLabel}${num?' — بازی '+toPersianNum(num):''}</div>
-          <div style="font-size:0.72rem;color:var(--text-dim);text-align:left">📅 ${dateStr} &nbsp;⏰ ${timeStr}</div>
+          <div style="font-size:0.68rem;color:var(--text-dim)">📅 ${dateStr} · ${timeStr}</div>
         </div>
-        <div style="display:flex;align-items:center;gap:8px">
-          <!-- میزبان -->
-          <div style="flex:1;display:flex;align-items:center;gap:6px;background:var(--bg-2);border:1px solid var(--border);border-radius:8px;padding:6px 8px">
-            <span id="tbd-hf-${m.id}" style="font-size:1.2rem">${hFlag}</span>
+        <!-- دو ورودی روی یه خط + دکمه زیرش -->
+        <div style="display:flex;gap:6px;align-items:center;margin-bottom:6px">
+          <div style="flex:1;display:flex;align-items:center;gap:5px;background:var(--bg-2);border:1px solid var(--border);border-radius:8px;padding:5px 7px;min-width:0">
+            <span id="tbd-hf-${m.id}" style="font-size:1.1rem;flex-shrink:0">${hFlag}</span>
             <input id="tbd-h-${m.id}" list="tbd-teams-datalist"
-              placeholder="تیم میزبان" value="${hName}"
+              placeholder="میزبان" value="${hName}"
               oninput="updateTBDFlag('${m.id}','h')"
-              style="flex:1;background:transparent;border:none;color:var(--text);font-family:'Vazirmatn',sans-serif;font-size:0.8rem;min-width:0;outline:none">
+              style="flex:1;background:transparent;border:none;color:var(--text);font-family:'Vazirmatn',sans-serif;font-size:0.78rem;min-width:0;outline:none;width:100%">
           </div>
-          <span style="color:var(--text-dim);font-size:0.8rem;flex-shrink:0">vs</span>
-          <!-- مهمان -->
-          <div style="flex:1;display:flex;align-items:center;gap:6px;background:var(--bg-2);border:1px solid var(--border);border-radius:8px;padding:6px 8px">
-            <span id="tbd-af-${m.id}" style="font-size:1.2rem">${aFlag}</span>
+          <span style="color:var(--text-dim);font-size:0.72rem;flex-shrink:0">vs</span>
+          <div style="flex:1;display:flex;align-items:center;gap:5px;background:var(--bg-2);border:1px solid var(--border);border-radius:8px;padding:5px 7px;min-width:0">
+            <span id="tbd-af-${m.id}" style="font-size:1.1rem;flex-shrink:0">${aFlag}</span>
             <input id="tbd-a-${m.id}" list="tbd-teams-datalist"
-              placeholder="تیم مهمان" value="${aName}"
+              placeholder="مهمان" value="${aName}"
               oninput="updateTBDFlag('${m.id}','a')"
-              style="flex:1;background:transparent;border:none;color:var(--text);font-family:'Vazirmatn',sans-serif;font-size:0.8rem;min-width:0;outline:none">
+              style="flex:1;background:transparent;border:none;color:var(--text);font-family:'Vazirmatn',sans-serif;font-size:0.78rem;min-width:0;outline:none;width:100%">
           </div>
-          <button onclick="saveTBDTeams('${m.id}')"
-            style="padding:0.45rem 0.8rem;background:var(--gold);border:none;border-radius:8px;color:#000;font-weight:700;cursor:pointer;font-family:'Vazirmatn',sans-serif;font-size:0.78rem;flex-shrink:0">💾</button>
         </div>
+        <button onclick="saveTBDTeams('${m.id}')"
+          style="width:100%;padding:0.45rem;background:var(--gold);border:none;border-radius:8px;color:#000;font-weight:700;cursor:pointer;font-family:'Vazirmatn',sans-serif;font-size:0.8rem">
+          💾 ذخیره
+        </button>
       </div>`;
     }).join('');
   } else {
@@ -3342,6 +3367,77 @@ function showSettlement() {
   html += '</div>';
   document.getElementById('settlement-content').innerHTML = html;
   document.getElementById('settlement-modal').style.display = 'flex';
+}
+
+// ════════════════════════════════════════════════════════════
+//  SCREENSHOT & SHARE
+// ════════════════════════════════════════════════════════════
+let _screenshotBlob = null;
+let _screenshotDataUrl = null;
+
+async function captureAndShareResults() {
+  showToast('در حال ساخت تصویر...', '');
+  try {
+    // سوئیچ به تب نتایج
+    _switchToTab('results');
+    await new Promise(r => setTimeout(r, 300));
+
+    const el = document.getElementById('tab-results');
+    const canvas = await html2canvas(el, {
+      backgroundColor: '#0a0c0f',
+      scale: 2,
+      useCORS: true,
+      logging: false,
+      width: el.scrollWidth,
+      height: el.scrollHeight,
+      windowWidth: el.scrollWidth,
+      windowHeight: el.scrollHeight,
+    });
+
+    _screenshotDataUrl = canvas.toDataURL('image/png');
+    canvas.toBlob(blob => { _screenshotBlob = blob; }, 'image/png');
+
+    // نمایش در modal
+    const preview = document.getElementById('screenshot-preview');
+    preview.innerHTML = `<img src="${_screenshotDataUrl}" style="width:100%;display:block;border-radius:6px">`;
+    document.getElementById('screenshot-modal').style.display = 'flex';
+    showToast('تصویر آماده‌ست ✅', 'success');
+  } catch(e) {
+    showToast('خطا در ساخت تصویر: ' + e.message, 'error');
+  }
+}
+
+function downloadScreenshot() {
+  if (!_screenshotDataUrl) return;
+  const a = document.createElement('a');
+  a.href = _screenshotDataUrl;
+  a.download = 'نتایج-جام‌جهانی-' + new Date().toLocaleDateString('fa-IR').replace(/\//g,'-') + '.png';
+  a.click();
+  showToast('تصویر دانلود شد ✅', 'success');
+}
+
+async function shareScreenshot() {
+  // اگه Web Share API با فایل پشتیبانی می‌کنه (موبایل)
+  if (_screenshotBlob && navigator.canShare && navigator.canShare({ files: [new File([_screenshotBlob], 'results.png', { type:'image/png' })] })) {
+    try {
+      await navigator.share({
+        files: [new File([_screenshotBlob], 'results-worldcup.png', { type:'image/png' })],
+        title: '🏆 جام‌جهانی ۲۰۲۶',
+        text: 'آخرین وضعیت پیش‌بینی‌ها',
+      });
+      return;
+    } catch(e) {}
+  }
+  // fallback: دانلود + باز کردن تلگرام
+  downloadScreenshot();
+  setTimeout(() => {
+    window.open('https://t.me', '_blank');
+    showToast('تصویر دانلود شد — در تلگرام ضمیمه کن 📎', 'success');
+  }, 500);
+}
+
+function closeScreenshotModal() {
+  document.getElementById('screenshot-modal').style.display = 'none';
 }
 
 // ════════════════════════════════════════════════════════════
