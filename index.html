@@ -1031,16 +1031,16 @@
     <div id="loading-msg" style="color:var(--text-dim);font-size:0.88rem;margin-top:0.5rem;">در حال اتصال...</div>
     <script>
       const _msgs = [
-        "توپ روی نقطه‌ی پنالتیه، یه لحظه صبر کن 🧤",
-        "ضربه کرنر، بازیکنا دارن جا می‌گیرن، یه لحظه صبر کن 🚩",
-        "داور داره تصمیم می‌گیره، یه لحظه صبر کن 🏳️",
-        "دروازه‌بان مصدوم شد، یه لحظه صبر کن 🏥",
-        "داره بازیکن عوض می‌کنه، یه لحظه صبر کن 🔄",
-        "توپ رفت توی تماشاگرا، یه لحظه صبر کن ⚽",
-        "داور چهارم وقت اضافه رو اعلام می‌کنه، یه لحظه صبر کن ⏱️",
-        "بازیکن روی زمینه، بازی متوقفه، یه لحظه صبر کن 🩺",
-        "دارن دیوار انسانی می‌چینن، یه لحظه صبر کن 🧱",
-        "کمک‌داور داره مشورت می‌کنه، یه لحظه صبر کن 📡",
+        "توپ روی نقطه‌ی پنالتیه، یه لحظه صبر کن",
+        "ضربه کرنر، بازیکنا دارن جا می‌گیرن، یه لحظه صبر کن",
+        "داور داره تصمیم می‌گیره، یه لحظه صبر کن",
+        "دروازه‌بان مصدوم شد، یه لحظه صبر کن",
+        "داره بازیکن عوض می‌کنه، یه لحظه صبر کن",
+        "توپ رفت توی تماشاگرا، یه لحظه صبر کن",
+        "داور چهارم وقت اضافه رو اعلام می‌کنه، یه لحظه صبر کن",
+        "بازیکن روی زمینه، بازی متوقفه، یه لحظه صبر کن",
+        "دارن دیوار انسانی می‌چینن، یه لحظه صبر کن",
+        "کمک‌داور داره مشورت می‌کنه، یه لحظه صبر کن",
       ];
       document.getElementById('loading-msg').textContent = _msgs[Math.floor(Math.random() * _msgs.length)];
     </script>
@@ -1600,6 +1600,14 @@ async function editUserName(uid, currentName) {
   if (!trimmed) return;
   try {
     await db.ref(`users/${uid}/name`).set(trimmed);
+    // اگه ادمین اسم خودشو عوض کرد، هدر هم آپدیت بشه
+    if (currentUser && uid === currentUser.uid) {
+      currentUser.name = trimmed;
+      const headerEl = document.getElementById('header-username');
+      const avatarEl = document.getElementById('header-avatar');
+      if (headerEl) headerEl.textContent = trimmed;
+      if (avatarEl) avatarEl.textContent = trimmed[0].toUpperCase();
+    }
     showToast(`✅ اسم "${currentName}" به "${trimmed}" تغییر کرد`, 'success');
   } catch(e) {
     showToast('خطا در تغییر اسم', 'error');
@@ -1791,6 +1799,17 @@ function startListeners() {
       }
 
       appData[path] = fresh;
+      // اگه اسم کاربر جاری توی Firebase عوض شده، هدر رو آپدیت کن
+      if (path === 'users' && currentUser && fresh[currentUser.uid]) {
+        const freshName = fresh[currentUser.uid].name;
+        if (freshName && freshName !== currentUser.name) {
+          currentUser.name = freshName;
+          const headerEl = document.getElementById('header-username');
+          const avatarEl = document.getElementById('header-avatar');
+          if (headerEl) headerEl.textContent = freshName;
+          if (avatarEl) avatarEl.textContent = freshName[0].toUpperCase();
+        }
+      }
       debouncedRenderAll();
     }, err => {
       console.error(`Firebase listener error [${path}]:`, err);
