@@ -1327,6 +1327,17 @@ firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db   = firebase.database();
 
+// مانیتور اتصال به Firebase
+db.ref('.info/connected').on('value', snap => {
+  const connEl = document.getElementById('conn-status');
+  if (!connEl) return;
+  if (snap.val() === false) {
+    connEl.style.display = 'flex';
+  } else {
+    connEl.style.display = 'none';
+  }
+});
+
 // ════════════════════════════════════════════════════════════
 //  CONSTANTS
 // ════════════════════════════════════════════════════════════
@@ -1920,20 +1931,21 @@ async function submitPrediction(matchId) {
   const penWinnerEl = document.querySelector(`input[name="pen-winner-${matchId}"]:checked`);
   if (penWinnerEl) pred.penWinner = penWinnerEl.value;
 
-  // آپدیت فوری در حافظه (در هر حالتی، حتی test mode)
-  if (!appData.predictions[matchId]) appData.predictions[matchId] = {};
-  appData.predictions[matchId][currentUser.uid] = pred;
-  renderMatches();
-  showToast('پیش‌بینی ثبت شد ✅', 'success');
-
-  // ذخیره در Firebase — همیشه
+  // ذخیره در Firebase اول — بعد حافظه
   try {
     await db.ref(`predictions/${matchId}/${currentUser.uid}`).set(pred);
+    // فقط بعد از تأیید Firebase، حافظه آپدیت بشه
+    if (!appData.predictions[matchId]) appData.predictions[matchId] = {};
+    appData.predictions[matchId][currentUser.uid] = pred;
+    renderMatches();
+    showToast('✅ پیش‌بینی ذخیره شد', 'success');
   } catch (e) {
-    console.error('Firebase prediction write:', e);
+    console.error('Firebase prediction write error:', e);
     const msg = e.code === 'PERMISSION_DENIED'
-      ? '❌ دسترسی رد شد — Firebase Rules بررسی شود'
-      : `❌ خطای ذخیره: ${e.message || e.code}`;
+      ? '❌ دسترسی رد شد — تنظیمات Firebase بررسی شود'
+      : e.message
+      ? `❌ خطا: ${e.message}`
+      : '❌ ذخیره نشد — اتصال اینترنت را بررسی کنید';
     showToast(msg, 'error');
   }
 }
