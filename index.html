@@ -2400,16 +2400,43 @@ function renderPredictionSection(match, status, myPred) {
   }
 
   if (status === 'done') {
-    if (myPred) {
-      return `<div class="prediction-section">
-        <div class="prediction-submitted">✅ پیش‌بینی شما: <span dir="ltr">${toPersianNum(myPred.homeGoals)} – ${toPersianNum(myPred.awayGoals)}</span></div>
+    // همه پیش‌بینی‌ها نمایش داده میشه (مثل locked)
+    const matchPredsDone    = appData.predictions[match.id] || {};
+    const approvedUsersDone = Object.entries(appData.users).filter(([,u]) => u.approved);
+    let doneRows = '';
+    for (const [uid, user] of approvedUsersDone) {
+      const pred = matchPredsDone[uid];
+      if (!pred) continue;
+      const isMe = uid === currentUser?.uid;
+      doneRows += `<div class="breakdown-row${isMe?' highlight':''}">
+        <span class="breakdown-player">${user.name}</span>
+        <span class="breakdown-pred" dir="ltr">${toPersianNum(pred.homeGoals)}–${toPersianNum(pred.awayGoals)}</span>
+        <span class="breakdown-result res-zero">نتیجه ثبت شد</span>
       </div>`;
     }
-    return `<div class="prediction-section"><div class="prediction-locked">🔒 پیش‌بینی بسته شد</div></div>`;
+    if (!doneRows) doneRows = '<div style="font-size:0.78rem;color:var(--text-dim)">هیچ پیش‌بینی ثبت نشده</div>';
+    return `<div class="prediction-section">
+      <div class="prediction-label">📋 پیش‌بینی‌ها — بازی پایان یافت</div>
+      <div style="margin-top:0.4rem">${doneRows}</div>
+    </div>`;
   }
 
   const hasExisting = !!myPred;
+
+  // ادمین: تعداد ثبت‌شده‌ها رو نشون بده
+  let adminSubmitInfo = '';
+  if (isAdmin) {
+    const matchPredsOpen = appData.predictions[match.id] || {};
+    const approvedUsersOpen = Object.entries(appData.users).filter(([,u]) => u.approved);
+    const submittedCount = approvedUsersOpen.filter(([uid]) => matchPredsOpen[uid]).length;
+    const totalCount = approvedUsersOpen.length;
+    adminSubmitInfo = `<div style="font-size:0.72rem;color:var(--text-dim);margin-bottom:8px;text-align:center">
+      👁️ ${toPersianNum(submittedCount)} از ${toPersianNum(totalCount)} نفر ثبت کردن
+    </div>`;
+  }
+
   return `<div class="prediction-section">
+    ${adminSubmitInfo}
     <div class="prediction-label">🎯 پیش‌بینی نتیجه ${hasExisting ? '(ویرایش)' : ''}</div>
     <div class="score-input-row" dir="ltr">
       <div style="flex:1;text-align:center;font-size:0.75rem;color:var(--text-dim)" dir="rtl">${getTeamInfo(match.id,'home').name}</div>
