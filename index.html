@@ -1028,7 +1028,22 @@
 <div id="screen-loading" class="screen active">
   <div style="text-align:center">
     <div class="trophy-icon">🏆</div>
-    <div style="color:var(--text-dim);font-size:0.88rem;margin-top:0.5rem;">در حال اتصال به Firebase...</div>
+    <div id="loading-msg" style="color:var(--text-dim);font-size:0.88rem;margin-top:0.5rem;">در حال اتصال...</div>
+    <script>
+      const _msgs = [
+        "توپ روی نقطه‌ی پنالتیه، یه لحظه صبر کن 🧤",
+        "ضربه کرنر، بازیکنا دارن جا می‌گیرن، یه لحظه صبر کن 🚩",
+        "داور داره تصمیم می‌گیره، یه لحظه صبر کن 🏳️",
+        "دروازه‌بان مصدوم شد، یه لحظه صبر کن 🏥",
+        "داره بازیکن عوض می‌کنه، یه لحظه صبر کن 🔄",
+        "توپ رفت توی تماشاگرا، یه لحظه صبر کن ⚽",
+        "داور چهارم وقت اضافه رو اعلام می‌کنه، یه لحظه صبر کن ⏱️",
+        "بازیکن روی زمینه، بازی متوقفه، یه لحظه صبر کن 🩺",
+        "دارن دیوار انسانی می‌چینن، یه لحظه صبر کن 🧱",
+        "کمک‌داور داره مشورت می‌کنه، یه لحظه صبر کن 📡",
+      ];
+      document.getElementById('loading-msg').textContent = _msgs[Math.floor(Math.random() * _msgs.length)];
+    </script>
   </div>
 </div>
 
