@@ -2528,8 +2528,8 @@ function renderScorecard() {
   for (const match of doneMatches) {
     const { payments, cat90={} } = calcSettlementForMatch(match.id, appData.results[match.id]);
     for (const u of approvedUsers) {
-      const pay = payments[u.uid]||0, c = cat90[u.uid];
-      u.balance += pay;
+      u.balance += payments[u.uid]||0;
+      const c = cat90[u.uid];
       if (!c) continue;
       u.total++;
       if (c==='exact') u.exact++;
@@ -2543,114 +2543,88 @@ function renderScorecard() {
   const maxAbs = Math.max(...approvedUsers.map(u=>Math.abs(u.balance)),1);
   const ranks = ['🥇','🥈','🥉','4️⃣','5️⃣'];
 
-  // SVG donut chart for success rate
-  function donut(exact,correct,neutral,wrong,total) {
-    if (!total) return `<svg width="80" height="80" viewBox="0 0 80 80"><circle cx="40" cy="40" r="32" fill="none" stroke="rgba(255,255,255,0.07)" stroke-width="10"/><text x="40" y="45" text-anchor="middle" fill="rgba(255,255,255,0.3)" font-size="12" font-family="Vazirmatn">—</text></svg>`;
-    const R=32, C=2*Math.PI*R;
-    const e=exact/total, c=correct/total, n=neutral/total, w=wrong/total;
+  // ── بخش ۱: نوارهای مقایسه‌ای ──
+  let html = `<div style="background:var(--bg-2);border-radius:14px;border:1px solid rgba(255,255,255,0.07);padding:1.1rem 1rem;margin-bottom:1rem">
+    <div style="font-size:0.78rem;font-weight:700;color:var(--gold);margin-bottom:1rem;text-align:center;letter-spacing:0.5px">
+      📊 مقایسه موجودی — ${toPersianNum(doneMatches.length)} بازی
+    </div>`;
+
+  approvedUsers.forEach((u,i)=>{
+    const pct = Math.round(Math.abs(u.balance)/maxAbs*100);
+    const col = u.balance>0?'#00d68f':u.balance<0?'#ff4d4d':'#4a5568';
+    const balStr = u.balance>0
+      ? `<span style="color:#00d68f;font-weight:800">${toPersianNum(u.balance.toLocaleString('fa-IR'))}+</span>`
+      : u.balance<0
+      ? `<span style="color:#ff4d4d;font-weight:800">${toPersianNum(Math.abs(u.balance).toLocaleString('fa-IR'))}-</span>`
+      : `<span style="color:rgba(255,255,255,0.3)">—</span>`;
+    html+=`<div style="margin-bottom:10px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+        <span style="font-size:0.78rem;font-weight:700">${ranks[i]} ${u.name}</span>
+        <span style="font-size:0.78rem">${balStr} <span style="font-size:0.65rem;color:rgba(255,255,255,0.3)">تومان</span></span>
+      </div>
+      <div style="height:8px;background:rgba(255,255,255,0.07);border-radius:4px;overflow:hidden">
+        <div style="height:100%;width:${pct}%;background:${col};border-radius:4px;
+          animation:fillBar 0.7s ${(i*0.12).toFixed(2)}s ease both;animation-fill-mode:both"></div>
+      </div>
+    </div>`;
+  });
+  html+=`</div>`;
+
+  // ── بخش ۲: دونات‌های کنار هم ──
+  html+=`<div style="background:var(--bg-2);border-radius:14px;border:1px solid rgba(255,255,255,0.07);padding:1.1rem 0.5rem">
+    <div style="font-size:0.78rem;font-weight:700;color:var(--gold);margin-bottom:1.1rem;text-align:center;letter-spacing:0.5px">
+      🎯 درصد موفقیت پیش‌بینی
+    </div>
+    <div style="display:flex;justify-content:space-around;align-items:flex-start;flex-wrap:nowrap;gap:4px">`;
+
+  approvedUsers.forEach((u,i)=>{
+    const score = u.exact*5 + u.correct*1 + u.wrong*(-3);
+    const succ  = u.total ? Math.max(0, Math.round((score + u.total*3)/(u.total*8)*100)) : 0;
+
+    const R=36, C=2*Math.PI*R;
+    // segments: exact=gold, correct=green, neutral=gray, wrong=red
     const segs=[
-      {v:e,col:'#C9A84C'},{v:c,col:'#00d68f'},{v:n,col:'#4a5568'},{v:w,col:'#ff4d4d'}
+      {v:u.exact,  col:'#C9A84C'},
+      {v:u.correct,col:'#00d68f'},
+      {v:u.neutral,col:'#4a5568'},
+      {v:u.wrong,  col:'#ff4d4d'},
     ];
-    let off=0, paths='';
-    // rotate -90deg so it starts from top
+    const total = u.total || 1;
+    let offset=0, rings='';
+    const delay = i*0.18;
     segs.forEach(s=>{
       if(!s.v) return;
-      const len=s.v*C, gap=C-len;
-      paths+=`<circle cx="40" cy="40" r="${R}" fill="none" stroke="${s.col}" stroke-width="10"
-        stroke-dasharray="${len.toFixed(1)} ${gap.toFixed(1)}"
-        stroke-dashoffset="${(-off*C+C/4).toFixed(1)}"
-        style="animation:spin 0.8s ease both"/>`;
-      off+=s.v;
+      const len=(s.v/total)*C, gap=C-len;
+      const dashOffset = C/4 - offset*C/total;
+      rings+=`<circle cx="45" cy="45" r="${R}" fill="none" stroke="${s.col}" stroke-width="9"
+        stroke-dasharray="${len.toFixed(2)} ${gap.toFixed(2)}"
+        stroke-dashoffset="${dashOffset.toFixed(2)}"
+        stroke-linecap="round"
+        style="animation:spin ${(0.6+i*0.15).toFixed(2)}s ${(delay+0.1).toFixed(2)}s cubic-bezier(0.4,0,0.2,1) both"/>`;
+      offset+=s.v;
     });
-    const succ=Math.round((exact+correct)/total*100);
-    return `<svg width="80" height="80" viewBox="0 0 80 80">
-      <circle cx="40" cy="40" r="32" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="10"/>
-      ${paths}
-      <text x="40" y="37" text-anchor="middle" fill="white" font-size="14" font-weight="900" font-family="Vazirmatn">${succ}%</text>
-      <text x="40" y="52" text-anchor="middle" fill="rgba(255,255,255,0.4)" font-size="9" font-family="Vazirmatn">موفقیت</text>
-    </svg>`;
-  }
 
-  // horizontal mini-bar breakdown
-  function miniBar(val,total,color,label) {
-    if(!total) return '';
-    const pct=Math.round(val/total*100);
-    if(!val) return '';
-    return `<div style="margin-bottom:5px">
-      <div style="display:flex;justify-content:space-between;font-size:0.65rem;margin-bottom:2px">
-        <span style="color:${color}">${label} ${toPersianNum(val)}</span>
-        <span style="color:rgba(255,255,255,0.3)">${pct}%</span>
-      </div>
-      <div style="height:5px;background:rgba(255,255,255,0.07);border-radius:3px;overflow:hidden">
-        <div style="height:100%;width:${pct}%;background:${color};border-radius:3px;animation:fillBar 0.7s ease both"></div>
-      </div>
-    </div>`;
-  }
+    const succColor = succ>=80?'#C9A84C':succ>=50?'#00d68f':succ>=25?'#f6ad55':'#ff4d4d';
 
-  // comparison bar for balance
-  function balBar(balance,maxA) {
-    const pct=Math.round(Math.abs(balance)/maxA*100);
-    const col=balance>0?'#00d68f':balance<0?'#ff4d4d':'#4a5568';
-    const balStr=balance>0
-      ?`<span style="color:#00d68f">+${toPersianNum(balance.toLocaleString('fa-IR'))} تومان</span>`
-      :balance<0
-      ?`<span style="color:#ff4d4d">${toPersianNum(Math.abs(balance).toLocaleString('fa-IR'))}- تومان</span>`
-      :`<span style="color:rgba(255,255,255,0.3)">—</span>`;
-    return {col,pct,balStr};
-  }
-
-  let html=`<div style="padding:0.25rem 0">`;
-
-  // ── بخش ۱: نمودار مقایسه‌ای ──
-  html+=`<div style="background:var(--bg-2);border-radius:12px;border:1px solid rgba(255,255,255,0.07);padding:1rem;margin-bottom:0.85rem">
-    <div style="font-size:0.78rem;font-weight:700;color:var(--gold);margin-bottom:0.85rem;text-align:center">📊 مقایسه موجودی — ${toPersianNum(doneMatches.length)} بازی</div>`;
-
-  approvedUsers.forEach((u,i)=>{
-    const {col,pct,balStr}=balBar(u.balance,maxAbs);
-    html+=`<div style="margin-bottom:8px">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:3px">
-        <span style="font-size:0.75rem;font-weight:700">${ranks[i]||toPersianNum(i+1)} ${u.name}</span>
-        <span style="font-size:0.75rem;font-weight:800">${balStr}</span>
-      </div>
-      <div style="height:7px;background:rgba(255,255,255,0.07);border-radius:4px;overflow:hidden">
-        <div style="height:100%;width:${pct}%;background:${col};border-radius:4px;
-          animation:fillBar 0.6s ${(i*0.1).toFixed(1)}s ease both;animation-fill-mode:both"></div>
-      </div>
-    </div>`;
-  });
-  html+=`</div>`;
-
-  // ── بخش ۲: کارت هر بازیکن ──
-  approvedUsers.forEach((u,i)=>{
-    const isMe=u.uid===currentUser?.uid;
-    html+=`<div class="sc-anim" style="background:var(--bg-2);border-radius:12px;border:1px solid ${isMe?'rgba(201,168,76,0.35)':'rgba(255,255,255,0.07)'};padding:0.9rem 1rem;margin-bottom:0.6rem">
-      <div style="display:flex;gap:12px;align-items:flex-start">
-        <!-- donut -->
-        <div style="flex-shrink:0">${donut(u.exact,u.correct,u.neutral,u.wrong,u.total)}</div>
-        <!-- info -->
-        <div style="flex:1;min-width:0">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
-            <div>
-              <span style="font-size:0.85rem;font-weight:800">${ranks[i]||toPersianNum(i+1)} ${u.name}</span>
-              <div style="font-size:0.68rem;color:rgba(255,255,255,0.4);margin-top:1px">${toPersianNum(u.total)} بازی</div>
-            </div>
-            <div style="text-align:left;font-size:0.82rem;font-weight:800">
-              ${u.balance>0?`<span style="color:#00d68f">+${toPersianNum(u.balance.toLocaleString('fa-IR'))}</span>`
-               :u.balance<0?`<span style="color:#ff4d4d">${toPersianNum(Math.abs(u.balance).toLocaleString('fa-IR'))}-</span>`
-               :'<span style="color:rgba(255,255,255,0.3)">—</span>'}
-              <div style="font-size:0.62rem;color:rgba(255,255,255,0.3);text-align:right">تومان</div>
-            </div>
-          </div>
-          ${miniBar(u.exact,u.total,'#C9A84C','🎯 دقیق')}
-          ${miniBar(u.correct,u.total,'#00d68f','✅ درست')}
-          ${miniBar(u.neutral,u.total,'#718096','➖ خنثی')}
-          ${miniBar(u.wrong,u.total,'#ff4d4d','❌ اشتباه')}
-        </div>
+    html+=`<div style="display:flex;flex-direction:column;align-items:center;gap:6px;
+      animation:fadeUp 0.4s ${(delay).toFixed(2)}s ease both;animation-fill-mode:both;flex:1;min-width:0">
+      <svg width="90" height="90" viewBox="0 0 90 90" style="overflow:visible">
+        <circle cx="45" cy="45" r="${R}" fill="none" stroke="rgba(255,255,255,0.07)" stroke-width="9"/>
+        ${rings}
+        <text x="45" y="41" text-anchor="middle" fill="${succColor}"
+          font-size="13" font-weight="900" font-family="Vazirmatn,sans-serif">${succ}%</text>
+        <text x="45" y="55" text-anchor="middle" fill="rgba(255,255,255,0.35)"
+          font-size="8" font-family="Vazirmatn,sans-serif">موفقیت</text>
+      </svg>
+      <div style="font-size:0.72rem;font-weight:700;text-align:center;max-width:60px;line-height:1.3">${u.name}</div>
+      <div style="font-size:0.65rem;color:rgba(255,255,255,0.4);text-align:center;line-height:1.6">
+        ${u.exact?`<span style="color:#C9A84C">🎯${toPersianNum(u.exact)}</span> `:''}${u.correct?`<span style="color:#00d68f">✅${toPersianNum(u.correct)}</span>`:''}
+        ${u.wrong?`<br><span style="color:#ff4d4d">❌${toPersianNum(u.wrong)}</span>`:''}
       </div>
     </div>`;
   });
 
-  html+=`</div>`;
+  html+=`</div></div>`;
   container.innerHTML=html;
 }
 
