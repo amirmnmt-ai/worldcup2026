@@ -2449,12 +2449,22 @@ function renderPredictionSection(match, status, myPred) {
   // ادمین: تعداد ثبت‌شده‌ها رو نشون بده
   let adminSubmitInfo = '';
   if (isAdmin) {
-    const matchPredsOpen = appData.predictions[match.id] || {};
+    const matchPredsOpen    = appData.predictions[match.id] || {};
     const approvedUsersOpen = Object.entries(appData.users).filter(([,u]) => u.approved);
-    const submittedCount = approvedUsersOpen.filter(([uid]) => matchPredsOpen[uid]).length;
-    const totalCount = approvedUsersOpen.length;
-    adminSubmitInfo = `<div style="font-size:0.72rem;color:var(--text-dim);margin-bottom:8px;text-align:center">
-      👁️ ${toPersianNum(submittedCount)} از ${toPersianNum(totalCount)} نفر ثبت کردن
+    const submitted   = approvedUsersOpen.filter(([uid]) =>  matchPredsOpen[uid]).map(([,u]) => u.name);
+    const notSubmitted= approvedUsersOpen.filter(([uid]) => !matchPredsOpen[uid]).map(([,u]) => u.name);
+    const total       = approvedUsersOpen.length;
+
+    const submittedDots = submitted.map(n =>
+      `<span style="color:var(--green);font-size:0.68rem">✅ ${n}</span>`
+    ).join(' · ');
+    const missingDots = notSubmitted.map(n =>
+      `<span style="color:var(--red);font-size:0.68rem">⏳ ${n}</span>`
+    ).join(' · ');
+
+    adminSubmitInfo = `<div style="font-size:0.72rem;color:var(--text-dim);margin-bottom:8px;text-align:center;line-height:1.9">
+      👁️ ${toPersianNum(submitted.length)} از ${toPersianNum(total)} نفر ثبت کردن
+      <br>${submittedDots}${missingDots ? ' · '+missingDots : ''}
     </div>`;
   }
 
