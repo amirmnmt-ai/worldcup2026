@@ -1386,10 +1386,10 @@ const MATCHES = [
   { id:"qf_02", stage:"qf", stageLabel:"یک‌چهارم نهایی", home:{name:"؟", flag:"🏳️"}, away:{name:"؟", flag:"🏳️"}, datetime:"2026-07-11T02:30:00" },
   { id:"qf_03", stage:"qf", stageLabel:"یک‌چهارم نهایی", home:{name:"؟", flag:"🏳️"}, away:{name:"؟", flag:"🏳️"}, datetime:"2026-07-12T01:30:00" },
   { id:"qf_04", stage:"qf", stageLabel:"یک‌چهارم نهایی", home:{name:"؟", flag:"🏳️"}, away:{name:"؟", flag:"🏳️"}, datetime:"2026-07-12T06:30:00" },
-  { id:"sf_01", stage:"sf", stageLabel:"نیمه‌نهایی", home:{name:"؟", flag:"🏳️"}, away:{name:"؟", flag:"🏳️"}, datetime:"2026-07-15T00:30:00" },
-  { id:"sf_02", stage:"sf", stageLabel:"نیمه‌نهایی", home:{name:"؟", flag:"🏳️"}, away:{name:"؟", flag:"🏳️"}, datetime:"2026-07-15T23:30:00" },
-  { id:"3rd", stage:"3rd", stageLabel:"رده‌بندی سوم", home:{name:"؟", flag:"🏳️"}, away:{name:"؟", flag:"🏳️"}, datetime:"2026-07-19T01:30:00" },
-  { id:"final", stage:"final", stageLabel:"فینال", home:{name:"؟", flag:"🏳️"}, away:{name:"؟", flag:"🏳️"}, datetime:"2026-07-19T23:30:00" }
+  { id:"sf_01", stage:"sf", stageLabel:"نیمه‌نهایی", home:{name:"؟", flag:"🏳️"}, away:{name:"؟", flag:"🏳️"}, datetime:"2026-07-14T22:30:00" },
+  { id:"sf_02", stage:"sf", stageLabel:"نیمه‌نهایی", home:{name:"؟", flag:"🏳️"}, away:{name:"؟", flag:"🏳️"}, datetime:"2026-07-15T22:30:00" },
+  { id:"3rd", stage:"3rd", stageLabel:"رده‌بندی سوم", home:{name:"؟", flag:"🏳️"}, away:{name:"؟", flag:"🏳️"}, datetime:"2026-07-18T22:30:00" },
+  { id:"final", stage:"final", stageLabel:"فینال", home:{name:"؟", flag:"🏳️"}, away:{name:"؟", flag:"🏳️"}, datetime:"2026-07-19T22:30:00" }
 ];
 
 // ════════════════════════════════════════════════════════════
@@ -1514,9 +1514,17 @@ async function handleForgotPassword() {
   if (!email) { showToast('ابتدا ایمیلت رو وارد کن', 'error'); return; }
   try {
     await auth.sendPasswordResetEmail(email);
-    showToast('✅ لینک بازیابی به ایمیلت فرستاده شد', 'success');
+    showToast('✅ ایمیل بازیابی فرستاده شد — پوشه Spam هم چک کن', 'success');
   } catch(e) {
-    showToast('ایمیل پیدا نشد یا خطایی رخ داد', 'error');
+    if (e.code === 'auth/user-not-found') {
+      showToast('این ایمیل در سیستم ثبت نشده', 'error');
+    } else if (e.code === 'auth/invalid-email') {
+      showToast('فرمت ایمیل اشتباهه', 'error');
+    } else if (e.code === 'auth/too-many-requests') {
+      showToast('خیلی زیاد تلاش کردی — چند دقیقه صبر کن', 'error');
+    } else {
+      showToast('خطا: ' + e.message, 'error');
+    }
   }
 }
 
@@ -2933,6 +2941,57 @@ function clearTestData() {
 // ════════════════════════════════════════════════════════════
 //  RENDER ADMIN
 // ════════════════════════════════════════════════════════════
+const ALL_TEAMS = [
+  {name:"آرژانتین", flag:"🇦🇷"},
+  {name:"آفریقای جنوبی", flag:"🇿🇦"},
+  {name:"آلمان", flag:"🇩🇪"},
+  {name:"آمریکا", flag:"🇺🇸"},
+  {name:"اتریش", flag:"🇦🇹"},
+  {name:"اردن", flag:"🇯🇴"},
+  {name:"اروگوئه", flag:"🇺🇾"},
+  {name:"ازبکستان", flag:"🇺🇿"},
+  {name:"استرالیا", flag:"🇦🇺"},
+  {name:"اسپانیا", flag:"🇪🇸"},
+  {name:"اسکاتلند", flag:"🏴󠁧󠁢󠁳󠁣󠁴󠁿"},
+  {name:"الجزایر", flag:"🇩🇿"},
+  {name:"انگلیس", flag:"🏴󠁧󠁢󠁥󠁮󠁧󠁿"},
+  {name:"اکوادور", flag:"🇪🇨"},
+  {name:"ایران", flag:"🇮🇷"},
+  {name:"برزیل", flag:"🇧🇷"},
+  {name:"بلژیک", flag:"🇧🇪"},
+  {name:"بوسنی", flag:"🇧🇦"},
+  {name:"ترکیه", flag:"🇹🇷"},
+  {name:"تونس", flag:"🇹🇳"},
+  {name:"ساحل عاج", flag:"🇨🇮"},
+  {name:"سنگال", flag:"🇸🇳"},
+  {name:"سوئد", flag:"🇸🇪"},
+  {name:"سوئیس", flag:"🇨🇭"},
+  {name:"عراق", flag:"🇮🇶"},
+  {name:"عربستان", flag:"🇸🇦"},
+  {name:"غنا", flag:"🇬🇭"},
+  {name:"فرانسه", flag:"🇫🇷"},
+  {name:"قطر", flag:"🇶🇦"},
+  {name:"مراکش", flag:"🇲🇦"},
+  {name:"مصر", flag:"🇪🇬"},
+  {name:"مکزیک", flag:"🇲🇽"},
+  {name:"نروژ", flag:"🇳🇴"},
+  {name:"نیوزیلند", flag:"🇳🇿"},
+  {name:"هائیتی", flag:"🇭🇹"},
+  {name:"هلند", flag:"🇳🇱"},
+  {name:"پاراگوئه", flag:"🇵🇾"},
+  {name:"پاناما", flag:"🇵🇦"},
+  {name:"پرتغال", flag:"🇵🇹"},
+  {name:"چک", flag:"🇨🇿"},
+  {name:"ژاپن", flag:"🇯🇵"},
+  {name:"کانادا", flag:"🇨🇦"},
+  {name:"کره‌جنوبی", flag:"🇰🇷"},
+  {name:"کرواسی", flag:"🇭🇷"},
+  {name:"کلمبیا", flag:"🇨🇴"},
+  {name:"کنگو", flag:"🇨🇩"},
+  {name:"کوراسائو", flag:"🇨🇼"},
+  {name:"کیپ‌ورد", flag:"🇨🇻"}
+];
+
 function renderAdmin() {
   autoFetchMissingResults();
   renderTelegramMessages();
@@ -3003,18 +3062,60 @@ function renderAdmin() {
     return h.name === '؟' || a.name === '؟';
   });
   if (tbdMatches.length) {
+    // datalist برای همه تیم‌ها
+    const dlId = 'tbd-teams-datalist';
+    if (!document.getElementById(dlId)) {
+      const dl = document.createElement('datalist');
+      dl.id = dlId;
+      ALL_TEAMS.forEach(t => {
+        const opt = document.createElement('option');
+        opt.value = t.name;
+        opt.label = t.flag + ' ' + t.name;
+        dl.appendChild(opt);
+      });
+      document.body.appendChild(dl);
+    }
+
     tbdContainer.innerHTML = tbdMatches.map(m => {
-      const h = getTeamInfo(m.id,'home'); const a = getTeamInfo(m.id,'away');
       const ov = (appData.teamOverrides||{})[m.id]||{};
-      return `<div class="pending-user-row" style="flex-direction:column;gap:0.4rem">
-        <div style="font-size:0.8rem;font-weight:600">${m.stageLabel.split(' - ')[0]} — بازی ${m.id}</div>
-        <div style="display:flex;gap:0.5rem;align-items:center;flex-wrap:wrap">
-          <input id="tbd-h-${m.id}" placeholder="${h.name==='؟'?'تیم میزبان':h.name}" value="${ov.home?.name||''}"
-            style="flex:1;min-width:100px;padding:0.4rem 0.6rem;background:var(--bg-2);border:1px solid var(--border);border-radius:var(--radius-xs);color:var(--text);font-family:'Vazirmatn',sans-serif;font-size:0.8rem">
-          <input id="tbd-a-${m.id}" placeholder="${a.name==='؟'?'تیم مهمان':a.name}" value="${ov.away?.name||''}"
-            style="flex:1;min-width:100px;padding:0.4rem 0.6rem;background:var(--bg-2);border:1px solid var(--border);border-radius:var(--radius-xs);color:var(--text);font-family:'Vazirmatn',sans-serif;font-size:0.8rem">
+      const hName = ov.home?.name || '';
+      const aName = ov.away?.name || '';
+      const hFlag = (ALL_TEAMS.find(t=>t.name===hName)||{}).flag || '🏳️';
+      const aFlag = (ALL_TEAMS.find(t=>t.name===aName)||{}).flag || '🏳️';
+      // label مرحله
+      const stageMap = {r32:'یک‌شانزدهم',r16:'یک‌هشتم',qf:'یک‌چهارم',sf:'نیمه‌نهایی','3rd':'رده‌بندی',final:'فینال'};
+      const stageLabel = stageMap[m.stage] || m.stage;
+      const num = m.id.replace(/[^0-9]/g,'');
+      // تاریخ و ساعت به وقت ایران
+      const matchDt = new Date(m.datetime + '+03:30');
+      const dateStr = matchDt.toLocaleDateString('fa-IR', {weekday:'short', month:'long', day:'numeric'});
+      const timeStr = matchDt.toLocaleTimeString('fa-IR', {hour:'2-digit', minute:'2-digit'});
+
+      return `<div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:0.75rem;margin-bottom:0.5rem">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.6rem">
+          <div style="font-size:0.75rem;color:var(--gold);font-weight:700">${stageLabel}${num?' — بازی '+toPersianNum(num):''}</div>
+          <div style="font-size:0.72rem;color:var(--text-dim);text-align:left">📅 ${dateStr} &nbsp;⏰ ${timeStr}</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <!-- میزبان -->
+          <div style="flex:1;display:flex;align-items:center;gap:6px;background:var(--bg-2);border:1px solid var(--border);border-radius:8px;padding:6px 8px">
+            <span id="tbd-hf-${m.id}" style="font-size:1.2rem">${hFlag}</span>
+            <input id="tbd-h-${m.id}" list="tbd-teams-datalist"
+              placeholder="تیم میزبان" value="${hName}"
+              oninput="updateTBDFlag('${m.id}','h')"
+              style="flex:1;background:transparent;border:none;color:var(--text);font-family:'Vazirmatn',sans-serif;font-size:0.8rem;min-width:0;outline:none">
+          </div>
+          <span style="color:var(--text-dim);font-size:0.8rem;flex-shrink:0">vs</span>
+          <!-- مهمان -->
+          <div style="flex:1;display:flex;align-items:center;gap:6px;background:var(--bg-2);border:1px solid var(--border);border-radius:8px;padding:6px 8px">
+            <span id="tbd-af-${m.id}" style="font-size:1.2rem">${aFlag}</span>
+            <input id="tbd-a-${m.id}" list="tbd-teams-datalist"
+              placeholder="تیم مهمان" value="${aName}"
+              oninput="updateTBDFlag('${m.id}','a')"
+              style="flex:1;background:transparent;border:none;color:var(--text);font-family:'Vazirmatn',sans-serif;font-size:0.8rem;min-width:0;outline:none">
+          </div>
           <button onclick="saveTBDTeams('${m.id}')"
-            style="padding:0.4rem 0.9rem;background:var(--gold);border:none;border-radius:var(--radius-xs);color:#000;font-weight:700;cursor:pointer;font-family:'Vazirmatn',sans-serif;font-size:0.78rem">ذخیره</button>
+            style="padding:0.45rem 0.8rem;background:var(--gold);border:none;border-radius:8px;color:#000;font-weight:700;cursor:pointer;font-family:'Vazirmatn',sans-serif;font-size:0.78rem;flex-shrink:0">💾</button>
         </div>
       </div>`;
     }).join('');
@@ -3158,15 +3259,25 @@ async function fetchResultFromAPI(matchId) {
   } catch(e) { showToast('خطا در API — نتیجه را دستی وارد کنید', 'error'); }
 }
 
+function updateTBDFlag(matchId, side) {
+  const input = document.getElementById(`tbd-${side}-${matchId}`);
+  const flagEl = document.getElementById(`tbd-${side}f-${matchId}`);
+  if (!input || !flagEl) return;
+  const team = ALL_TEAMS.find(t => t.name === input.value.trim());
+  flagEl.textContent = team ? team.flag : '🏳️';
+}
+
 async function saveTBDTeams(matchId) {
   const hn = document.getElementById(`tbd-h-${matchId}`)?.value.trim();
   const an = document.getElementById(`tbd-a-${matchId}`)?.value.trim();
   if (!hn && !an) return;
   const ov = {};
-  if (hn) ov.home = { name: hn, flag: '🏳️' };
-  if (an) ov.away = { name: an, flag: '🏳️' };
+  const hTeam = ALL_TEAMS.find(t => t.name === hn);
+  const aTeam = ALL_TEAMS.find(t => t.name === an);
+  if (hn) ov.home = { name: hn, flag: hTeam?.flag || '🏳️' };
+  if (an) ov.away = { name: an, flag: aTeam?.flag || '🏳️' };
   await db.ref(`teamOverrides/${matchId}`).update(ov);
-  showToast('✅ تیم‌ها ذخیره شدند', 'success');
+  showToast('✅ ' + (hTeam?.flag||'🏳️') + ' ' + (hn||'') + ' vs ' + (an||'') + ' ' + (aTeam?.flag||'🏳️') + ' ذخیره شد', 'success');
 }
 
 function showSettlement() {
