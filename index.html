@@ -11,8 +11,8 @@
 <link href="https://cdn.jsdelivr.net/npm/@fontsource/vazirmatn@5/index.min.css" rel="stylesheet">
 
 <!-- Chart.js -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js" defer></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" defer></script>
 
 <!-- ══ Firebase SDK (compat v9) ══ -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -1359,8 +1359,6 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db   = firebase.database();
-db.ref('predictions').keepSynced(true); // همیشه sync با سرور
-
 // timeout wrapper — اگه Firebase جواب نداد بعد از X ثانیه خطا بده
 function fbWithTimeout(promise, ms = 8000) {
   return Promise.race([
@@ -1807,7 +1805,7 @@ const _authTimeout = setTimeout(() => {
     document.getElementById('loading-msg').textContent = 'اتصال برقرار نشد — صفحه را رفرش کنید';
     showScreen('login');
   }
-}, 15000);
+}, 10000);
 
 auth.onAuthStateChanged(async (fbUser) => {
   clearTimeout(_authTimeout);
@@ -3755,3 +3753,5 @@ function renderAll() {
 </script>
 </body>
 </html>
+
+  
