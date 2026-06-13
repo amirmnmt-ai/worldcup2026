@@ -6,8 +6,9 @@
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏆</text></svg>">
 <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏆</text></svg>">
 <title>پیش‌بینی جام‌جهانی ۲۰۲۶</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<!-- Vazirmatn از jsDelivr — در ایران بدون فیلتر -->
+<link rel="preconnect" href="https://cdn.jsdelivr.net">
+<link href="https://cdn.jsdelivr.net/npm/@fontsource/vazirmatn@5/index.min.css" rel="stylesheet">
 
 <!-- Chart.js -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
@@ -19,7 +20,7 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;600;700;800;900&display=swap');
+  /* فونت از jsDelivr لود میشه — fallback به سیستم */
 
   :root {
     --gold:        #C9A84C;
@@ -1799,7 +1800,17 @@ async function checkApproval() {
 }
 
 // ── Auth State Observer ──
+// اگه Firebase در ۱۵ ثانیه جواب نداد، صفحه لاگین نشون بده
+const _authTimeout = setTimeout(() => {
+  const splash = document.getElementById('splash-screen');
+  if (splash && splash.style.display !== 'none') {
+    document.getElementById('loading-msg').textContent = 'اتصال برقرار نشد — صفحه را رفرش کنید';
+    showScreen('login');
+  }
+}, 15000);
+
 auth.onAuthStateChanged(async (fbUser) => {
+  clearTimeout(_authTimeout);
   if (!fbUser) {
     showScreen('login');
     return;
