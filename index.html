@@ -3612,58 +3612,6 @@ function closeScreenshotModal() {
 }
 
 // ════════════════════════════════════════════════════════════
-//  TELEGRAM MATCH NOTIFICATIONS
-// ════════════════════════════════════════════════════════════
-const _notifSent = {}; // { matchId: { open: bool, close: bool } }
-
-async function checkMatchNotifications() {
-  if (!currentUser) return;
-  for (const match of MATCHES) {
-    const status = getMatchStatus(match);
-    const n = _notifSent[match.id] || {};
-
-    // باز شدن
-    if ((status === 'open') && !n.open) {
-      _notifSent[match.id] = { ...n, open: true };
-      const home = getTeamInfo(match.id,'home');
-      const away = getTeamInfo(match.id,'away');
-      const dt   = new Date(match.datetime + '+03:30');
-      const timeStr = dt.toLocaleTimeString('fa-IR', {hour:'2-digit', minute:'2-digit'});
-      const dateStr = dt.toLocaleDateString('fa-IR', {weekday:'short', month:'long', day:'numeric'});
-      sendTelegram(
-        `⚽ <b>پیش‌بینی باز شد</b>
-`
-        + `${home.flag} ${home.name} vs ${away.name} ${away.flag}
-`
-        + `📅 ${dateStr} ساعت ${timeStr}
-`
-        + `⏰ تا یک ساعت قبل از شروع بازی فرصت ثبت پیش‌بینی دارید.
-
-`
-        + `🔗 amirmnmt-ai.github.io/worldcup2026`
-      );
-    }
-
-    // بسته شدن
-    if ((status === 'locked' || status === 'done') && n.open && !n.close) {
-      _notifSent[match.id] = { ...n, close: true };
-      const home = getTeamInfo(match.id,'home');
-      const away = getTeamInfo(match.id,'away');
-      sendTelegram(
-        `🔒 <b>پیش‌بینی بسته شد</b>
-`
-        + `${home.flag} ${home.name} vs ${away.name} ${away.flag}
-`
-        + `دیگه نمیشه پیش‌بینی تغییر داد.`
-      );
-    }
-  }
-}
-
-// چک هر ۶۰ ثانیه
-setInterval(checkMatchNotifications, 60 * 1000);
-
-// ════════════════════════════════════════════════════════════
 //  RENDER ALL
 // ════════════════════════════════════════════════════════════
 function renderAll() {
