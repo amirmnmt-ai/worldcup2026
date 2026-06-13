@@ -1206,6 +1206,11 @@
       <div class="test-panel-title" style="color:#25A7E4">📢 اطلاع‌رسانی تلگرام</div>
       <div class="test-panel-desc">وقتی بازی باز یا قفل بشه یا نتیجه ثبت بشه، متن آماده برای گروه تلگرامت اینجا ظاهر میشه.</div>
       <div id="tg-messages-list" style="max-height:280px;overflow-y:auto;scrollbar-width:thin"></div>
+      <div class="test-btns" style="margin-top:0.75rem">
+        <button class="btn-test-inject" style="background:rgba(255,77,77,.15);color:var(--red);border:1px solid rgba(255,77,77,.3)" onclick="markAllNotifSent()">
+          🔕 خاموش کردن اعلان‌های تکراری
+        </button>
+      </div>
     </div>
 
     <!-- SCREENSHOT SHARE -->
@@ -1267,35 +1272,28 @@
 
   </div>
 
-  <!-- ══ ADMIN PROXY PREDICTIONS ══ -->
-  <div class="section-divider"><span class="section-divider-text">📝 ورود پیش‌بینی به‌جای کاربر (اضطراری)</span></div>
-  <div style="background:rgba(255,165,0,.06);border:1px solid rgba(255,165,0,.2);border-radius:12px;padding:1rem;margin-bottom:0.5rem">
-    <div style="font-size:0.75rem;color:rgba(255,165,0,.8);margin-bottom:0.75rem">
-      ⚠️ فقط برای مواقع ضروری — پیش‌بینی‌های قبلی کاربر جایگزین می‌شن
+    <!-- پیش‌بینی اضطراری — فقط از renderAdmin پر میشه -->
+    <div id="admin-proxy-section" style="display:none;margin-bottom:0.5rem">
+      <div class="section-divider"><span class="section-divider-text">📝 ورود پیش‌بینی به‌جای کاربر (اضطراری)</span></div>
+      <div style="background:rgba(255,165,0,.06);border:1px solid rgba(255,165,0,.2);border-radius:12px;padding:1rem;margin-bottom:0.5rem">
+        <div style="font-size:0.75rem;color:rgba(255,165,0,.8);margin-bottom:0.75rem">⚠️ فقط برای مواقع ضروری</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:0.75rem">
+          <select id="proxy-user-select" style="flex:1;min-width:120px;padding:0.4rem 0.6rem;background:var(--bg-2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:inherit;font-size:0.8rem">
+            <option value="">انتخاب کاربر...</option>
+          </select>
+          <select id="proxy-match-select" style="flex:1;min-width:160px;padding:0.4rem 0.6rem;background:var(--bg-2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:inherit;font-size:0.8rem">
+            <option value="">انتخاب بازی...</option>
+          </select>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+          <input type="number" id="proxy-home" min="0" max="20" placeholder="گل میزبان" style="width:90px;padding:0.4rem 0.6rem;background:var(--bg-2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:inherit;font-size:0.8rem">
+          <span style="color:var(--text-dim)">–</span>
+          <input type="number" id="proxy-away" min="0" max="20" placeholder="گل مهمان" style="width:90px;padding:0.4rem 0.6rem;background:var(--bg-2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:inherit;font-size:0.8rem">
+          <button onclick="submitProxyPrediction()" style="padding:0.4rem 1rem;background:rgba(255,165,0,.8);border:none;border-radius:8px;color:#000;font-weight:700;cursor:pointer;font-family:inherit;font-size:0.8rem">💾 ثبت</button>
+        </div>
+        <div id="proxy-current" style="font-size:0.72rem;color:var(--text-dim);margin-top:0.5rem"></div>
+      </div>
     </div>
-    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:0.75rem">
-      <select id="proxy-user-select" style="flex:1;min-width:120px;padding:0.4rem 0.6rem;background:var(--bg-2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:inherit;font-size:0.8rem">
-        <option value="">انتخاب کاربر...</option>
-      </select>
-      <select id="proxy-match-select" style="flex:1;min-width:160px;padding:0.4rem 0.6rem;background:var(--bg-2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:inherit;font-size:0.8rem">
-        <option value="">انتخاب بازی...</option>
-      </select>
-    </div>
-    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-      <input type="number" id="proxy-home" min="0" max="20" placeholder="گل میزبان"
-        style="width:90px;padding:0.4rem 0.6rem;background:var(--bg-2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:inherit;font-size:0.8rem">
-      <span style="color:var(--text-dim)">–</span>
-      <input type="number" id="proxy-away" min="0" max="20" placeholder="گل مهمان"
-        style="width:90px;padding:0.4rem 0.6rem;background:var(--bg-2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:inherit;font-size:0.8rem">
-      <button onclick="submitProxyPrediction()"
-        style="padding:0.4rem 1rem;background:rgba(255,165,0,.8);border:none;border-radius:8px;color:#000;font-weight:700;cursor:pointer;font-family:inherit;font-size:0.8rem">
-        💾 ثبت
-      </button>
-    </div>
-    <div id="proxy-current" style="font-size:0.72rem;color:var(--text-dim);margin-top:0.5rem"></div>
-  </div>
-
-  <div style="display:none">
 
     <div class="section-divider">
       <div class="section-divider-line"></div>
@@ -3375,6 +3373,10 @@ function renderAdmin() {
   document.getElementById('proxy-user-select')?.addEventListener('change', updateProxyCurrent);
   document.getElementById('proxy-match-select')?.addEventListener('change', updateProxyCurrent);
 
+  // بخش پیش‌بینی اضطراری در پنل ادمین
+  const proxySection = document.getElementById('admin-proxy-section');
+  if (proxySection) proxySection.style.display = 'block';
+
   // تیم‌های TBD
   const tbdContainer = document.getElementById('tbd-teams-list');
   const tbdMatches = MATCHES.filter(m => {
@@ -3700,6 +3702,27 @@ async function shareScreenshot() {
 
 function closeScreenshotModal() {
   document.getElementById('screenshot-modal').style.display = 'none';
+}
+
+async function markAllNotifSent() {
+  showToast('⏳ در حال علامت‌گذاری...', '');
+  const now = Date.now();
+  const updates = {};
+  for (const m of MATCHES) {
+    const matchTime = new Date(m.datetime + '+03:30').getTime();
+    const closeTime = matchTime - 1 * 3600 * 1000;
+    if (now >= closeTime) {
+      updates[m.id] = { open: true, close: true };
+    } else if (now >= matchTime - 48 * 3600 * 1000) {
+      updates[m.id] = { open: true };
+    }
+  }
+  try {
+    await fbWithTimeout(db.ref('notif_sent').update(updates), 8000);
+    showToast('✅ همه اعلان‌های قدیمی خاموش شدن', 'success');
+  } catch(e) {
+    showToast('❌ خطا: ' + (e.message||e.code), 'error');
+  }
 }
 
 function updateProxyCurrent() {
