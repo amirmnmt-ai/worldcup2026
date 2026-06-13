@@ -2504,7 +2504,11 @@ function renderPredictionSection(match, status, myPred) {
   const isKnockout = match.stage !== 'group';
 
   if (status === 'upcoming') {
-    return `<div class="prediction-section"><div class="prediction-locked">🕐 پیش‌بینی ۲۴ ساعت قبل از بازی باز می‌شود</div></div>`;
+    const _mt  = new Date(match.datetime + '+03:30');
+    const _ot  = new Date(_mt.getTime() - 48 * 60 * 60 * 1000);
+    const _day = _ot.toLocaleDateString('fa-IR', { weekday:'long', day:'numeric', month:'long' });
+    const _tim = _ot.toLocaleTimeString('fa-IR', { hour:'2-digit', minute:'2-digit' });
+    return `<div class="prediction-section"><div class="prediction-locked">🕐 پیش‌بینی از ${_day} ساعت ${_tim} باز می‌شود</div></div>`;
   }
 
   if (status === 'locked') {
