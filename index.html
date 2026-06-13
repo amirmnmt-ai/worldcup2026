@@ -10,6 +10,11 @@
 <link rel="preconnect" href="https://cdn.jsdelivr.net">
 <link href="https://cdn.jsdelivr.net/npm/@fontsource/vazirmatn@5/index.min.css" rel="stylesheet">
 
+<!-- preconnect — مرورگر اتصال رو زودتر شروع می‌کنه، بدون هیچ تغییری در رفتار -->
+<link rel="preconnect" href="https://www.gstatic.com">
+<link rel="preconnect" href="https://flagcdn.com">
+<link rel="dns-prefetch" href="https://worldcup-2026-e2195-default-rtdb.europe-west1.firebasedatabase.app">
+
 <!-- Chart.js -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js" defer></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" defer></script>
@@ -1355,6 +1360,7 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db   = firebase.database();
+
 // timeout wrapper — اگه Firebase جواب نداد بعد از X ثانیه خطا بده
 function fbWithTimeout(promise, ms = 8000) {
   return Promise.race([
@@ -1542,7 +1548,7 @@ function flagImg(emoji, size = 32) {
       .join('').toLowerCase();
     // کانتینر مربعی ثابت + object-fit:cover = همه پرچم‌ها یک اندازه
     // onerror: اگه لود نشد emoji رو نشون بده
-    return `<span style="display:inline-block;width:${size}px;height:${size}px;overflow:hidden;border-radius:5px;vertical-align:middle;flex-shrink:0"><img src="https://flagcdn.com/w${size*2}/${code}.png" style="width:100%;height:100%;object-fit:cover;display:block" onerror="this.parentElement.textContent='${emoji}'" alt="${emoji}"></span>`;
+    return `<span style="display:inline-block;width:${size}px;height:${size}px;overflow:hidden;border-radius:5px;vertical-align:middle;flex-shrink:0"><img src="https://flagcdn.com/w${size*2}/${code}.png" style="width:100%;height:100%;object-fit:cover;display:block" loading="lazy" decoding="async" onerror="this.parentElement.textContent='${emoji}'" alt="${emoji}"></span>`;
   }
   return emoji || '';
 }
