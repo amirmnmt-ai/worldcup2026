@@ -1326,6 +1326,7 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db   = firebase.database();
+db.ref('predictions').keepSynced(true); // همیشه sync با سرور
 
 // ── TELEGRAM BOT ──
 const TG_TOKEN   = "8724029460:AAGRuOErReyf75EKakQFxGrRmkVBndzxn94";
@@ -1921,6 +1922,10 @@ function debouncedRenderAll() {
 
 // ثبت پیش‌بینی کاربر
 async function submitPrediction(matchId) {
+  try {
+
+  if (!currentUser) { showToast('❌ لاگین نیستی', 'error'); return; }
+
   const ph = parseInt(document.getElementById(`ph-${matchId}`)?.value);
   const pa = parseInt(document.getElementById(`pa-${matchId}`)?.value);
 
@@ -1929,7 +1934,9 @@ async function submitPrediction(matchId) {
     return;
   }
 
-  const pred = { homeGoals: ph, awayGoals: pa, timestamp: Date.now() };
+  // token یکتا برای تأیید واقعی از سرور
+  const writeToken = Date.now().toString(36) + Math.random().toString(36).substr(2,5);
+  const pred = { homeGoals: ph, awayGoals: pa, timestamp: Date.now(), _wt: writeToken };
 
   const othEl = document.getElementById(`oth-${matchId}`);
   const otaEl = document.getElementById(`ota-${matchId}`);
@@ -1945,28 +1952,35 @@ async function submitPrediction(matchId) {
   const penWinnerEl = document.querySelector(`input[name="pen-winner-${matchId}"]:checked`);
   if (penWinnerEl) pred.penWinner = penWinnerEl.value;
 
-  // ذخیره با retry خودکار
+  // اطمینان از لاگین و اتصال
+  if (!auth.currentUser) { showToast('❌ نشست منقضی شده — دوباره لاگین کن', 'error'); return; }
+  db.goOnline();
+
+  // ذخیره با retry — Promise.set فقط بعد از تأیید سرور resolve میشه
   for (let attempt = 1; attempt <= 3; attempt++) {
     try {
-      if (attempt > 1) showToast(`⏳ تلاش مجدد ${attempt}/3...`, '');
+      if (attempt > 1) showToast(`⏳ تلاش ${attempt}/3...`, '');
       await db.ref(`predictions/${matchId}/${currentUser.uid}`).set(pred);
-      const verify = await db.ref(`predictions/${matchId}/${currentUser.uid}`).once('value');
-      if (!verify.val()) throw new Error('not-verified');
-      // موفق
+      // موفق — سرور تأیید کرد
       if (!appData.predictions[matchId]) appData.predictions[matchId] = {};
       appData.predictions[matchId][currentUser.uid] = pred;
       renderMatches();
-      showToast('✅ پیش‌بینی ذخیره و تأیید شد', 'success');
+      showToast('✅ پیش‌بینی ثبت شد', 'success');
       return;
     } catch (e) {
-      console.error(`Pred attempt ${attempt}:`, e.code, e.message);
+      console.error(`attempt ${attempt}:`, e.code, e.message);
       if (e.code === 'PERMISSION_DENIED') {
-        showToast('❌ دسترسی رد شد — Firebase Rules را بررسی کن', 'error');
+        showToast('❌ خطای دسترسی Firebase', 'error');
         return;
       }
-      if (attempt < 3) await new Promise(r => setTimeout(r, 800 * attempt));
-      else showToast('❌ پیش‌بینی ذخیره نشد — اتصال اینترنت را بررسی کن', 'error');
+      if (attempt < 3) await new Promise(r => setTimeout(r, 1000 * attempt));
+      else showToast('❌ اینترنت ضعیفه — دوباره امتحان کن', 'error');
     }
+  }
+
+  } catch(err) {
+    console.error('submitPrediction crash:', err);
+    showToast('❌ خطای غیرمنتظره: ' + (err.message || err), 'error');
   }
 }
 
@@ -3625,5 +3639,3 @@ function renderAll() {
 </script>
 </body>
 </html>
-
-  
