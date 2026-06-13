@@ -1264,6 +1264,38 @@
     </div>
     <div id="tbd-teams-list" style="margin-bottom:0.5rem"></div>
 
+  </div>
+
+  <!-- ══ ADMIN PROXY PREDICTIONS ══ -->
+  <div class="section-divider"><span class="section-divider-text">📝 ورود پیش‌بینی به‌جای کاربر (اضطراری)</span></div>
+  <div style="background:rgba(255,165,0,.06);border:1px solid rgba(255,165,0,.2);border-radius:12px;padding:1rem;margin-bottom:0.5rem">
+    <div style="font-size:0.75rem;color:rgba(255,165,0,.8);margin-bottom:0.75rem">
+      ⚠️ فقط برای مواقع ضروری — پیش‌بینی‌های قبلی کاربر جایگزین می‌شن
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:0.75rem">
+      <select id="proxy-user-select" style="flex:1;min-width:120px;padding:0.4rem 0.6rem;background:var(--bg-2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:inherit;font-size:0.8rem">
+        <option value="">انتخاب کاربر...</option>
+      </select>
+      <select id="proxy-match-select" style="flex:1;min-width:160px;padding:0.4rem 0.6rem;background:var(--bg-2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:inherit;font-size:0.8rem">
+        <option value="">انتخاب بازی...</option>
+      </select>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+      <input type="number" id="proxy-home" min="0" max="20" placeholder="گل میزبان"
+        style="width:90px;padding:0.4rem 0.6rem;background:var(--bg-2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:inherit;font-size:0.8rem">
+      <span style="color:var(--text-dim)">–</span>
+      <input type="number" id="proxy-away" min="0" max="20" placeholder="گل مهمان"
+        style="width:90px;padding:0.4rem 0.6rem;background:var(--bg-2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:inherit;font-size:0.8rem">
+      <button onclick="submitProxyPrediction()"
+        style="padding:0.4rem 1rem;background:rgba(255,165,0,.8);border:none;border-radius:8px;color:#000;font-weight:700;cursor:pointer;font-family:inherit;font-size:0.8rem">
+        💾 ثبت
+      </button>
+    </div>
+    <div id="proxy-current" style="font-size:0.72rem;color:var(--text-dim);margin-top:0.5rem"></div>
+  </div>
+
+  <div style="display:none">
+
     <div class="section-divider">
       <div class="section-divider-line"></div>
       <div class="section-divider-text">ثبت نتایج بازی‌ها</div>
@@ -1327,6 +1359,16 @@ firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db   = firebase.database();
 db.ref('predictions').keepSynced(true); // همیشه sync با سرور
+
+// timeout wrapper — اگه Firebase جواب نداد بعد از X ثانیه خطا بده
+function fbWithTimeout(promise, ms = 8000) {
+  return Promise.race([
+    promise,
+    new Promise((_, reject) =>
+      setTimeout(() => reject(new Error('firebase-timeout')), ms)
+    )
+  ]);
+}
 
 // ── TELEGRAM BOT ──
 const TG_TOKEN   = "8724029460:AAGRuOErReyf75EKakQFxGrRmkVBndzxn94";
@@ -1960,7 +2002,7 @@ async function submitPrediction(matchId) {
   for (let attempt = 1; attempt <= 3; attempt++) {
     try {
       if (attempt > 1) showToast(`⏳ تلاش ${attempt}/3...`, '');
-      await db.ref(`predictions/${matchId}/${currentUser.uid}`).set(pred);
+      await fbWithTimeout(db.ref(`predictions/${matchId}/${currentUser.uid}`).set(pred), 8000);
       // موفق — سرور تأیید کرد
       if (!appData.predictions[matchId]) appData.predictions[matchId] = {};
       appData.predictions[matchId][currentUser.uid] = pred;
@@ -2066,7 +2108,7 @@ async function confirmResult(matchId) {
   for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
     try {
       if (attempt > 1) showToast(`⏳ تلاش مجدد ${attempt}/${MAX_RETRIES}...`, '');
-      await db.ref(`results/${matchId}`).set(result);
+      await fbWithTimeout(db.ref(`results/${matchId}`).set(result), 8000);
 
       // تأیید ذخیره با خواندن مجدد
       const verify = await db.ref(`results/${matchId}`).once('value');
@@ -3298,6 +3340,32 @@ function renderAdmin() {
     approvedContainer.innerHTML = '<div style="font-size:0.85rem;color:var(--text-dim);padding:0.5rem">هیچ کاربر فعالی وجود ندارد</div>';
   }
 
+  // آپدیت منوی proxy
+  const proxyUser = document.getElementById('proxy-user-select');
+  const proxyMatch = document.getElementById('proxy-match-select');
+  if (proxyUser) {
+    const curU = proxyUser.value;
+    proxyUser.innerHTML = '<option value="">انتخاب کاربر...</option>' +
+      Object.entries(appData.users).filter(([,u])=>u.approved)
+        .map(([uid,u]) => `<option value="${uid}" ${uid===curU?'selected':''}>${u.name}</option>`).join('');
+  }
+  if (proxyMatch) {
+    const curM = proxyMatch.value;
+    const openMatches = MATCHES.filter(m => {
+      const s = getMatchStatus(m);
+      return s === 'open' || s === 'upcoming';
+    });
+    proxyMatch.innerHTML = '<option value="">انتخاب بازی...</option>' +
+      openMatches.map(m => {
+        const h = getTeamInfo(m.id,'home'), a = getTeamInfo(m.id,'away');
+        return `<option value="${m.id}" ${m.id===curM?'selected':''}>${h.name} vs ${a.name}</option>`;
+      }).join('');
+  }
+
+  // نشون دادن پیش‌بینی فعلی
+  document.getElementById('proxy-user-select')?.addEventListener('change', updateProxyCurrent);
+  document.getElementById('proxy-match-select')?.addEventListener('change', updateProxyCurrent);
+
   // تیم‌های TBD
   const tbdContainer = document.getElementById('tbd-teams-list');
   const tbdMatches = MATCHES.filter(m => {
@@ -3623,6 +3691,43 @@ async function shareScreenshot() {
 
 function closeScreenshotModal() {
   document.getElementById('screenshot-modal').style.display = 'none';
+}
+
+function updateProxyCurrent() {
+  const uid   = document.getElementById('proxy-user-select')?.value;
+  const mid   = document.getElementById('proxy-match-select')?.value;
+  const el    = document.getElementById('proxy-current');
+  if (!el) return;
+  if (!uid || !mid) { el.textContent = ''; return; }
+  const pred = (appData.predictions[mid]||{})[uid];
+  const userName = appData.users[uid]?.name || uid;
+  el.textContent = pred
+    ? `پیش‌بینی فعلی ${userName}: ${pred.homeGoals}–${pred.awayGoals}`
+    : `${userName} هنوز پیش‌بینی نداده`;
+}
+
+async function submitProxyPrediction() {
+  const uid = document.getElementById('proxy-user-select')?.value;
+  const mid = document.getElementById('proxy-match-select')?.value;
+  const ph  = parseInt(document.getElementById('proxy-home')?.value);
+  const pa  = parseInt(document.getElementById('proxy-away')?.value);
+
+  if (!uid) { showToast('کاربر را انتخاب کن', 'error'); return; }
+  if (!mid) { showToast('بازی را انتخاب کن', 'error'); return; }
+  if (isNaN(ph) || isNaN(pa)) { showToast('گل‌ها را وارد کن', 'error'); return; }
+
+  const pred = { homeGoals: ph, awayGoals: pa, timestamp: Date.now(), byAdmin: true };
+  try {
+    await fbWithTimeout(db.ref(`predictions/${mid}/${uid}`).set(pred), 8000);
+    if (!appData.predictions[mid]) appData.predictions[mid] = {};
+    appData.predictions[mid][uid] = pred;
+    const userName = appData.users[uid]?.name || uid;
+    showToast(`✅ پیش‌بینی ${userName} ثبت شد`, 'success');
+    updateProxyCurrent();
+    renderAdmin();
+  } catch(e) {
+    showToast('❌ خطا: ' + (e.message||e.code), 'error');
+  }
 }
 
 // ════════════════════════════════════════════════════════════
