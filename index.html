@@ -993,6 +993,13 @@
   .res-round-body { display:none; }
   .res-round-body.active { display:block; }
   .res-round-select { width:100%; padding:0.55rem 0.85rem; background:var(--card); border:1px solid var(--border); border-radius:var(--radius-sm); color:var(--text); font-family:inherit; font-size:0.88rem; cursor:pointer; direction:rtl; text-align:right; margin-bottom:0.75rem; }
+  .res-accordion { border:1px solid var(--border); border-radius:var(--radius-sm); margin-bottom:0.5rem; overflow:hidden; }
+  .res-acc-header { width:100%; display:flex; align-items:center; gap:0.5rem; padding:0.75rem 1rem; background:var(--card); border:none; cursor:pointer; font-family:inherit; color:var(--text); text-align:right; direction:rtl; }
+  .res-acc-header:hover { background:var(--card-alt); }
+  .res-acc-title { flex:1; font-size:0.88rem; font-weight:700; }
+  .res-acc-meta { font-size:0.72rem; color:var(--gold); background:rgba(201,168,76,0.12); padding:0.15rem 0.5rem; border-radius:20px; white-space:nowrap; }
+  .res-acc-arrow { font-size:0.7rem; color:var(--text-dim); flex-shrink:0; }
+  .res-acc-inner { padding:0.5rem; }
   .admin-flt-btn { padding:0.3rem 0.75rem; border-radius:20px; border:1px solid var(--border); background:var(--card-alt); color:var(--text-dim); font-family:inherit; font-size:0.73rem; cursor:pointer; white-space:nowrap; transition:all 0.15s; }
   .admin-flt-btn.active { background:var(--gold); border-color:var(--gold); color:#000; font-weight:700; }
   .res-match-card { background:var(--bg-2); border-radius:12px; border:1px solid rgba(255,255,255,0.07); margin-bottom:0.75rem; overflow:hidden; }
@@ -2779,87 +2786,60 @@ function renderResults() {
   // آخرین دور فعال
   const lastKey = ROUNDS[ROUNDS.length - 1].key;
 
-  // dropdown انتخاب دور — سمت راست به چپ
-  const pillsHtml = `<div style="text-align:right">
-    <select id="res-round-select" class="res-round-select" onchange="switchRound(this.value)">
-      ${ROUNDS.map(r => `<option value="${r.key}"${r.key===lastKey?' selected':''}>${r.label}  (${r.matches.length} بازی)</option>`).join('')}
-    </select>
-  </div>`;
-
-  // ساخت محتوای هر دور
-  const approvedUsers = Object.entries(appData.users).filter(([,u]) => u.approved);
-
-  const roundBodies = ROUNDS.map(round => {
-    const cards = round.matches.map(match => {
-      const result = appData.results[match.id];
-      const settlement = calcSettlementForMatch(match.id, result) || {};
-      const { payments = {}, cat90 = {}, catOT = {}, catPen = {} } = settlement;
-
-      const home = getTeamInfo(match.id, 'home');
-      const away = getTeamInfo(match.id, 'away');
-
-      // نوع نتیجه
-      let scoreBadge = '';
-      if (result.type === 'ot')  scoreBadge = '<span class="res-score-badge">وقت اضافه</span>';
-      if (result.type === 'pen') scoreBadge = '<span class="res-score-badge">پنالتی</span>';
-
-      // ردیف‌های بازیکنان
-      let rows = '';
-      for (const [uid, user] of approvedUsers) {
-        const pred = (appData.predictions[match.id] || {})[uid];
-        if (!pred) continue;
-        const pay = payments[uid] || 0;
-        const c90 = cat90[uid];
-        const isMe = uid === currentUser?.uid;
-
-        // برچسب
-        const catLabel = c90==='exact'  ? '🎯 دقیق'
-                       : c90==='correct'? '✅ درست'
-                       : c90==='neutral'? '➖ خنثی'
-                       : c90==='wrong'  ? '❌ اشتباه' : '—';
-
-        // OT/Pen extra
-        const otC = catOT[uid], penC = catPen[uid];
-        const extra = (otC ? (otC==='exact'?'⏱🎯':'⏱✅') : '') + (penC ? (penC==='exact'?' 🥅🎯':' 🥅✅') : '');
-
-        // پرداخت
-        const payHtml = pay > 0
-          ? `<span class="rr-pos">${toPersianNum(Math.abs(pay).toLocaleString('fa-IR'))}+</span>`
-          : pay < 0
-          ? `<span class="rr-neg">${toPersianNum(Math.abs(pay).toLocaleString('fa-IR'))}-</span>`
-          : `<span class="rr-zero">—</span>`;
-
-        rows += `<div class="res-row${isMe?' highlight':''}">
-          <span class="rr-name">${user.name}</span>
-          <span class="rr-pred" dir="ltr">${toPersianNum(pred.homeGoals)}–${toPersianNum(pred.awayGoals)}</span>
-          <span class="rr-cat">${catLabel}${extra}</span>
-          <span class="rr-pay" dir="ltr">${payHtml}</span>
-        </div>`;
-      }
-
-      return `<div class="res-match-card">
-        <div class="res-match-head">
-          <div class="res-team">
-            <div style="font-size:1.5rem;line-height:1">${flagImg(home.flag, 28)}</div>
-            <div class="res-team-name">${home.name}</div>
-          </div>
-          <div class="res-score-box">
-            <div class="res-score-main" dir="ltr">${toPersianNum(result.homeGoals)} – ${toPersianNum(result.awayGoals)}</div>
-            ${scoreBadge}
-          </div>
-          <div class="res-team">
-            <div style="font-size:1.5rem;line-height:1">${flagImg(away.flag, 28)}</div>
-            <div class="res-team-name">${away.name}</div>
-          </div>
+  // accordion — هر دور یه هدر کلیک‌شدنی، پیش‌فرض بسته
+  const accordionHtml = ROUNDS.map((round, idx) => {
+    const isLast = idx === ROUNDS.length - 1;
+    return `
+    <div class="res-accordion">
+      <button class="res-acc-header" onclick="toggleAccordion('acc-${round.key}',this)">
+        <span class="res-acc-title">${round.label}</span>
+        <span class="res-acc-meta">${toPersianNum(round.matches.length)} بازی</span>
+        <span class="res-acc-arrow">${isLast ? '▲' : '▼'}</span>
+      </button>
+      <div class="res-acc-body" id="acc-${round.key}" style="display:${isLast?'block':'none'}">
+        <div class="res-acc-inner">
+          ${round.matches.map(match => {
+            const result = appData.results[match.id];
+            const settlement = calcSettlementForMatch(match.id, result) || {};
+            const { payments = {}, cat90 = {}, catOT = {}, catPen = {} } = settlement;
+            const home = getTeamInfo(match.id, 'home');
+            const away = getTeamInfo(match.id, 'away');
+            let scoreBadge = '';
+            if (result.type === 'ot')  scoreBadge = '<span class="res-score-badge">وقت اضافه</span>';
+            if (result.type === 'pen') scoreBadge = '<span class="res-score-badge">پنالتی</span>';
+            let rows = '';
+            for (const [uid, user] of approvedUsers) {
+              const pred = (appData.predictions[match.id] || {})[uid];
+              if (!pred) continue;
+              const pay = payments[uid] || 0;
+              const c90 = cat90[uid];
+              const isMe = uid === currentUser?.uid;
+              const catLabel = c90==='exact'?'🎯 دقیق':c90==='correct'?'✅ درست':c90==='neutral'?'➖ خنثی':c90==='wrong'?'❌ اشتباه':'—';
+              const otC = catOT[uid], penC = catPen[uid];
+              const extra = (otC?(otC==='exact'?'⏱🎯':'⏱✅'):'')+(penC?(penC==='exact'?' 🥅🎯':' 🥅✅'):'');
+              const payHtml = pay>0?`<span class="rr-pos">${toPersianNum(Math.abs(pay).toLocaleString('fa-IR'))}+</span>`:pay<0?`<span class="rr-neg">${toPersianNum(Math.abs(pay).toLocaleString('fa-IR'))}-</span>`:`<span class="rr-zero">—</span>`;
+              rows += `<div class="res-row${isMe?' highlight':''}">
+                <span class="rr-name">${user.name}</span>
+                <span class="rr-pred" dir="ltr">${toPersianNum(pred.homeGoals)}–${toPersianNum(pred.awayGoals)}</span>
+                <span class="rr-cat">${catLabel}${extra}</span>
+                <span class="rr-pay" dir="ltr">${payHtml}</span>
+              </div>`;
+            }
+            return `<div class="res-match-card">
+              <div class="res-match-head">
+                <div class="res-team"><div style="font-size:1.5rem;line-height:1">${flagImg(home.flag,28)}</div><div class="res-team-name">${home.name}</div></div>
+                <div class="res-score-box"><div class="res-score-main" dir="ltr">${toPersianNum(result.homeGoals)} – ${toPersianNum(result.awayGoals)}</div>${scoreBadge}</div>
+                <div class="res-team"><div style="font-size:1.5rem;line-height:1">${flagImg(away.flag,28)}</div><div class="res-team-name">${away.name}</div></div>
+              </div>
+              ${rows?`<div class="res-rows">${rows}</div>`:''}
+            </div>`;
+          }).join('')}
         </div>
-        ${rows ? `<div class="res-rows">${rows}</div>` : ''}
-      </div>`;
-    }).join('');
-
-    return `<div class="res-round-body${round.key===lastKey?' active':''}" id="rbody-${round.key}">${cards}</div>`;
+      </div>
+    </div>`;
   }).join('');
 
-  container.innerHTML = pillsHtml + roundBodies;
+  container.innerHTML = accordionHtml;
 }
 
 function switchRound(key) {
@@ -2871,6 +2851,14 @@ function switchRound(key) {
 }
 
 let _adminFlt = 'pending';
+function toggleAccordion(id, btn) {
+  const body = document.getElementById(id);
+  if (!body) return;
+  const isOpen = body.style.display !== 'none';
+  body.style.display = isOpen ? 'none' : 'block';
+  const arrow = btn?.querySelector('.res-acc-arrow');
+  if (arrow) arrow.textContent = isOpen ? '▼' : '▲';
+}
 function setAdminFlt(btn, flt) {
   _adminFlt = flt;
   document.querySelectorAll('.admin-flt-btn').forEach(b => b.classList.remove('active'));
