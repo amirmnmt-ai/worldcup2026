@@ -237,9 +237,9 @@
     text-transform: uppercase; font-stretch: condensed;
   }
 
-  .header-user { display: flex; align-items: center; gap: 0.7rem; }
-
+  .header-user { display: flex; align-items: center; gap: 0.4rem; }
   .header-username { font-size: 0.82rem; color: var(--text-mid); font-weight: 500; }
+  #btn-signout-header { margin-right: 0.6rem; }
 
   .avatar {
     width: 34px; height: 34px; border-radius: 50%;
@@ -443,8 +443,8 @@
   .player-stats { font-size: 0.7rem; color: var(--text-dim); margin-top: 0.25rem; }
   .player-balance { font-size: 1rem; font-weight: 900; text-align: left; }
 
-  .balance-pos  { color: var(--green); text-shadow: 0 0 10px rgba(0,214,143,0.3); }
-  .balance-neg  { color: var(--red); }
+  .balance-pos  { color: var(--green); text-shadow: 0 0 10px rgba(0,214,143,0.3); white-space: nowrap; }
+  .balance-neg  { color: var(--red); white-space: nowrap; }
   .balance-zero { color: var(--text-dim); }
 
   /* ══ RESULTS ══ */
@@ -693,15 +693,18 @@
     border-radius: var(--radius-sm); padding: 0.9rem 0.7rem;
     text-align: center; transition: all 0.2s;
     backdrop-filter: blur(8px);
+    display: flex; flex-direction: column; justify-content: flex-start; min-height: 82px;
   }
   .stat-box:hover { border-color: var(--border); transform: translateY(-2px); }
 
   .stat-value {
     font-size: 1.3rem; font-weight: 900; color: var(--gold); display: block;
-    text-shadow: 0 0 16px rgba(201,168,76,0.3);
+    text-shadow: 0 0 16px rgba(201,168,76,0.3); flex: 1;
+    display: flex; align-items: center; justify-content: center; flex-direction: column;
   }
-  .stat-label { font-size: 0.65rem; color: var(--text-dim); margin-top: 0.25rem; letter-spacing: 0.3px; }
-
+  .stat-label { font-size: 0.65rem; color: var(--text-dim); letter-spacing: 0.3px; }
+  .balance-pos  { color: var(--green); text-shadow: 0 0 10px rgba(0,214,143,0.3); white-space: nowrap; }
+  .balance-neg  { color: var(--red); white-space: nowrap; }
   /* ══ TOAST ══ */
   .toast {
     position: fixed; bottom: 1.5rem; left: 50%;
@@ -2859,7 +2862,6 @@ function renderPredictionSection(match, status, myPred) {
     }
     if (!predRows) predRows = '<div style="font-size:0.78rem;color:var(--text-dim)">هنوز کسی پیش‌بینی نکرده</div>';
     return `<div class="prediction-section">
-      <div class="prediction-label">📋 پیش‌بینی‌ها — بازی شروع شد</div>
       <div style="margin-top:0.4rem">${predRows}</div>
     </div>`;
   }
@@ -2881,7 +2883,6 @@ function renderPredictionSection(match, status, myPred) {
     }
     if (!doneRows) doneRows = '<div style="font-size:0.78rem;color:var(--text-dim)">هیچ پیش‌بینی ثبت نشده</div>';
     return `<div class="prediction-section">
-      <div class="prediction-label">📋 پیش‌بینی‌ها — بازی پایان یافت</div>
       <div style="margin-top:0.4rem">${doneRows}</div>
     </div>`;
   }
@@ -2908,7 +2909,7 @@ function renderPredictionSection(match, status, myPred) {
 
   return `<div class="prediction-section">
     ${adminSubmitInfo}
-    <div class="prediction-label">🎯 پیش‌بینی نتیجه ${hasExisting ? '(ویرایش)' : ''}</div>
+    
     <div class="score-input-row" dir="ltr">
       <div style="flex:1;text-align:center;font-size:0.75rem;color:var(--text-dim)" dir="rtl">${getTeamInfo(match.id,'home').name}</div>
       <input type="number" inputmode="numeric" pattern="[0-9]*" class="score-input" id="ph-${match.id}" min="0" max="20" value="${hasExisting ? myPred.homeGoals : ''}" placeholder="۰">
