@@ -304,6 +304,11 @@
     background: rgba(0,0,0,0.25);
     font-size: 0.72rem; color: var(--text-dim);
     border-bottom: 1px solid var(--border-subtle);
+    position: relative;
+  }
+  .match-header-time {
+    position: absolute; left: 50%; transform: translateX(-50%);
+    font-size: 0.73rem; color: var(--text-dim); pointer-events: none;
   }
 
   .match-stage {
@@ -333,6 +338,7 @@
   }
 
   .vs-text { font-size: 0.68rem; color: var(--text-dim); font-weight: 700; letter-spacing: 1px; }
+  .vs-time  { font-size: 0.72rem; color: var(--text-dim); margin-bottom: 0.1rem; }
 
   .score-display {
     font-size: 1.5rem; font-weight: 900; color: var(--gold);
@@ -2479,7 +2485,7 @@ function renderMatches() {
     html += `<div class="match-card">
       <div class="match-header">
         <span class="match-stage ${getStageClass(match.stage)}">${match.stageLabel.split(' - ')[0]}</span>
-        <span style="font-size:0.73rem">${dateStr}</span>
+        <span class="match-header-time">${dateStr}</span>
         ${statusBadge}
       </div>
       <div class="match-teams" dir="ltr">
