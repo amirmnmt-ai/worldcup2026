@@ -214,7 +214,11 @@
   /* ══ APP ══ */
   #screen-app { flex-direction: column; }
 
-  .app-header {
+  .wc26-stripe {
+    height: 3px;
+    background: linear-gradient(to left, #CE1126, #3C3B6E 50%, #006847);
+    flex-shrink: 0;
+  }
     position: sticky; top: 0; z-index: 100;
     background: rgba(6,8,12,0.88);
     backdrop-filter: blur(24px) saturate(1.5);
@@ -226,9 +230,10 @@
   }
 
   .header-logo {
-    font-size: 1rem; font-weight: 800; letter-spacing: -0.3px;
-    background: linear-gradient(135deg, var(--gold-light), var(--gold));
+    font-size: 1.08rem; font-weight: 900; letter-spacing: -0.5px;
+    background: linear-gradient(135deg, #FFD97D, var(--gold), #C9A84C);
     -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+    text-transform: uppercase; font-stretch: condensed;
   }
 
   .header-user { display: flex; align-items: center; gap: 0.7rem; }
@@ -1047,7 +1052,41 @@
   /* ── SCORECARD ANIMATIONS ── */
   @keyframes fillBar { from { width:0 } }
   @keyframes fadeUp  { from { opacity:0; transform:translateY(12px) } to { opacity:1; transform:translateY(0) } }
-  @keyframes countUp { from { opacity:0 } to { opacity:1 } }
+  /* ══ ۱. ورود staggered کارت‌ها ══ */
+  @keyframes cardSlideUp {
+    from { opacity:0; transform:translateY(16px); }
+    to   { opacity:1; transform:translateY(0); }
+  }
+
+  /* ══ ۲. fade بین تب‌ها ══ */
+  @keyframes tabFadeIn {
+    from { opacity:0; }
+    to   { opacity:1; }
+  }
+  .tab-content.active { animation: tabFadeIn 0.22s ease both; }
+
+  /* ══ ۳. pulse روی badge باز ══ */
+  @keyframes pulseOpen {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(0,214,143,0.45); }
+    60%       { box-shadow: 0 0 0 6px rgba(0,214,143,0); }
+  }
+  .badge-open { animation: pulseOpen 2.2s ease-in-out infinite; }
+
+  /* ══ ۵. accordion نرم ══ */
+  .res-acc-body {
+    overflow: hidden;
+    max-height: 0;
+    transition: max-height 0.38s cubic-bezier(0.4,0,0.2,1);
+  }
+  .res-acc-body.open { max-height: 6000px; transition: max-height 0.5s ease; }
+
+  /* ══ ۶. flash رتبه ══ */
+  @keyframes rankFlash {
+    0%   { background: transparent; }
+    25%  { background: rgba(201,168,76,0.22); box-shadow: 0 0 0 1px rgba(201,168,76,0.3); }
+    100% { background: transparent; }
+  }
+  .leaderboard-row.me.flash { animation: rankFlash 1.4s ease-out; }
   @keyframes spin    { from { stroke-dashoffset:283 } }
   .sc-anim { animation: fadeUp 0.4s ease both; }
   .sc-anim:nth-child(1){animation-delay:0s}
@@ -1158,6 +1197,7 @@
       <button class="btn-signout" onclick="handleSignOut()" title="خروج" id="btn-signout-header"></button>
     </div>
   </header>
+  <div class="wc26-stripe"></div>
 
   <nav class="nav-tabs">
     <button class="nav-tab active" onclick="switchTab('matches')">بازی‌ها</button>
@@ -2422,6 +2462,23 @@ function switchTab(name) {
   event.target.classList.add('active');
 }
 
+/* ══ ۴. count-up utility ══ */
+function countUp(el, target, dur = 600) {
+  if (!el) return;
+  const isNeg  = target < 0;
+  const abs    = Math.abs(target);
+  const start  = Date.now();
+  const tick   = () => {
+    const p = Math.min((Date.now() - start) / dur, 1);
+    const ease = 1 - Math.pow(1 - p, 3); // ease-out cubic
+    const cur  = Math.round(abs * ease);
+    el.textContent = (isNeg ? '−' : '+') + toPersianNum(cur.toLocaleString('fa-IR'));
+    if (p < 1) requestAnimationFrame(tick);
+    else el.innerHTML = formatMoney(target); // نهایی با فرمت کامل
+  };
+  requestAnimationFrame(tick);
+}
+
 function showScreen(name) {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.getElementById(`screen-${name}`).classList.add('active');
@@ -2443,7 +2500,7 @@ function renderMatches() {
     const balEl = document.getElementById('my-balance-stat');
     const predEl = document.getElementById('my-pred-count');
     const exEl  = document.getElementById('my-exact-count');
-    if (balEl) balEl.innerHTML = formatMoney(myBalance);
+    if (balEl) countUp(balEl, myBalance, 700);
     if (predEl) predEl.textContent = toPersianNum(myPreds);
     if (exEl)  exEl.textContent  = toPersianNum(myExact);
   }
@@ -2451,6 +2508,9 @@ function renderMatches() {
   const container = document.getElementById('matches-list');
   let html = '';
   let lastDate = '';
+  const TRIONDA = ['#D52B1E', '#3C3B6E', '#006847']; // 🇨🇦 🇺🇸 🇲🇽
+  let triIdx = 0;
+  let cardIdx = 0;
 
   const sorted = [...MATCHES].sort((a, b) => new Date(a.datetime) - new Date(b.datetime));
   const doneCount = sorted.filter(m => getMatchStatus(m) === 'done').length;
@@ -2468,12 +2528,16 @@ function renderMatches() {
     const dateStr = dt.toLocaleTimeString('fa-IR', { hour:'2-digit', minute:'2-digit' });
 
     if (dateKey !== lastDate) {
+      const col = TRIONDA[triIdx % 3];
       html += `<div class="section-divider">
-        <div class="section-divider-line"></div>
-        <div class="section-divider-text">📅 ${dateKey}</div>
-        <div class="section-divider-line"></div>
+        <div class="section-divider-line" style="background:linear-gradient(to right,transparent,${col})"></div>
+        <div class="section-divider-text">
+          <span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:${col};margin-left:0.4rem;vertical-align:middle;flex-shrink:0"></span>${dateKey}
+        </div>
+        <div class="section-divider-line" style="background:linear-gradient(to left,transparent,${col})"></div>
       </div>`;
       lastDate = dateKey;
+      triIdx++;
     }
 
     let statusBadge = '';
@@ -2482,7 +2546,8 @@ function renderMatches() {
     if (status === 'locked')   statusBadge = '<span class="badge badge-closed">بسته</span>';
     if (status === 'done')     statusBadge = '<span class="badge badge-done">پایان یافت</span>';
 
-    html += `<div class="match-card">
+    const _delay = Math.min(cardIdx * 0.055, 0.4); cardIdx++;
+    html += `<div class="match-card" style="animation:cardSlideUp 0.32s ease both;animation-delay:${_delay}s">
       <div class="match-header">
         <span class="match-stage ${getStageClass(match.stage)}">${match.stageLabel.split(' - ')[0]}</span>
         <span class="match-header-time">${dateStr}</span>
@@ -2520,7 +2585,7 @@ function renderMatches() {
     const balEl = document.getElementById('my-balance-stat');
     const predEl = document.getElementById('my-pred-count');
     const exEl   = document.getElementById('my-exact-count');
-    if (balEl) balEl.innerHTML = formatMoney(myBalance);
+    if (balEl) countUp(balEl, myBalance, 700);
     if (predEl) predEl.textContent = toPersianNum(myPreds);
     if (exEl)   exEl.textContent  = toPersianNum(myExact);
   }
@@ -2760,7 +2825,16 @@ function renderLeaderboard() {
   });
 
   container.innerHTML = html || '<div class="empty-state"><div class="empty-icon">📊</div><div class="empty-text">هنوز نتیجه‌ای ثبت نشده</div></div>';
-}
+
+  // ══ ۶. flash رتبه کاربر جاری ══
+  requestAnimationFrame(() => {
+    const myRow = container.querySelector('.leaderboard-row.me');
+    if (myRow) {
+      myRow.classList.remove('flash');
+      void myRow.offsetWidth; // reflow
+      myRow.classList.add('flash');
+    }
+  });
 
 // ════════════════════════════════════════════════════════════
 //  RENDER: RESULTS TAB
@@ -2803,7 +2877,7 @@ function renderResults() {
         <span class="res-acc-meta">${toPersianNum(round.matches.length)} بازی</span>
         <span class="res-acc-arrow">${isLast ? '▲' : '▼'}</span>
       </button>
-      <div class="res-acc-body" id="acc-${round.key}" style="display:${isLast?'block':'none'}">
+      <div class="res-acc-body ${isLast ? 'open' : ''}" id="acc-${round.key}">
         <div class="res-acc-inner">
           ${round.matches.map(match => {
             const result = appData.results[match.id];
@@ -2861,8 +2935,8 @@ let _adminFlt = 'pending';
 function toggleAccordion(id, btn) {
   const body = document.getElementById(id);
   if (!body) return;
-  const isOpen = body.style.display !== 'none';
-  body.style.display = isOpen ? 'none' : 'block';
+  const isOpen = body.classList.contains('open');
+  body.classList.toggle('open', !isOpen);
   const arrow = btn?.querySelector('.res-acc-arrow');
   if (arrow) arrow.textContent = isOpen ? '▼' : '▲';
 }
