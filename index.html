@@ -212,13 +212,14 @@
   .btn-signout-pending:hover { opacity: 1; border-color: var(--red); }
 
   /* ══ APP ══ */
-  #screen-app { flex-direction: column; }
+  #screen-app { flex-direction: column; height: 100vh; overflow: hidden; }
 
   .wc26-stripe {
     height: 3px;
     background: linear-gradient(to left, #CE1126, #3C3B6E 50%, #006847);
     flex-shrink: 0;
   }
+  .app-header {
     position: sticky; top: 0; z-index: 100;
     background: rgba(6,8,12,0.88);
     backdrop-filter: blur(24px) saturate(1.5);
@@ -284,7 +285,7 @@
   .nav-tab:hover:not(.active) { color: var(--text-mid); }
 
   /* ══ CONTENT ══ */
-  .tab-content { display: none; flex: 1; overflow-y: auto; padding: 1.2rem; }
+  .tab-content { display: none; flex: 1; min-height: 0; overflow-y: auto; padding: 1.2rem; }
   .tab-content.active { display: block; }
 
   /* ══ MATCH CARD ══ */
@@ -1052,11 +1053,51 @@
   /* ── SCORECARD ANIMATIONS ── */
   @keyframes fillBar { from { width:0 } }
   @keyframes fadeUp  { from { opacity:0; transform:translateY(12px) } to { opacity:1; transform:translateY(0) } }
-  /* ══ ۱. ورود staggered کارت‌ها ══ */
+  @keyframes ballBounce {
+    from { transform: translateY(0); }
+    to   { transform: translateY(-5px); }
+  }
+  /* ══ Champion Pick Banner ══ */
+  .champion-banner { width:100%; text-align:center; }
+  .champ-header { font-size:0.88rem; font-weight:900; color:var(--gold); margin-bottom:0.6rem; line-height:1.4; }
+  .champ-timer  { font-size:0.72rem; color:var(--text-dim); margin-bottom:0.75rem; }
+  .champ-pick-confirmed { font-size:0.8rem; color:var(--green); margin-bottom:0.6rem; }
+  .champ-pick-locked    { font-size:0.85rem; font-weight:700; color:var(--gold); }
+  .champ-carousel {
+    display:flex; gap:0.5rem; overflow-x:auto; padding:0.25rem 0 0.5rem;
+    scroll-snap-type:x mandatory; scrollbar-width:none; -webkit-overflow-scrolling:touch;
+    justify-content:flex-start;
+  }
+  .champ-carousel::-webkit-scrollbar { display:none; }
+  .champ-team-card {
+    flex-shrink:0; scroll-snap-align:start;
+    display:flex; flex-direction:column; align-items:center; gap:0.25rem;
+    padding:0.5rem 0.6rem; border-radius:10px;
+    border:1px solid var(--border); background:var(--card);
+    cursor:pointer; transition:all 0.15s; min-width:58px;
+  }
+  .champ-team-card:hover  { border-color:var(--gold); background:rgba(201,168,76,0.08); }
+  .champ-team-card.selected { border-color:var(--gold); background:rgba(201,168,76,0.15); box-shadow:0 0 0 2px rgba(201,168,76,0.3); }
+  .champ-team-name { font-size:0.58rem; color:var(--text-dim); line-height:1.2; text-align:center; max-width:54px; word-break:break-word; }
+  .champ-team-card.selected .champ-team-name { color:var(--gold); }
   @keyframes cardSlideUp {
     from { opacity:0; transform:translateY(16px); }
     to   { opacity:1; transform:translateY(0); }
   }
+  @keyframes cardShine {
+    0%   { background-position: -200% center; }
+    100% { background-position: 200% center; }
+  }
+  .match-card::after {
+    content: '';
+    position: absolute; inset: 0;
+    border-radius: inherit;
+    background: linear-gradient(105deg, transparent 40%, rgba(255,255,255,0.045) 50%, transparent 60%);
+    background-size: 200% 100%;
+    animation: cardShine 4s ease-in-out infinite;
+    pointer-events: none;
+  }
+  .match-card { position: relative; overflow: hidden; }
 
   /* ══ ۲. fade بین تب‌ها ══ */
   @keyframes tabFadeIn {
@@ -1114,16 +1155,12 @@
     <div id="loading-msg" style="color:var(--text-dim);font-size:0.88rem;margin-top:0.5rem;">در حال اتصال...</div>
     <script>
       const _msgs = [
-        "توپ روی نقطه‌ی پنالتیه، یه لحظه صبر کن",
-        "ضربه کرنر، بازیکنا دارن جا می‌گیرن، یه لحظه صبر کن",
-        "داور داره تصمیم می‌گیره، یه لحظه صبر کن",
-        "دروازه‌بان مصدوم شد، یه لحظه صبر کن",
-        "داره بازیکن عوض می‌کنه، یه لحظه صبر کن",
-        "توپ رفت توی تماشاگرا، یه لحظه صبر کن",
-        "داور چهارم وقت اضافه رو اعلام می‌کنه، یه لحظه صبر کن",
-        "بازیکن روی زمینه، بازی متوقفه، یه لحظه صبر کن",
-        "دارن دیوار انسانی می‌چینن، یه لحظه صبر کن",
-        "کمک‌داور داره مشورت می‌کنه، یه لحظه صبر کن",
+        "توپ روی نقطه‌ی پنالتیه، صبر کن",
+        "گل آفسایده؛ داور داره بررسی می‌کنه، صبر کن",
+        "بازیکن روی زمینه و بازی متوقف شده، صبر کن",
+        "بازیکن در حال تعویضه، صبر کن",
+        "توپ رفت بین تماشاگرا، صبر کن",
+        "دیوار دفاعی داره شکل می‌گیره، صبر کن",
       ];
       document.getElementById('loading-msg').textContent = _msgs[Math.floor(Math.random() * _msgs.length)];
     </script>
@@ -1212,17 +1249,44 @@
     <div class="stats-grid">
       <div class="stat-box">
         <span class="stat-value" id="my-balance-stat">۰</span>
-        <div class="stat-label">موجودی (تومان)</div>
+        <div class="stat-label">موجودی</div>
       </div>
       <div class="stat-box">
         <span class="stat-value" id="my-pred-count">۰</span>
-        <div class="stat-label">پیش‌بینی‌ها</div>
+        <div class="stat-label">پیش‌بینی</div>
       </div>
       <div class="stat-box">
         <span class="stat-value" id="my-exact-count">۰</span>
         <div class="stat-label">نتیجه دقیق</div>
       </div>
     </div>
+
+    <!-- ══ بنر سورپرایز ══ -->
+    <div id="surprise-banner" style="
+      margin: 0.75rem 0 0.25rem;
+      padding: 0.65rem 1.1rem;
+      background: linear-gradient(135deg, rgba(201,168,76,0.08), rgba(201,168,76,0.04));
+      border: 1px solid rgba(201,168,76,0.25);
+      border-radius: var(--radius-sm);
+      text-align: center;
+      font-size: 0.88rem;
+      font-weight: 700;
+      color: var(--gold);
+      letter-spacing: 0.3px;
+      min-height: 2.4rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    ">
+      <span id="surprise-text"></span><span id="surprise-cursor" style="
+        display:inline-block;
+        margin-right:3px;
+        vertical-align:middle;
+        font-size:0.9rem;
+        animation: ballBounce 0.6s ease-in-out infinite alternate;
+      ">⚽</span>
+    </div>
+
     <div id="matches-list"></div>
   </div>
 
@@ -1342,6 +1406,21 @@
       <div class="section-divider-line"></div>
     </div>
     <div id="tbd-teams-list" style="margin-bottom:0.5rem"></div>
+
+    <!-- پنل تسویه حدس قهرمان -->
+    <div id="champion-settle-panel" style="margin-bottom:0.5rem">
+      <div class="section-divider">
+        <div class="section-divider-line"></div>
+        <div class="section-divider-text">🏆 تسویه حدس قهرمان</div>
+        <div class="section-divider-line"></div>
+      </div>
+      <div id="champion-picks-summary" style="font-size:0.78rem;color:var(--text-dim);margin-bottom:0.6rem;line-height:1.8"></div>
+      <div style="display:flex;gap:0.5rem;flex-wrap:wrap;align-items:center">
+        <input id="champ-winner-input" placeholder="نام قهرمان..." style="flex:1;min-width:130px;padding:0.4rem 0.7rem;background:var(--bg-2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:inherit;font-size:0.8rem;direction:rtl">
+        <input id="champ-winner-flag" placeholder="🏳️" style="width:54px;padding:0.4rem 0.5rem;background:var(--bg-2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:inherit;font-size:0.9rem;text-align:center">
+        <button onclick="triggerChampionSettle()" style="padding:0.4rem 1rem;background:var(--gold);border:none;border-radius:8px;color:#000;font-weight:700;cursor:pointer;font-family:inherit;font-size:0.8rem">⚡ تسویه</button>
+      </div>
+    </div>
 
     <!-- پیش‌بینی اضطراری — فقط از renderAdmin پر میشه -->
     <div id="admin-proxy-section" style="display:none;margin-bottom:0.5rem">
@@ -1688,7 +1767,7 @@ const ICONS = {
 // ════════════════════════════════════════════════════════════
 let currentUser  = null;
 let isAdmin      = false;
-let appData      = { users: {}, predictions: {}, results: {}, teamOverrides: {} };
+let appData      = { users: {}, predictions: {}, results: {}, teamOverrides: {}, champion_picks: {}, champion_result: null };
 let dbListeners  = [];
 let _renderTimer = null;
 
@@ -1977,7 +2056,7 @@ function startListeners() {
     }
   });
 
-  ['users', 'predictions', 'results', 'teamOverrides'].forEach(path => {
+  ['users', 'predictions', 'results', 'teamOverrides', 'champion_picks', 'champion_result'].forEach(path => {
     const ref = db.ref(path);
     ref.on('value', snap => {
       if (testModeActive && path !== 'users') return; // تست فعاله — فقط users بخون
@@ -2462,7 +2541,165 @@ function switchTab(name) {
   event.target.classList.add('active');
 }
 
-/* ══ ۴. count-up utility ══ */
+// ══ تایپ‌رایتر بنر سورپرایز ══
+(function startTypewriter() {
+  const el   = document.getElementById('surprise-text');
+  if (!el) return;
+  const MSG  = 'سورپرایز براتون داریم';
+  const TYPE_SPEED  = 90;
+  const ERASE_SPEED = 45;
+  const PAUSE_FULL  = 2200;
+  const PAUSE_EMPTY = 600;
+  let i = 0, erasing = false;
+  function tick() {
+    if (!document.contains(el)) return; // بنر عوض شده — متوقف شو
+    if (!erasing) {
+      el.textContent = MSG.slice(0, ++i);
+      if (i === MSG.length) { erasing = true; window._twTimeout = setTimeout(tick, PAUSE_FULL); return; }
+      window._twTimeout = setTimeout(tick, TYPE_SPEED);
+    } else {
+      el.textContent = MSG.slice(0, --i);
+      if (i === 0) { erasing = false; window._twTimeout = setTimeout(tick, PAUSE_EMPTY); return; }
+      window._twTimeout = setTimeout(tick, ERASE_SPEED);
+    }
+  }
+  window._twTimeout = setTimeout(tick, 800);
+})();
+
+// ════════════════════════════════════════════════════════════
+//  CHAMPION PICK
+// ════════════════════════════════════════════════════════════
+const CHAMP_R32_FIRST = new Date("2026-06-28T22:30:00+03:30").getTime();
+const CHAMP_OPEN      = CHAMP_R32_FIRST - 24 * 3600 * 1000;
+const CHAMP_CLOSE     = CHAMP_R32_FIRST -  1 * 3600 * 1000;
+
+let _champTimerInterval = null;
+
+function getR32Teams() {
+  const teams = [];
+  MATCHES.filter(m => m.stage === 'r32').forEach(m => {
+    ['home','away'].forEach(side => {
+      const info = getTeamInfo(m.id, side);
+      if (info.name !== '؟') teams.push({ name: info.name, flag: info.flag, matchId: m.id, side });
+    });
+  });
+  return teams;
+}
+
+function updateSurpriseBanner() {
+  const now = Date.now();
+  if (now < CHAMP_OPEN) return;
+  clearTimeout(window._twTimeout);
+  renderChampionBanner(now >= CHAMP_CLOSE);
+}
+
+function renderChampionBanner(isLocked) {
+  const banner = document.getElementById('surprise-banner');
+  if (!banner) return;
+  const myPick = currentUser ? (appData.champion_picks || {})[currentUser.uid] : null;
+  const teams  = getR32Teams();
+  let timerHtml = '';
+  if (!isLocked) {
+    const rem = CHAMP_CLOSE - Date.now();
+    const h   = Math.floor(rem / 3600000);
+    const m   = Math.floor((rem % 3600000) / 60000);
+    timerHtml = `<div class="champ-timer">⏰ ${toPersianNum(h)} ساعت و ${toPersianNum(m)} دقیقه تا پایان فرصت</div>`;
+    if (!_champTimerInterval) {
+      _champTimerInterval = setInterval(() => renderChampionBanner(Date.now() >= CHAMP_CLOSE), 60000);
+    }
+  } else {
+    clearInterval(_champTimerInterval); _champTimerInterval = null;
+  }
+  const carouselHtml = teams.map(t => {
+    const sel = myPick?.teamName === t.name;
+    const clickable = !isLocked && !myPick;
+    return `<button class="champ-team-card${sel?' selected':''}"
+      ${clickable ? `onclick="pickChampion('${t.name.replace(/'/g,"\\'")}','${t.flag}','${t.matchId}','${t.side}')"` : 'disabled'}
+      title="${t.name}">
+      <span style="font-size:1.5rem">${t.flag}</span>
+      <span class="champ-team-name">${t.name}</span>
+    </button>`;
+  }).join('');
+  let statusHtml = '';
+  if (isLocked) {
+    statusHtml = myPick
+      ? `<div class="champ-pick-locked">${myPick.flag} ${myPick.teamName} — انتخاب تو 🔒</div>`
+      : `<div class="champ-pick-locked" style="color:var(--text-dim)">شرکت نکردی</div>`;
+  } else if (myPick) {
+    statusHtml = `<div class="champ-pick-confirmed">✅ انتخاب کردی: ${myPick.flag} ${myPick.teamName}
+      <button onclick="clearChampionPick()" style="font-size:0.68rem;margin-right:0.5rem;background:none;border:1px solid var(--border);border-radius:4px;color:var(--text-dim);padding:0.1rem 0.45rem;cursor:pointer;font-family:inherit">تغییر</button>
+    </div>`;
+  }
+  banner.style.minHeight = '';
+  banner.innerHTML = `<div class="champion-banner">
+    <div class="champ-header">🏆 جایزه یک میلیونی برای حدس قهرمان جام</div>
+    ${timerHtml}${statusHtml}
+    ${teams.length ? `<div class="champ-carousel">${carouselHtml}</div>` : '<div style="font-size:0.75rem;color:var(--text-dim)">تیم‌ها هنوز مشخص نشدن</div>'}
+  </div>`;
+}
+
+async function pickChampion(teamName, flag, matchId, side) {
+  if (!currentUser) return;
+  const pick = { teamName, flag, matchId, side, ts: firebase.database.ServerValue.TIMESTAMP };
+  try {
+    await fbWithTimeout(db.ref(`champion_picks/${currentUser.uid}`).set(pick), 8000);
+    if (!appData.champion_picks) appData.champion_picks = {};
+    appData.champion_picks[currentUser.uid] = pick;
+    renderChampionBanner(false);
+    showToast(`${flag} ${teamName} انتخاب شد ✅`, 'success');
+  } catch(e) { showToast('خطا در ثبت انتخاب', 'error'); }
+}
+
+async function clearChampionPick() {
+  if (!currentUser) return;
+  try {
+    await fbWithTimeout(db.ref(`champion_picks/${currentUser.uid}`).remove(), 8000);
+    if (appData.champion_picks) delete appData.champion_picks[currentUser.uid];
+    renderChampionBanner(false);
+  } catch(e) { showToast('خطا', 'error'); }
+}
+
+async function settleChampion(winnerTeam, winnerFlag) {
+  const adminUid     = Object.entries(appData.users).find(([,u]) => u.email === ADMIN_EMAIL)?.[0];
+  const picks        = appData.champion_picks || {};
+  const participants = Object.entries(picks).filter(([uid]) => uid !== adminUid);
+  if (!participants.length) { showToast('هیچ‌کس شرکت نکرده', 'error'); return; }
+  const nonAdminWinners = participants.filter(([,p]) => p.teamName === winnerTeam);
+  const adminWon        = adminUid && picks[adminUid]?.teamName === winnerTeam;
+  let settlements = {};
+  if (nonAdminWinners.length > 0) {
+    const [winUid] = nonAdminWinners[Math.floor(Math.random() * nonAdminWinners.length)];
+    settlements[winUid] = 1000000;
+    if (adminUid) settlements[adminUid] = -1000000;
+    showToast('🎉 ' + (appData.users[winUid]?.name) + ' برنده یک میلیون شد', 'success');
+  } else if (adminWon && adminUid) {
+    participants.forEach(([uid]) => { settlements[uid] = -300000; });
+    settlements[adminUid] = participants.length * 300000;
+    showToast('ادمین برنده شد', 'success');
+  } else {
+    showToast('کسی درست حدس نزد — جایزه‌ای وجود ندارد', '');
+    return;
+  }
+  const result = { winnerTeam, winnerFlag, settledAt: firebase.database.ServerValue.TIMESTAMP, settlements };
+  await fbWithTimeout(db.ref('champion_result').set(result), 8000);
+  appData.champion_result = result;
+  showToast('تسویه قهرمان انجام شد ✅', 'success');
+  renderAll();
+}
+
+function getChampionBalance(uid) {
+  return (appData.champion_result?.settlements || {})[uid] || 0;
+}
+
+async function triggerChampionSettle() {
+  const teamName = document.getElementById('champ-winner-input')?.value?.trim();
+  const flag     = document.getElementById('champ-winner-flag')?.value?.trim() || '🏆';
+  if (!teamName) { showToast('نام قهرمان رو وارد کن', 'error'); return; }
+  if (!confirm(`تسویه حدس قهرمان با برنده «${flag} ${teamName}»؟\nاین عمل برگشت‌پذیر نیست.`)) return;
+  await settleChampion(teamName, flag);
+}
+
+/* ══ count-up utility ══ */
 function countUp(el, target, dur = 600) {
   if (!el) return;
   const isNeg  = target < 0;
@@ -2497,6 +2734,7 @@ function renderMatches() {
       const c = cat90[currentUser.uid];
       if (c) { myPreds++; if (c==='exact') myExact++; }
     }
+    myBalance += getChampionBalance(currentUser.uid);
     const balEl = document.getElementById('my-balance-stat');
     const predEl = document.getElementById('my-pred-count');
     const exEl  = document.getElementById('my-exact-count');
@@ -2572,6 +2810,7 @@ function renderMatches() {
   });
 
   container.innerHTML = html;
+  updateSurpriseBanner();
 
   // آپدیت آمار شخصی
   if (currentUser) {
@@ -2582,6 +2821,7 @@ function renderMatches() {
       const c = cat90[currentUser.uid];
       if (c) { myPreds++; if (c==='exact') myExact++; }
     }
+    myBalance += getChampionBalance(currentUser.uid);
     const balEl = document.getElementById('my-balance-stat');
     const predEl = document.getElementById('my-pred-count');
     const exEl   = document.getElementById('my-exact-count');
@@ -2656,16 +2896,15 @@ function renderPredictionSection(match, status, myPred) {
   const total        = approvedUsersOpen.length;
 
   const submittedDots = submitted.map(n =>
-    `<span style="color:var(--green);font-size:0.68rem">✅ ${n}</span>`
+    `<span style="color:var(--green);font-size:0.72rem;font-weight:600">${n}</span>`
   ).join(' · ');
   const missingDots = notSubmitted.map(n =>
-    `<span style="color:var(--text-dim);font-size:0.68rem">⏳ ${n}</span>`
+    `<span style="color:var(--red);font-size:0.72rem">${n}</span>`
   ).join(' · ');
 
-  const adminSubmitInfo = `<div style="font-size:0.72rem;color:var(--text-dim);margin-bottom:8px;text-align:center;line-height:1.9">
-    👁️ ${toPersianNum(submitted.length)} از ${toPersianNum(total)} نفر ثبت کردن
-    <br>${submittedDots}${missingDots ? (submitted.length ? ' · ' : '') + missingDots : ''}
-  </div>`;
+  const adminSubmitInfo = submitted.length || notSubmitted.length ? `<div style="font-size:0.72rem;margin-bottom:8px;text-align:center;line-height:2">
+    ${submittedDots}${(submitted.length && notSubmitted.length) ? ' · ' : ''}${missingDots}
+  </div>` : '';
 
   return `<div class="prediction-section">
     ${adminSubmitInfo}
@@ -2800,6 +3039,8 @@ function renderLeaderboard() {
     }
   }
 
+  // اضافه کردن موجودی حدس قهرمان و مرتب‌سازی نهایی
+  approvedList.forEach(u => { u.balance += getChampionBalance(u.uid); });
   approvedList.sort((a, b) => b.balance - a.balance);
 
 
@@ -2810,7 +3051,7 @@ function renderLeaderboard() {
   approvedList.forEach((user, i) => {
     const rank      = i + 1;
     const rankClass = rank <= 3 ? `rank-${rank}` : '';
-    const rankEmoji = rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : '';
+    const rankEmoji = rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : rank === 4 ? '🎗️' : '';
     const isMe      = currentUser?.uid === user.uid;
 
     html += `<div class="leaderboard-row ${isMe ? 'me' : ''}">
@@ -3483,6 +3724,26 @@ function renderAdmin() {
   // بخش پیش‌بینی اضطراری در پنل ادمین
   const proxySection = document.getElementById('admin-proxy-section');
   if (proxySection) proxySection.style.display = 'block';
+
+  // خلاصه انتخاب‌های قهرمان
+  const champSummary = document.getElementById('champion-picks-summary');
+  if (champSummary) {
+    const picks = appData.champion_picks || {};
+    const settled = appData.champion_result;
+    if (settled?.winnerTeam) {
+      champSummary.innerHTML = `<span style="color:var(--green)">✅ تسویه انجام شده — قهرمان: ${settled.winnerFlag} ${settled.winnerTeam}</span>`;
+    } else {
+      const lines = Object.entries(appData.users)
+        .filter(([,u]) => u.approved)
+        .map(([uid, u]) => {
+          const p = picks[uid];
+          return p
+            ? `<span style="color:var(--green)">${u.name}: ${p.flag} ${p.teamName}</span>`
+            : `<span style="color:var(--red)">${u.name}: شرکت نکرده</span>`;
+        }).join(' &nbsp;·&nbsp; ');
+      champSummary.innerHTML = lines || '<span>هنوز کسی انتخاب نکرده</span>';
+    }
+  }
 
   // تیم‌های TBD
   const tbdContainer = document.getElementById('tbd-teams-list');
