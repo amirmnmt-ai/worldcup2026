@@ -2787,6 +2787,7 @@ function renderResults() {
   const lastKey = ROUNDS[ROUNDS.length - 1].key;
 
   // accordion — هر دور یه هدر کلیک‌شدنی، پیش‌فرض بسته
+  const approvedUsers = Object.entries(appData.users).filter(([,u]) => u.approved);
   const accordionHtml = ROUNDS.map((round, idx) => {
     const isLast = idx === ROUNDS.length - 1;
     return `
