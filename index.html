@@ -992,6 +992,9 @@
   .res-round-pill.active { background:var(--gold); border-color:var(--gold); color:#000; }
   .res-round-body { display:none; }
   .res-round-body.active { display:block; }
+  .res-round-select { width:100%; padding:0.55rem 0.85rem; background:var(--card); border:1px solid var(--border); border-radius:var(--radius-sm); color:var(--text); font-family:inherit; font-size:0.88rem; cursor:pointer; direction:rtl; text-align:right; margin-bottom:0.75rem; }
+  .admin-flt-btn { padding:0.3rem 0.75rem; border-radius:20px; border:1px solid var(--border); background:var(--card-alt); color:var(--text-dim); font-family:inherit; font-size:0.73rem; cursor:pointer; white-space:nowrap; transition:all 0.15s; }
+  .admin-flt-btn.active { background:var(--gold); border-color:var(--gold); color:#000; font-weight:700; }
   .res-match-card { background:var(--bg-2); border-radius:12px; border:1px solid rgba(255,255,255,0.07); margin-bottom:0.75rem; overflow:hidden; }
   .res-match-head { display:flex; align-items:center; justify-content:space-between; padding:0.85rem 1rem 0.65rem; background:rgba(255,255,255,0.02); gap:8px; direction:ltr; }
   .res-team { display:flex; flex-direction:column; align-items:center; gap:4px; flex:1; }
@@ -1201,6 +1204,23 @@
 
   <!-- TAB: ADMIN -->
   <div class="tab-content" id="tab-admin">
+    <!-- ثبت نتایج — بالای پنل ادمین -->
+    <div class="section-divider">
+      <div class="section-divider-line"></div>
+      <div class="section-divider-text">ثبت نتایج بازی‌ها</div>
+      <div class="section-divider-line"></div>
+    </div>
+    <div id="missed-results-badge" style="display:none;margin-bottom:0.5rem;flex-direction:column;gap:0.4rem"></div>
+    <div style="display:flex;gap:0.5rem;flex-wrap:wrap;align-items:center;margin-bottom:0.75rem">
+      <input type="text" id="admin-result-search" placeholder="🔍 جستجوی تیم..." oninput="filterAdminMatches()"
+        style="flex:1;min-width:130px;padding:0.4rem 0.75rem;background:var(--bg-2);border:1px solid var(--border);border-radius:20px;color:var(--text);font-family:inherit;font-size:0.8rem;direction:rtl">
+      <div style="display:flex;gap:0.35rem">
+        <button class="admin-flt-btn active" data-flt="pending" onclick="setAdminFlt(this,'pending')">در انتظار</button>
+        <button class="admin-flt-btn" data-flt="done" onclick="setAdminFlt(this,'done')">ثبت‌شده</button>
+        <button class="admin-flt-btn" data-flt="all" onclick="setAdminFlt(this,'all')">همه</button>
+      </div>
+    </div>
+    <div id="admin-matches-list" style="margin-bottom:1.5rem"></div>
     <!-- TELEGRAM SHARE PANEL -->
     <div class="test-panel" style="border-color:rgba(37,167,228,0.3);background:rgba(37,167,228,0.05)">
       <div class="test-panel-title" style="color:#25A7E4">📢 اطلاع‌رسانی تلگرام</div>
@@ -1293,13 +1313,6 @@
       </div>
     </div>
 
-    <div class="section-divider">
-      <div class="section-divider-line"></div>
-      <div class="section-divider-text">ثبت نتایج بازی‌ها</div>
-      <div class="section-divider-line"></div>
-    </div>
-    <div id="missed-results-badge" style="display:none;margin-bottom:0.75rem;display:flex;flex-direction:column;gap:0.4rem"></div>
-    <div id="admin-matches-list"></div>
   </div>
 
 </div>
@@ -2766,12 +2779,11 @@ function renderResults() {
   // آخرین دور فعال
   const lastKey = ROUNDS[ROUNDS.length - 1].key;
 
-  // ساخت pills
-  const pillsHtml = `<div class="res-rounds-nav" id="res-nav">
-    ${ROUNDS.map(r => `<button class="res-round-pill${r.key===lastKey?' active':''}"
-      onclick="switchRound('${r.key}')" id="pill-${r.key}">
-      ${r.label}
-    </button>`).join('')}
+  // dropdown انتخاب دور — سمت راست به چپ
+  const pillsHtml = `<div style="text-align:right">
+    <select id="res-round-select" class="res-round-select" onchange="switchRound(this.value)">
+      ${ROUNDS.map(r => `<option value="${r.key}"${r.key===lastKey?' selected':''}>${r.label}  (${r.matches.length} بازی)</option>`).join('')}
+    </select>
   </div>`;
 
   // ساخت محتوای هر دور
@@ -2851,12 +2863,35 @@ function renderResults() {
 }
 
 function switchRound(key) {
-  document.querySelectorAll('.res-round-pill').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.res-round-body').forEach(b => b.classList.remove('active'));
-  const pill = document.getElementById('pill-' + key);
   const body = document.getElementById('rbody-' + key);
-  if (pill) pill.classList.add('active');
   if (body) body.classList.add('active');
+  const sel = document.getElementById('res-round-select');
+  if (sel && sel.value !== key) sel.value = key;
+}
+
+let _adminFlt = 'pending';
+function setAdminFlt(btn, flt) {
+  _adminFlt = flt;
+  document.querySelectorAll('.admin-flt-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  filterAdminMatches();
+}
+function filterAdminMatches() {
+  const q  = (document.getElementById('admin-result-search')?.value || '').trim();
+  const flt = _adminFlt || 'pending';
+  let visible = 0;
+  document.querySelectorAll('#admin-matches-list .admin-match-card').forEach(card => {
+    const teams  = card.dataset.teams  || '';
+    const status = card.dataset.status || '';
+    const matchQ   = !q || teams.includes(q);
+    const matchFlt = flt === 'all' || status === flt;
+    const show = matchQ && matchFlt;
+    card.style.display = show ? '' : 'none';
+    if (show) visible++;
+  });
+  const emptyEl = document.getElementById('admin-matches-empty');
+  if (emptyEl) emptyEl.style.display = visible === 0 ? '' : 'none';
 }
 
 function toggleRound(key) { switchRound(key); }
@@ -3478,9 +3513,13 @@ function renderAdmin() {
     matchesContainer.innerHTML = '<div style="font-size:0.85rem;color:var(--text-dim);padding:0.5rem">بازی‌ای در انتظار ثبت نتیجه نیست</div>';
     return;
   }
-  matchesContainer.innerHTML = eligibleMatches.map(match => {
+  matchesContainer.innerHTML = '<div id="admin-matches-empty" style="display:none;font-size:0.85rem;color:var(--text-dim);padding:0.75rem 0">نتیجه‌ای پیدا نشد</div>' + eligibleMatches.map(match => {
     const existing = appData.results[match.id];
     const isKO = match.stage !== 'group';
+    const status = existing ? 'done' : 'pending';
+    const homeInfo = getTeamInfo(match.id,'home');
+    const awayInfo = getTeamInfo(match.id,'away');
+    const teamsStr = (homeInfo.name + ' ' + awayInfo.name).toLowerCase();
     const matchPreds = appData.predictions[match.id] || {};
     const approvedUsrs = Object.entries(appData.users).filter(([,u]) => u.approved);
     let predRows = '';
@@ -3491,9 +3530,9 @@ function renderAdmin() {
         <span class="breakdown-pred" dir="ltr">${pred ? toPersianNum(pred.homeGoals)+'–'+toPersianNum(pred.awayGoals) : '<span style="color:var(--text-dim);font-size:0.7rem">ثبت نشده</span>'}</span>
       </div>`;
     }
-    return `<div class="admin-match-card">
+    return `<div class="admin-match-card" data-teams="${teamsStr}" data-status="${status}">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.5rem">
-        <div class="admin-match-title">${getTeamInfo(match.id,'home').flag} ${getTeamInfo(match.id,'home').name} – ${getTeamInfo(match.id,'away').flag} ${getTeamInfo(match.id,'away').name}</div>
+        <div class="admin-match-title">${homeInfo.flag} ${homeInfo.name} – ${awayInfo.flag} ${awayInfo.name}</div>
         <span class="match-stage ${getStageClass(match.stage)}">${match.stageLabel.split(' - ')[0]}</span>
       </div>
       ${predRows ? `<div class="predictions-breakdown" style="padding:0.6rem 1rem;background:rgba(201,168,76,0.04)">
@@ -3502,12 +3541,12 @@ function renderAdmin() {
       </div>` : ''}
       <div class="admin-result-input" dir="ltr">
         <div class="input-group">
-          <label dir="rtl">${getTeamInfo(match.id,'home').name} (میزبان)</label>
+          <label dir="rtl">${homeInfo.name} (میزبان)</label>
           <input type="number" inputmode="numeric" id="rh-${match.id}" min="0" max="20" value="${existing ? existing.homeGoals : ''}" placeholder="۰">
         </div>
         <div style="font-size:1.2rem;color:var(--text-dim);align-self:flex-end;padding-bottom:0.3rem">–</div>
         <div class="input-group">
-          <label dir="rtl">${getTeamInfo(match.id,'away').name} (مهمان)</label>
+          <label dir="rtl">${awayInfo.name} (مهمان)</label>
           <input type="number" inputmode="numeric" id="ra-${match.id}" min="0" max="20" value="${existing ? existing.awayGoals : ''}" placeholder="۰">
         </div>
         ${isKO ? `
@@ -3527,6 +3566,8 @@ function renderAdmin() {
       </div>
     </div>`;
   }).join('');
+  // اعمال فیلتر فعلی
+  filterAdminMatches();
 }
 
 function renderOTAdminInputs(matchId, existing) {
