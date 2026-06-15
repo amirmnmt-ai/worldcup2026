@@ -4257,12 +4257,12 @@ const GK_GAME = {
     this.gk.w=82; this.gk.lean=0;
     this.running=true;
     // cap به ۶۰fps — جلوگیری از سریع‌تر شدن توپ روی صفحه‌های ۹۰/۱۲۰Hz
-    const FRAME_MS = 1000/60;
-    let _lastT = 0;
+    let _lastT = null;
     const loop = (ts) => {
       if (!this.running) return;
       this.frame = requestAnimationFrame(loop);
-      if (ts - _lastT < FRAME_MS - 1) return;
+      if (_lastT === null) { _lastT = ts; return; }
+      if (ts - _lastT < 12) return; // skip اگه >75fps (90/120Hz صفحه)
       _lastT = ts;
       this.update(); this.draw();
     };
@@ -4382,25 +4382,25 @@ const GK_GAME = {
       if(r < 0.5){
         this.spawnBall(W*0.28,null,1.0); this.spawnBall(W*0.72,null,1.0);
         this._showMsg('👥 دوقلو!','#f6ad55');
-        this.eventCD=360; this.suppressT=70;
+        this.eventCD=360; this.suppressT=115; this.spawnT=0;
       } else {
         this.spawnBall(null,null,1.55,'#ff3333');
         this._showMsg('🔴 توپ سریع!','#ff4d4d');
-        this.eventCD=300; this.suppressT=50;
+        this.eventCD=300; this.suppressT=90; this.spawnT=0;
       }
     } else {
       if(r < 0.42){
         this.spawnBall(W*0.28,null,1.0); this.spawnBall(W*0.72,null,1.0);
         this._showMsg('👥 دوقلو!','#f6ad55');
-        this.eventCD=360; this.suppressT=70;
+        this.eventCD=360; this.suppressT=115; this.spawnT=0;
       } else if(r < 0.82){
         this.spawnBall(null,null,1.55,'#ff3333');
         this._showMsg('🔴 توپ سریع!','#ff4d4d');
-        this.eventCD=300; this.suppressT=50;
+        this.eventCD=300; this.suppressT=90; this.spawnT=0;
       } else {
         this.pauseT=110;
         this._showMsg('⚠️ آماده باش...','#60a5fa');
-        this.eventCD=480;
+        this.eventCD=480; this.spawnT=0;
       }
     }
   },
