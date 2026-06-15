@@ -4308,7 +4308,7 @@ const GK_GAME = {
       else { this.spawnBall(); }
       // جون — فقط بعد از spawn معمولی و بدون رویداد فعال
       if(!doEvent && !this.lifePickup && this.lives<3 && this.score>=5 && !this.eventCD && Math.random()<0.04){
-        this.lifePickup={x:45+Math.random()*(W-90),y:-22,vy:1.6,r:16,rot:0,pulse:0};
+        this.lifePickup={x:45+Math.random()*(W-90),y:-22,vy:2.8,r:16,rot:0,pulse:0};
       }
     }
 
@@ -4412,7 +4412,7 @@ const GK_GAME = {
     const ty = this.gk.y;
     const dx=tx-x, dy=ty;
     const mag=Math.sqrt(dx*dx+dy*dy);
-    const sp=(3.5+2.2*(1-Math.exp(-this.level/5.5))+Math.random()*1.0)*speedMult;
+    const sp=(4.2+2.0*(1-Math.exp(-this.level/5.5))+Math.random()*1.0)*speedMult;
     this.balls.push({x, y: forceY||(-16), vx:(dx/mag)*sp, vy:(dy/mag)*sp, r:14, rot:Math.random()*6.28, trail:[], color});
   },
 
