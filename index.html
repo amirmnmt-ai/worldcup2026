@@ -1244,6 +1244,7 @@
     <button class="nav-tab" onclick="switchTab('leaderboard')">جدول</button>
     <button class="nav-tab" onclick="switchTab('results')">نتایج</button>
     <button class="nav-tab" onclick="switchTab('scorecard')">کارنامه</button>
+    <button class="nav-tab" onclick="switchTab('game')">⚽ بازی</button>
     <button class="nav-tab admin-only" onclick="switchTab('admin')" style="display:none" id="tab-btn-admin">ادمین <span id="admin-badge" class="tab-badge" style="display:none">0</span></button>
   </nav>
 
@@ -1319,6 +1320,15 @@
         <div style="font-size:2.5rem;margin-bottom:0.8rem;opacity:0.4">📊</div>
         <div style="font-size:0.9rem">بعد از اولین بازی، کارنامه شما اینجا نمایش داده می‌شود</div>
       </div>
+    </div>
+  </div>
+
+  <!-- TAB: GAME -->
+  <div class="tab-content" id="tab-game">
+    <div style="display:flex;flex-direction:column;align-items:center;gap:1rem;padding-bottom:1.5rem">
+      <canvas id="gk-canvas" width="360" height="480"
+        style="width:100%;max-width:360px;border-radius:14px;touch-action:none;display:block;cursor:none"></canvas>
+      <div id="game-leaderboard" style="width:100%;max-width:360px"></div>
     </div>
   </div>
 
@@ -1770,7 +1780,7 @@ const ICONS = {
 // ════════════════════════════════════════════════════════════
 let currentUser  = null;
 let isAdmin      = false;
-let appData      = { users: {}, predictions: {}, results: {}, teamOverrides: {}, champion_picks: {}, champion_result: null };
+let appData      = { users: {}, predictions: {}, results: {}, teamOverrides: {}, champion_picks: {}, champion_result: null, game_scores: {} };
 let dbListeners  = [];
 let _renderTimer = null;
 
@@ -2059,7 +2069,7 @@ function startListeners() {
     }
   });
 
-  ['users', 'predictions', 'results', 'teamOverrides', 'champion_picks', 'champion_result'].forEach(path => {
+  ['users', 'predictions', 'results', 'teamOverrides', 'champion_picks', 'champion_result', 'game_scores'].forEach(path => {
     const ref = db.ref(path);
     ref.on('value', snap => {
       if (testModeActive && path !== 'users') return; // تست فعاله — فقط users بخون
@@ -2542,6 +2552,7 @@ function switchTab(name) {
   document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
   document.getElementById(`tab-${name}`).classList.add('active');
   event.target.classList.add('active');
+  if (name === 'game') { GK_GAME.init(); renderGameLeaderboard(); }
 }
 
 // ══ تایپ‌رایتر بنر سورپرایز ══
@@ -4145,9 +4156,271 @@ function renderAll() {
   try { renderLeaderboard();} catch(e) { console.error('❌ renderLeaderboard:', e); }
   try { renderResults();    } catch(e) { console.error('❌ renderResults:', e); }
   try { renderScorecard();  } catch(e) { console.error('❌ renderScorecard:', e); }
+  try { renderGameLeaderboard(); } catch(e) {}
   if (isAdmin) { try { renderAdmin(); } catch(e) { console.error('❌ renderAdmin:', e); } }
   try { injectIcons();      } catch(e) {}
 }
+
+// ════════════════════════════════════════════════════════════
+//  GOALKEEPER GAME
+// ════════════════════════════════════════════════════════════
+function renderGameLeaderboard() {
+  const el = document.getElementById('game-leaderboard');
+  if (!el) return;
+  const scores = appData.game_scores || {};
+  const sorted = Object.entries(scores)
+    .map(([uid, d]) => ({ uid, name: d.name, best: d.best || 0 }))
+    .sort((a, b) => b.best - a.best);
+  if (!sorted.length) {
+    el.innerHTML = '<div style="color:var(--text-dim);font-size:0.78rem;text-align:center">هنوز امتیازی ثبت نشده — اولین نفر باش!</div>';
+    return;
+  }
+  const medals = ['🥇','🥈','🥉'];
+  el.innerHTML = `
+    <div style="font-size:0.78rem;font-weight:700;color:var(--gold);margin-bottom:0.5rem;text-align:center">🏆 بهترین امتیازها</div>
+    ${sorted.map((p,i) => `
+      <div style="display:flex;align-items:center;gap:0.6rem;padding:0.45rem 0.75rem;
+        background:${p.uid===currentUser?.uid?'rgba(201,168,76,0.08)':'var(--card)'};
+        border-radius:8px;margin-bottom:0.3rem;border:1px solid var(--border-subtle)">
+        <span style="font-size:0.9rem;min-width:22px;text-align:center">${medals[i]||toPersianNum(i+1)}</span>
+        <span style="flex:1;font-size:0.82rem">${p.name}</span>
+        <span style="font-size:0.88rem;font-weight:700;color:var(--gold)">${toPersianNum(p.best)}</span>
+      </div>`).join('')}`;
+}
+
+const GK_GAME = {
+  canvas:null, ctx:null, running:false, frame:null, initialized:false,
+  score:0, lives:3, level:1, combo:0,
+  gk:{ x:180, y:430, w:82, h:22, tx:180 },
+  balls:[], spawnT:0, spawnI:100,
+  flash:null,
+
+  init() {
+    this.canvas = document.getElementById('gk-canvas');
+    if (!this.canvas || this.initialized) { this.drawIdle(); return; }
+    this.ctx = this.canvas.getContext('2d');
+    this.initialized = true;
+
+    const c = this.canvas;
+    const getX = (clientX) => {
+      const r = c.getBoundingClientRect();
+      return (clientX - r.left) * (c.width / r.width);
+    };
+    c.addEventListener('touchstart', e => {
+      e.preventDefault();
+      this.gk.tx = getX(e.touches[0].clientX);
+      if (!this.running) this.start();
+    }, { passive:false });
+    c.addEventListener('touchmove', e => {
+      e.preventDefault();
+      this.gk.tx = getX(e.touches[0].clientX);
+    }, { passive:false });
+    c.addEventListener('click', e => {
+      this.gk.tx = getX(e.clientX);
+      if (!this.running) this.start();
+    });
+    c.addEventListener('mousemove', e => {
+      this.gk.tx = getX(e.clientX);
+    });
+    this.drawIdle();
+  },
+
+  start() {
+    this.score=0; this.lives=3; this.level=1; this.combo=0;
+    this.balls=[]; this.spawnT=0; this.spawnI=100; this.flash=null;
+    this.gk.x=180; this.gk.tx=180;
+    this.running=true;
+    const loop = () => {
+      if (!this.running) return;
+      this.update(); this.draw();
+      this.frame = requestAnimationFrame(loop);
+    };
+    loop();
+  },
+
+  update() {
+    // goalkeeper follows touch
+    const dx = this.gk.tx - this.gk.x;
+    this.gk.x += dx * 0.2;
+    this.gk.x = Math.max(this.gk.w/2+10, Math.min(350 - this.gk.w/2, this.gk.x));
+
+    // spawn
+    if (++this.spawnT >= this.spawnI) {
+      this.spawnBall();
+      this.spawnT = 0;
+      this.spawnI = Math.max(38, this.spawnI - 1.5);
+    }
+
+    const ballSpeed = 2.8 + this.level * 0.45;
+    this.balls = this.balls.filter(b => {
+      b.x += b.vx; b.y += b.vy; b.rot += 0.09;
+      if (b.x < b.r || b.x > 360-b.r) b.vx *= -1;
+
+      if (b.y >= this.gk.y - b.r) {
+        const hit = Math.abs(b.x - this.gk.x) < this.gk.w/2 + b.r*0.4;
+        if (hit) {
+          this.score++; this.combo++;
+          if (this.combo > 0 && this.combo % 5 === 0) this.level++;
+          this.flash = { col:'#00d68f', a:0.28, t:18 };
+        } else {
+          this.lives--; this.combo=0;
+          this.flash = { col:'#ff4d4d', a:0.4, t:24 };
+          if (this.lives <= 0) { this.gameOver(); return false; }
+        }
+        return false;
+      }
+      return b.y < 500;
+    });
+
+    if (this.flash) { this.flash.t--; this.flash.a *= 0.82; if (this.flash.t<=0) this.flash=null; }
+  },
+
+  spawnBall() {
+    const x = 25 + Math.random() * 310;
+    const tx = this.gk.x + (Math.random()-.5)*180;
+    const dy = 430, dx = tx-x;
+    const mag = Math.sqrt(dx*dx+dy*dy);
+    const sp = 2.8 + this.level*0.4 + Math.random()*1.2;
+    this.balls.push({ x, y:-14, vx:(dx/mag)*sp, vy:(dy/mag)*sp, r:13, rot:Math.random()*Math.PI*2 });
+  },
+
+  draw() {
+    const ctx=this.ctx, W=360, H=480;
+    ctx.fillStyle='#06080f'; ctx.fillRect(0,0,W,H);
+
+    // field lines
+    ctx.strokeStyle='rgba(255,255,255,0.04)'; ctx.lineWidth=1;
+    ctx.beginPath(); ctx.moveTo(0,H*0.5); ctx.lineTo(W,H*0.5); ctx.stroke();
+    ctx.beginPath(); ctx.arc(W/2,H*0.5,55,0,Math.PI*2); ctx.stroke();
+
+    // flash
+    if (this.flash) {
+      ctx.fillStyle=this.flash.col; ctx.globalAlpha=this.flash.a;
+      ctx.fillRect(0,0,W,H); ctx.globalAlpha=1;
+    }
+
+    // goal
+    ctx.strokeStyle='rgba(255,255,255,0.9)'; ctx.lineWidth=5;
+    ctx.strokeRect(30, H-68, W-60, 58);
+    // net
+    ctx.strokeStyle='rgba(255,255,255,0.08)'; ctx.lineWidth=0.7;
+    for(let i=30;i<=W-30;i+=18){ctx.beginPath();ctx.moveTo(i,H-68);ctx.lineTo(i,H-10);ctx.stroke();}
+    for(let j=H-68;j<=H-10;j+=10){ctx.beginPath();ctx.moveTo(30,j);ctx.lineTo(W-30,j);ctx.stroke();}
+
+    // goalkeeper body
+    const gx=this.gk.x, gy=this.gk.y, gw=this.gk.w, gh=this.gk.h;
+    const bobY = Math.sin(Date.now()/180)*2; // subtle bob
+    // jersey
+    ctx.fillStyle='#2563eb';
+    ctx.beginPath(); ctx.roundRect(gx-gw/2, gy+bobY, gw, gh, 7); ctx.fill();
+    // gloves
+    ctx.fillStyle='#f6ad55';
+    ctx.beginPath(); ctx.ellipse(gx-gw/2-10, gy+gh/2+bobY, 11, 9, -0.3, 0, Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(gx+gw/2+10, gy+gh/2+bobY, 11, 9, 0.3, 0, Math.PI*2); ctx.fill();
+    // head
+    ctx.fillStyle='#f5cba7';
+    ctx.beginPath(); ctx.arc(gx, gy+bobY-10, 11, 0, Math.PI*2); ctx.fill();
+
+    // balls
+    this.balls.forEach(b => {
+      ctx.save(); ctx.translate(b.x, b.y); ctx.rotate(b.rot);
+      ctx.fillStyle='rgba(0,0,0,0.25)';
+      ctx.beginPath(); ctx.ellipse(2,3,b.r,b.r,0,0,Math.PI*2); ctx.fill();
+      ctx.fillStyle='#fff';
+      ctx.beginPath(); ctx.arc(0,0,b.r,0,Math.PI*2); ctx.fill();
+      ctx.fillStyle='#111';
+      ctx.beginPath(); ctx.arc(0,0,b.r*0.32,0,Math.PI*2); ctx.fill();
+      [0,72,144,216,288].forEach(a => {
+        const rad=a*Math.PI/180;
+        ctx.beginPath();
+        ctx.arc(Math.cos(rad)*b.r*.62, Math.sin(rad)*b.r*.62, b.r*.17, 0, Math.PI*2);
+        ctx.fill();
+      });
+      ctx.restore();
+    });
+
+    // HUD
+    ctx.fillStyle='rgba(0,0,0,0.55)'; ctx.fillRect(0,0,W,42);
+    // lives
+    ctx.font='15px sans-serif'; ctx.textAlign='right';
+    ctx.fillText('❤️'.repeat(this.lives)+'🖤'.repeat(3-this.lives), W-12, 26);
+    // score
+    ctx.fillStyle='#C9A84C'; ctx.font='bold 15px Vazirmatn,sans-serif'; ctx.textAlign='left';
+    ctx.fillText(`${toPersianNum(this.score)} امتیاز`, 12, 26);
+    // level
+    ctx.fillStyle='rgba(255,255,255,0.35)'; ctx.font='11px Vazirmatn,sans-serif'; ctx.textAlign='center';
+    ctx.fillText(`سطح ${toPersianNum(this.level)}`, W/2, 26);
+
+    // combo streak
+    if (this.combo >= 3) {
+      ctx.fillStyle='#f6ad55'; ctx.font=`bold 12px Vazirmatn,sans-serif`; ctx.textAlign='center';
+      ctx.fillText(`🔥 ${toPersianNum(this.combo)} پشت هم`, W/2, 56);
+    }
+  },
+
+  drawIdle() {
+    const ctx=this.ctx; if(!ctx) return;
+    const W=360, H=480;
+    ctx.fillStyle='#06080f'; ctx.fillRect(0,0,W,H);
+    ctx.strokeStyle='rgba(255,255,255,0.9)'; ctx.lineWidth=5;
+    ctx.strokeRect(30,H-68,W-60,58);
+    ctx.strokeStyle='rgba(255,255,255,0.08)'; ctx.lineWidth=0.7;
+    for(let i=30;i<=W-30;i+=18){ctx.beginPath();ctx.moveTo(i,H-68);ctx.lineTo(i,H-10);ctx.stroke();}
+    // keeper
+    ctx.fillStyle='#2563eb';
+    ctx.beginPath(); ctx.roundRect(W/2-41, H-68, 82, 22, 7); ctx.fill();
+    ctx.fillStyle='#f5cba7';
+    ctx.beginPath(); ctx.arc(W/2, H-78, 11, 0, Math.PI*2); ctx.fill();
+    ctx.fillStyle='#f6ad55';
+    ctx.beginPath(); ctx.ellipse(W/2-51, H-57, 11,9,-0.3,0,Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(W/2+51, H-57, 11,9, 0.3,0,Math.PI*2); ctx.fill();
+    // ball
+    ctx.fillStyle='#fff'; ctx.beginPath(); ctx.arc(W/2,H/2-30,22,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle='#111'; ctx.beginPath(); ctx.arc(W/2,H/2-30,7,0,Math.PI*2); ctx.fill();
+    // text
+    ctx.fillStyle='#C9A84C'; ctx.font='bold 20px Vazirmatn,sans-serif'; ctx.textAlign='center';
+    ctx.fillText('⚽ دروازه‌بانی', W/2, H/2+30);
+    ctx.fillStyle='rgba(255,255,255,0.45)'; ctx.font='13px Vazirmatn,sans-serif';
+    ctx.fillText('برای شروع لمس کن', W/2, H/2+56);
+    ctx.fillStyle='rgba(255,255,255,0.2)'; ctx.font='11px Vazirmatn,sans-serif';
+    ctx.fillText('توپ‌ها رو بلاک کن — ۳ تا لایف داری', W/2, H/2+78);
+  },
+
+  async gameOver() {
+    this.running = false;
+    cancelAnimationFrame(this.frame);
+    const ctx=this.ctx, W=360, H=480;
+    ctx.fillStyle='rgba(0,0,0,0.78)'; ctx.fillRect(0,0,W,H);
+    ctx.fillStyle='#C9A84C'; ctx.font='bold 26px Vazirmatn,sans-serif'; ctx.textAlign='center';
+    ctx.fillText('بازی تموم شد!', W/2, H/2-40);
+    ctx.fillStyle='#fff'; ctx.font='bold 36px Vazirmatn,sans-serif';
+    ctx.fillText(toPersianNum(this.score), W/2, H/2+10);
+    ctx.fillStyle='rgba(255,255,255,0.4)'; ctx.font='13px Vazirmatn,sans-serif';
+    ctx.fillText('امتیاز', W/2, H/2+34);
+    // best
+    const prev = (appData.game_scores||{})[currentUser?.uid]?.best || 0;
+    if (this.score > prev && this.score > 0) {
+      ctx.fillStyle='#f6ad55'; ctx.font='bold 13px Vazirmatn,sans-serif';
+      ctx.fillText('🎉 رکورد جدید!', W/2, H/2+60);
+    }
+    ctx.fillStyle='rgba(255,255,255,0.35)'; ctx.font='13px Vazirmatn,sans-serif';
+    ctx.fillText('لمس کن تا دوباره بازی کنی', W/2, H/2+90);
+
+    // save to Firebase
+    if (currentUser && this.score > 0 && this.score > prev) {
+      try {
+        await fbWithTimeout(db.ref(`game_scores/${currentUser.uid}`).set({
+          name: currentUser.name,
+          best: this.score,
+          ts: firebase.database.ServerValue.TIMESTAMP
+        }), 6000);
+        appData.game_scores = appData.game_scores || {};
+        appData.game_scores[currentUser.uid] = { name: currentUser.name, best: this.score };
+        renderGameLeaderboard();
+      } catch(e) { console.error('save score:', e); }
+    }
+  }
+};
 </script>
 </body>
 </html>
