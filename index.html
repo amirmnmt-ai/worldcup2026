@@ -4303,7 +4303,7 @@ const GK_GAME = {
     if(++this.spawnT >= this.spawnI && !this.pauseT && !this.suppressT && !this.waveQ){
       this.spawnT=0;
       // رویداد یا توپ معمولی — هیچ‌وقت هر دو همزمان
-      const doEvent = !this.eventCD && this.score>=10 && Math.random()<0.07;
+      const doEvent = !this.eventCD && this.score>=8 && Math.random()<0.18;
       if(doEvent){ this._triggerEvent(); }
       else { this.spawnBall(); }
       // جون — فقط بعد از spawn معمولی و بدون رویداد فعال
@@ -4382,21 +4382,21 @@ const GK_GAME = {
       if(r < 0.5){
         this.spawnBall(W*0.28,null,1.0); this.spawnBall(W*0.72,null,1.0);
         this._showMsg('👥 دوقلو!','#f6ad55');
-        this.eventCD=360; this.suppressT=115; this.spawnT=0;
+        this.eventCD=220; this.suppressT=115; this.spawnT=0;
       } else {
         this.spawnBall(null,null,1.55,'#ff3333');
         this._showMsg('🔴 توپ سریع!','#ff4d4d');
-        this.eventCD=300; this.suppressT=90; this.spawnT=0;
+        this.eventCD=180; this.suppressT=90; this.spawnT=0;
       }
     } else {
       if(r < 0.42){
         this.spawnBall(W*0.28,null,1.0); this.spawnBall(W*0.72,null,1.0);
         this._showMsg('👥 دوقلو!','#f6ad55');
-        this.eventCD=360; this.suppressT=115; this.spawnT=0;
+        this.eventCD=220; this.suppressT=115; this.spawnT=0;
       } else if(r < 0.82){
         this.spawnBall(null,null,1.55,'#ff3333');
         this._showMsg('🔴 توپ سریع!','#ff4d4d');
-        this.eventCD=300; this.suppressT=90; this.spawnT=0;
+        this.eventCD=180; this.suppressT=90; this.spawnT=0;
       } else {
         this.pauseT=110;
         this._showMsg('⚠️ آماده باش...','#60a5fa');
@@ -4412,7 +4412,7 @@ const GK_GAME = {
     const ty = this.gk.y;
     const dx=tx-x, dy=ty;
     const mag=Math.sqrt(dx*dx+dy*dy);
-    const sp=(2.8+2.8*(1-Math.exp(-this.level/5.5))+Math.random()*1.1)*speedMult;
+    const sp=(3.5+2.2*(1-Math.exp(-this.level/5.5))+Math.random()*1.0)*speedMult;
     this.balls.push({x, y: forceY||(-16), vx:(dx/mag)*sp, vy:(dy/mag)*sp, r:14, rot:Math.random()*6.28, trail:[], color});
   },
 
