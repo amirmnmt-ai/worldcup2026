@@ -1244,7 +1244,7 @@
     <button class="nav-tab" onclick="switchTab('leaderboard')">جدول</button>
     <button class="nav-tab" onclick="switchTab('results')">نتایج</button>
     <button class="nav-tab" onclick="switchTab('scorecard')">کارنامه</button>
-    <button class="nav-tab" onclick="switchTab('game')">⚽ بازی</button>
+    <button class="nav-tab" onclick="switchTab('game')">گلبان</button>
     <button class="nav-tab admin-only" onclick="switchTab('admin')" style="display:none" id="tab-btn-admin">ادمین <span id="admin-badge" class="tab-badge" style="display:none">0</span></button>
   </nav>
 
@@ -4200,6 +4200,7 @@ const GK_GAME = {
     if (!this.canvas || this.initialized) { this.drawIdle(); return; }
     this.ctx = this.canvas.getContext('2d');
     this.initialized = true;
+    this.gk.x = 180; this.gk.y = 412;
 
     const c = this.canvas;
     const getX = (clientX) => {
@@ -4276,114 +4277,246 @@ const GK_GAME = {
   },
 
   spawnBall() {
-    const x = 25 + Math.random() * 310;
-    const tx = this.gk.x + (Math.random()-.5)*180;
-    const dy = 430, dx = tx-x;
-    const mag = Math.sqrt(dx*dx+dy*dy);
-    const sp = 2.8 + this.level*0.4 + Math.random()*1.2;
-    this.balls.push({ x, y:-14, vx:(dx/mag)*sp, vy:(dy/mag)*sp, r:13, rot:Math.random()*Math.PI*2 });
+    const W=360;
+    const x = 18 + Math.random() * 324;
+    // پراکنده — هدف تصادفی در عرض کامل دروازه، نه دنبال دروازه‌بان
+    const tx = 28 + Math.random() * (W - 56);
+    const ty = this.gk.y + 8;
+    const dx = tx - x, dy = ty;
+    const mag = Math.sqrt(dx*dx + dy*dy);
+    const sp = 2.6 + this.level*0.38 + Math.random()*1.4;
+    this.balls.push({
+      x, y:-16, vx:(dx/mag)*sp, vy:(dy/mag)*sp,
+      r:14, rot:Math.random()*Math.PI*2, trail:[]
+    });
+  },
+
+  _drawField(ctx,W,H) {
+    // پس‌زمینه گرادیان چمن
+    const g=ctx.createLinearGradient(0,0,0,H);
+    g.addColorStop(0,'#0a1f12'); g.addColorStop(0.5,'#0d2b18'); g.addColorStop(1,'#102e1a');
+    ctx.fillStyle=g; ctx.fillRect(0,0,W,H);
+    // نوارهای چمن
+    for(let i=0;i<7;i++){
+      if(i%2===0){ ctx.fillStyle='rgba(0,0,0,0.07)'; ctx.fillRect(0,i*H/7,W,H/7); }
+    }
+    // خطوط زمین
+    ctx.strokeStyle='rgba(255,255,255,0.1)'; ctx.lineWidth=1.2;
+    // خط وسط
+    ctx.beginPath(); ctx.moveTo(0,H*0.44); ctx.lineTo(W,H*0.44); ctx.stroke();
+    // دایره وسط
+    ctx.beginPath(); ctx.arc(W/2,H*0.44,58,0,Math.PI*2); ctx.stroke();
+    ctx.fillStyle='rgba(255,255,255,0.12)';
+    ctx.beginPath(); ctx.arc(W/2,H*0.44,3,0,Math.PI*2); ctx.fill();
+    // محوطه جریمه
+    ctx.strokeStyle='rgba(255,255,255,0.12)';
+    ctx.strokeRect(50,H-128,W-100,128);
+    // محوطه دروازه
+    ctx.strokeRect(95,H-76,W-190,76);
+    // نقطه پنالتی
+    ctx.fillStyle='rgba(255,255,255,0.15)';
+    ctx.beginPath(); ctx.arc(W/2,H-95,3,0,Math.PI*2); ctx.fill();
+    // قوس محوطه جریمه
+    ctx.beginPath(); ctx.arc(W/2,H-128,38,Math.PI,Math.PI*2); ctx.stroke();
+  },
+
+  _drawGoal(ctx,W,H) {
+    // سایه دروازه
+    ctx.fillStyle='rgba(0,0,0,0.35)';
+    ctx.fillRect(24,H-72,W-48,68);
+    // تور — عمق
+    for(let i=30;i<=W-30;i+=14){
+      const sag=(Math.abs(i-W/2)/(W/2))*6;
+      ctx.strokeStyle=`rgba(255,255,255,${0.06+sag*0.01})`; ctx.lineWidth=0.6;
+      ctx.beginPath(); ctx.moveTo(i,H-70); ctx.quadraticCurveTo(i+sag,H-35,i,H-8); ctx.stroke();
+    }
+    for(let j=H-70;j<=H-8;j+=9){
+      ctx.strokeStyle='rgba(255,255,255,0.07)'; ctx.lineWidth=0.6;
+      ctx.beginPath(); ctx.moveTo(30,j); ctx.lineTo(W-30,j); ctx.stroke();
+    }
+    // پست‌های دروازه — گرادیان
+    const pg=ctx.createLinearGradient(0,0,6,0);
+    pg.addColorStop(0,'#aaa'); pg.addColorStop(0.5,'#fff'); pg.addColorStop(1,'#888');
+    ctx.fillStyle=pg;
+    ctx.fillRect(28,H-74,7,72);
+    ctx.fillRect(W-35,H-74,7,72);
+    ctx.fillRect(28,H-74,W-56,7);
+    // زیر دروازه (خاکی)
+    ctx.fillStyle='rgba(255,255,255,0.06)';
+    ctx.fillRect(35,H-2,W-70,2);
+  },
+
+  _drawKeeper(ctx,W,H) {
+    const gx=this.gk.x, gy=this.gk.y, gw=this.gk.w, gh=this.gk.h;
+    const bob=Math.sin(Date.now()/210)*2.8;
+
+    // سایه
+    ctx.fillStyle='rgba(0,0,0,0.22)';
+    ctx.beginPath(); ctx.ellipse(gx,H-10,gw*0.42,5,0,0,Math.PI*2); ctx.fill();
+
+    // پاها
+    ctx.fillStyle='#1e3a8a';
+    ctx.beginPath(); ctx.roundRect(gx-17,gy+gh+bob,13,20,3); ctx.fill();
+    ctx.beginPath(); ctx.roundRect(gx+4,gy+gh+bob,13,20,3); ctx.fill();
+    // کفش
+    ctx.fillStyle='#111';
+    ctx.beginPath(); ctx.roundRect(gx-20,gy+gh+bob+16,17,6,2); ctx.fill();
+    ctx.beginPath(); ctx.roundRect(gx+3,gy+gh+bob+16,17,6,2); ctx.fill();
+
+    // بازوها
+    ctx.strokeStyle='#2563eb'; ctx.lineWidth=12; ctx.lineCap='round';
+    ctx.beginPath();
+    ctx.moveTo(gx-gw/2+4,gy+8+bob);
+    ctx.lineTo(gx-gw/2-22,gy+gh/2+2+bob);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(gx+gw/2-4,gy+8+bob);
+    ctx.lineTo(gx+gw/2+22,gy+gh/2+2+bob);
+    ctx.stroke();
+
+    // پیراهن
+    const jg=ctx.createLinearGradient(gx-gw/2,gy+bob,gx+gw/2,gy+gh+bob);
+    jg.addColorStop(0,'#3b82f6'); jg.addColorStop(1,'#1d4ed8');
+    ctx.fillStyle=jg;
+    ctx.beginPath(); ctx.roundRect(gx-gw/2,gy+bob,gw,gh,8); ctx.fill();
+    // خطوط پیراهن
+    ctx.strokeStyle='rgba(255,255,255,0.15)'; ctx.lineWidth=1;
+    ctx.beginPath(); ctx.moveTo(gx-gw/2+14,gy+bob); ctx.lineTo(gx-gw/2+14,gy+gh+bob); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(gx+gw/2-14,gy+bob); ctx.lineTo(gx+gw/2-14,gy+gh+bob); ctx.stroke();
+    // شماره
+    ctx.fillStyle='rgba(255,255,255,0.8)'; ctx.font='bold 12px Vazirmatn,sans-serif'; ctx.textAlign='center';
+    ctx.fillText('۱',gx,gy+gh-5+bob);
+
+    // دستکش
+    const gg=ctx.createRadialGradient(gx-gw/2-22,gy+gh/2+bob,1,gx-gw/2-22,gy+gh/2+bob,12);
+    gg.addColorStop(0,'#fbbf24'); gg.addColorStop(1,'#d97706');
+    ctx.fillStyle=gg;
+    ctx.beginPath(); ctx.ellipse(gx-gw/2-22,gy+gh/2+2+bob,13,11,-0.3,0,Math.PI*2); ctx.fill();
+    const gg2=ctx.createRadialGradient(gx+gw/2+22,gy+gh/2+bob,1,gx+gw/2+22,gy+gh/2+bob,12);
+    gg2.addColorStop(0,'#fbbf24'); gg2.addColorStop(1,'#d97706');
+    ctx.fillStyle=gg2;
+    ctx.beginPath(); ctx.ellipse(gx+gw/2+22,gy+gh/2+2+bob,13,11,0.3,0,Math.PI*2); ctx.fill();
+    // بند دستکش
+    ctx.strokeStyle='rgba(0,0,0,0.3)'; ctx.lineWidth=1.5;
+    ctx.beginPath(); ctx.moveTo(gx-gw/2-30,gy+gh/2+2+bob); ctx.lineTo(gx-gw/2-14,gy+gh/2+2+bob); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(gx+gw/2+30,gy+gh/2+2+bob); ctx.lineTo(gx+gw/2+14,gy+gh/2+2+bob); ctx.stroke();
+
+    // سر
+    const hg=ctx.createRadialGradient(gx-4,gy+bob-16,2,gx,gy+bob-10,14);
+    hg.addColorStop(0,'#fde7c8'); hg.addColorStop(1,'#d4956a');
+    ctx.fillStyle=hg;
+    ctx.beginPath(); ctx.arc(gx,gy+bob-10,14,0,Math.PI*2); ctx.fill();
+    // موها
+    ctx.fillStyle='#3b1f0a';
+    ctx.beginPath(); ctx.arc(gx,gy+bob-22,14,Math.PI+0.3,Math.PI*2-0.3); ctx.fill();
+    ctx.fillRect(gx-13,gy+bob-23,26,8);
+    // چشم‌ها
+    ctx.fillStyle='#222';
+    ctx.beginPath(); ctx.arc(gx-5,gy+bob-10,2.2,0,Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(gx+5,gy+bob-10,2.2,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle='rgba(255,255,255,0.6)';
+    ctx.beginPath(); ctx.arc(gx-4.2,gy+bob-10.8,0.7,0,Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(gx+5.8,gy+bob-10.8,0.7,0,Math.PI*2); ctx.fill();
+  },
+
+  _drawBall(ctx,b) {
+    // تریل
+    b.trail.forEach((t,i)=>{
+      ctx.fillStyle=`rgba(255,255,255,${(i/b.trail.length)*0.07})`;
+      ctx.beginPath(); ctx.arc(t.x,t.y,b.r*(i/b.trail.length)*0.6,0,Math.PI*2); ctx.fill();
+    });
+    ctx.save(); ctx.translate(b.x,b.y); ctx.rotate(b.rot);
+    // سایه
+    ctx.fillStyle='rgba(0,0,0,0.28)';
+    ctx.beginPath(); ctx.ellipse(2,3,b.r,b.r*0.65,0,0,Math.PI*2); ctx.fill();
+    // توپ
+    const bg=ctx.createRadialGradient(-b.r*.38,-b.r*.38,b.r*.04,0,0,b.r);
+    bg.addColorStop(0,'#ffffff'); bg.addColorStop(0.55,'#eeeeee'); bg.addColorStop(1,'#c0c0c0');
+    ctx.fillStyle=bg;
+    ctx.beginPath(); ctx.arc(0,0,b.r,0,Math.PI*2); ctx.fill();
+    // لکه‌های توپ
+    ctx.fillStyle='#111';
+    this._hexPatch(ctx,0,0,b.r*.3);
+    [0,72,144,216,288].forEach(a=>{
+      const r=a*Math.PI/180;
+      this._hexPatch(ctx,Math.cos(r)*b.r*.6,Math.sin(r)*b.r*.6,b.r*.18);
+    });
+    // هایلایت
+    ctx.fillStyle='rgba(255,255,255,0.38)';
+    ctx.beginPath(); ctx.ellipse(-b.r*.3,-b.r*.3,b.r*.24,b.r*.16,-0.5,0,Math.PI*2); ctx.fill();
+    ctx.restore();
+  },
+
+  _hexPatch(ctx,cx,cy,r) {
+    ctx.beginPath();
+    for(let i=0;i<6;i++){
+      const a=i*Math.PI/3-Math.PI/6;
+      i===0?ctx.moveTo(cx+r*Math.cos(a),cy+r*Math.sin(a)):ctx.lineTo(cx+r*Math.cos(a),cy+r*Math.sin(a));
+    }
+    ctx.closePath(); ctx.fill();
   },
 
   draw() {
     const ctx=this.ctx, W=360, H=480;
-    ctx.fillStyle='#06080f'; ctx.fillRect(0,0,W,H);
+    this._drawField(ctx,W,H);
 
-    // field lines
-    ctx.strokeStyle='rgba(255,255,255,0.04)'; ctx.lineWidth=1;
-    ctx.beginPath(); ctx.moveTo(0,H*0.5); ctx.lineTo(W,H*0.5); ctx.stroke();
-    ctx.beginPath(); ctx.arc(W/2,H*0.5,55,0,Math.PI*2); ctx.stroke();
-
-    // flash
-    if (this.flash) {
+    if(this.flash){
       ctx.fillStyle=this.flash.col; ctx.globalAlpha=this.flash.a;
       ctx.fillRect(0,0,W,H); ctx.globalAlpha=1;
     }
 
-    // goal
-    ctx.strokeStyle='rgba(255,255,255,0.9)'; ctx.lineWidth=5;
-    ctx.strokeRect(30, H-68, W-60, 58);
-    // net
-    ctx.strokeStyle='rgba(255,255,255,0.08)'; ctx.lineWidth=0.7;
-    for(let i=30;i<=W-30;i+=18){ctx.beginPath();ctx.moveTo(i,H-68);ctx.lineTo(i,H-10);ctx.stroke();}
-    for(let j=H-68;j<=H-10;j+=10){ctx.beginPath();ctx.moveTo(30,j);ctx.lineTo(W-30,j);ctx.stroke();}
+    this._drawGoal(ctx,W,H);
+    this._drawKeeper(ctx,W,H);
 
-    // goalkeeper body
-    const gx=this.gk.x, gy=this.gk.y, gw=this.gk.w, gh=this.gk.h;
-    const bobY = Math.sin(Date.now()/180)*2; // subtle bob
-    // jersey
-    ctx.fillStyle='#2563eb';
-    ctx.beginPath(); ctx.roundRect(gx-gw/2, gy+bobY, gw, gh, 7); ctx.fill();
-    // gloves
-    ctx.fillStyle='#f6ad55';
-    ctx.beginPath(); ctx.ellipse(gx-gw/2-10, gy+gh/2+bobY, 11, 9, -0.3, 0, Math.PI*2); ctx.fill();
-    ctx.beginPath(); ctx.ellipse(gx+gw/2+10, gy+gh/2+bobY, 11, 9, 0.3, 0, Math.PI*2); ctx.fill();
-    // head
-    ctx.fillStyle='#f5cba7';
-    ctx.beginPath(); ctx.arc(gx, gy+bobY-10, 11, 0, Math.PI*2); ctx.fill();
-
-    // balls
-    this.balls.forEach(b => {
-      ctx.save(); ctx.translate(b.x, b.y); ctx.rotate(b.rot);
-      ctx.fillStyle='rgba(0,0,0,0.25)';
-      ctx.beginPath(); ctx.ellipse(2,3,b.r,b.r,0,0,Math.PI*2); ctx.fill();
-      ctx.fillStyle='#fff';
-      ctx.beginPath(); ctx.arc(0,0,b.r,0,Math.PI*2); ctx.fill();
-      ctx.fillStyle='#111';
-      ctx.beginPath(); ctx.arc(0,0,b.r*0.32,0,Math.PI*2); ctx.fill();
-      [0,72,144,216,288].forEach(a => {
-        const rad=a*Math.PI/180;
-        ctx.beginPath();
-        ctx.arc(Math.cos(rad)*b.r*.62, Math.sin(rad)*b.r*.62, b.r*.17, 0, Math.PI*2);
-        ctx.fill();
-      });
-      ctx.restore();
+    // آپدیت تریل و رسم توپ‌ها
+    this.balls.forEach(b=>{
+      b.trail.push({x:b.x,y:b.y});
+      if(b.trail.length>7)b.trail.shift();
+      this._drawBall(ctx,b);
     });
 
-    // HUD
-    ctx.fillStyle='rgba(0,0,0,0.55)'; ctx.fillRect(0,0,W,42);
-    // lives
-    ctx.font='15px sans-serif'; ctx.textAlign='right';
-    ctx.fillText('❤️'.repeat(this.lives)+'🖤'.repeat(3-this.lives), W-12, 26);
-    // score
-    ctx.fillStyle='#C9A84C'; ctx.font='bold 15px Vazirmatn,sans-serif'; ctx.textAlign='left';
-    ctx.fillText(`${toPersianNum(this.score)} امتیاز`, 12, 26);
-    // level
-    ctx.fillStyle='rgba(255,255,255,0.35)'; ctx.font='11px Vazirmatn,sans-serif'; ctx.textAlign='center';
-    ctx.fillText(`سطح ${toPersianNum(this.level)}`, W/2, 26);
+    // HUD پس‌زمینه
+    const hg=ctx.createLinearGradient(0,0,0,50);
+    hg.addColorStop(0,'rgba(0,0,0,0.75)'); hg.addColorStop(1,'rgba(0,0,0,0)');
+    ctx.fillStyle=hg; ctx.fillRect(0,0,W,50);
 
-    // combo streak
-    if (this.combo >= 3) {
-      ctx.fillStyle='#f6ad55'; ctx.font=`bold 12px Vazirmatn,sans-serif`; ctx.textAlign='center';
-      ctx.fillText(`🔥 ${toPersianNum(this.combo)} پشت هم`, W/2, 56);
+    // لایف‌ها
+    ctx.font='16px sans-serif'; ctx.textAlign='right';
+    ctx.fillText('❤️'.repeat(this.lives)+'🖤'.repeat(3-this.lives),W-10,28);
+    // امتیاز
+    ctx.fillStyle='#C9A84C'; ctx.font='bold 16px Vazirmatn,sans-serif'; ctx.textAlign='left';
+    ctx.fillText(`${toPersianNum(this.score)} امتیاز`,10,28);
+    // سطح
+    ctx.fillStyle='rgba(255,255,255,0.4)'; ctx.font='10px Vazirmatn,sans-serif'; ctx.textAlign='center';
+    ctx.fillText(`● سطح ${toPersianNum(this.level)}`,W/2,28);
+    // کمبو
+    if(this.combo>=3){
+      ctx.fillStyle='#fbbf24'; ctx.font=`bold 13px Vazirmatn,sans-serif`;
+      ctx.fillText(`🔥 ${toPersianNum(this.combo)} پشت هم`,W/2,52);
     }
   },
 
   drawIdle() {
     const ctx=this.ctx; if(!ctx) return;
     const W=360, H=480;
-    ctx.fillStyle='#06080f'; ctx.fillRect(0,0,W,H);
-    ctx.strokeStyle='rgba(255,255,255,0.9)'; ctx.lineWidth=5;
-    ctx.strokeRect(30,H-68,W-60,58);
-    ctx.strokeStyle='rgba(255,255,255,0.08)'; ctx.lineWidth=0.7;
-    for(let i=30;i<=W-30;i+=18){ctx.beginPath();ctx.moveTo(i,H-68);ctx.lineTo(i,H-10);ctx.stroke();}
-    // keeper
-    ctx.fillStyle='#2563eb';
-    ctx.beginPath(); ctx.roundRect(W/2-41, H-68, 82, 22, 7); ctx.fill();
-    ctx.fillStyle='#f5cba7';
-    ctx.beginPath(); ctx.arc(W/2, H-78, 11, 0, Math.PI*2); ctx.fill();
-    ctx.fillStyle='#f6ad55';
-    ctx.beginPath(); ctx.ellipse(W/2-51, H-57, 11,9,-0.3,0,Math.PI*2); ctx.fill();
-    ctx.beginPath(); ctx.ellipse(W/2+51, H-57, 11,9, 0.3,0,Math.PI*2); ctx.fill();
-    // ball
-    ctx.fillStyle='#fff'; ctx.beginPath(); ctx.arc(W/2,H/2-30,22,0,Math.PI*2); ctx.fill();
-    ctx.fillStyle='#111'; ctx.beginPath(); ctx.arc(W/2,H/2-30,7,0,Math.PI*2); ctx.fill();
-    // text
-    ctx.fillStyle='#C9A84C'; ctx.font='bold 20px Vazirmatn,sans-serif'; ctx.textAlign='center';
-    ctx.fillText('⚽ دروازه‌بانی', W/2, H/2+30);
-    ctx.fillStyle='rgba(255,255,255,0.45)'; ctx.font='13px Vazirmatn,sans-serif';
-    ctx.fillText('برای شروع لمس کن', W/2, H/2+56);
-    ctx.fillStyle='rgba(255,255,255,0.2)'; ctx.font='11px Vazirmatn,sans-serif';
-    ctx.fillText('توپ‌ها رو بلاک کن — ۳ تا لایف داری', W/2, H/2+78);
+    this._drawField(ctx,W,H);
+    this._drawGoal(ctx,W,H);
+    // دروازه‌بان وسط
+    this.gk.x=W/2; this.gk.y=H-68;
+    this._drawKeeper(ctx,W,H);
+    // توپ شناور
+    const t=Date.now()/1000;
+    const bx=W/2, by=H/2-45+Math.sin(t*1.8)*8;
+    this._drawBall(ctx,{x:bx,y:by,r:22,rot:t*1.2,trail:[]});
+    // اوورلی تاریک
+    ctx.fillStyle='rgba(0,0,0,0.52)'; ctx.fillRect(0,0,W,H);
+    // عنوان
+    ctx.fillStyle='#C9A84C'; ctx.font='bold 26px Vazirmatn,sans-serif'; ctx.textAlign='center';
+    ctx.fillText('⚽ گلبان',W/2,H/2+22);
+    ctx.fillStyle='rgba(255,255,255,0.6)'; ctx.font='15px Vazirmatn,sans-serif';
+    ctx.fillText('نذار توپی گل بشه',W/2,H/2+54);
+    ctx.fillStyle='rgba(255,255,255,0.28)'; ctx.font='12px Vazirmatn,sans-serif';
+    ctx.fillText('لمس کن تا شروع کنی',W/2,H/2+78);
   },
 
   async gameOver() {
