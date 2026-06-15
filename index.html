@@ -4252,7 +4252,7 @@ const GK_GAME = {
     this.score=0; this.lives=3; this.level=1; this.combo=0;
     this.balls=[]; this.spawnT=0; this.spawnI=100; this.flash=null;
     this.shake=0; this.particles=[]; this.lifePickup=null;
-    this.eventCD=0; this.eventMsg=null; this.pauseT=0; this.waveQ=0; this.suppressT=0;
+    this.eventCD=0; this.eventMsg=null; this.pauseT=0; this.waveQ=0; this.waveTimer=0; this.suppressT=0;
     this.gk.x=this.canvas.width/2||190; this.gk.tx=this.canvas.width/2||190;
     this.gk.w=82; this.gk.lean=0;
     this.running=true;
@@ -4280,31 +4280,31 @@ const GK_GAME = {
     const targetSpawnI = 62 + 45*Math.exp(-this.level/5.5);
     this.spawnI += (targetSpawnI - this.spawnI)*0.08;
 
-    // رویدادهای تصادفی — از لول ۳، احتمال کمتر
+    // تایمرها — هر کدام مستقل
+    if(this.eventCD>0) this.eventCD--;
     if(this.suppressT>0) this.suppressT--;
-    if(this.eventCD>0){ this.eventCD--; }
-    else if(this.level>=3 && !this.pauseT && !this.waveQ && this.score>=8 && Math.random()<0.028){
-      this._triggerEvent();
-    }
     if(this.pauseT>0){
       this.pauseT--;
-      if(this.pauseT===0){ this.waveQ=3; this._showMsg('🌊 موج!','#3b82f6'); }
+      if(this.pauseT===0){ this.waveQ=3; this.waveTimer=18; this._showMsg('🌊 موج!','#3b82f6'); }
     }
-    if(this.waveQ>0 && this.spawnT%14===0){
-      this.spawnBall(); this.waveQ--;
-    }
-    if(this.eventMsg){ this.eventMsg.t--; if(this.eventMsg.t<=0)this.eventMsg=null; }
+    if(this.eventMsg){ this.eventMsg.t--; if(!this.eventMsg.t) this.eventMsg=null; }
 
-    // spawn معمولی — نه در حین رویداد یا suppression
-    if(++this.spawnT >= this.spawnI && !this.pauseT && !this.suppressT){
+    // موج — تایمر کاملاً مستقل از spawnT
+    if(this.waveQ>0){
+      if(--this.waveTimer<=0){ this.spawnBall(); this.waveQ--; this.waveTimer=18; }
+    }
+
+    // spawn معمولی — فقط وقتی هیچ رویداد فعالی نیست
+    if(++this.spawnT >= this.spawnI && !this.pauseT && !this.suppressT && !this.waveQ){
       this.spawnBall();
       this.spawnT=0;
-      // جون — ۴٪ شانس، فقط اگه جون < ۳ و هیچ جون روی صفحه نیست
+      // رویداد: ۱۰٪ احتمال در هر spawn (نه هر فریم — مهمه)
+      if(!this.eventCD && this.score>=8 && Math.random()<0.10){
+        this._triggerEvent();
+      }
+      // جون تصادفی
       if(!this.lifePickup && this.lives<3 && this.score>=5 && Math.random()<0.04){
-        this.lifePickup = {
-          x: 45+Math.random()*(W-90),
-          y: -22, vy: 1.6, r: 16, rot: 0, pulse: 0
-        };
+        this.lifePickup={x:45+Math.random()*(W-90),y:-22,vy:1.6,r:16,rot:0,pulse:0};
       }
     }
 
