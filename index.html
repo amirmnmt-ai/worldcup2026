@@ -4282,7 +4282,7 @@ const GK_GAME = {
     this.gk.lean=nearest?Math.max(-1,Math.min(1,(nearest.x-this.gk.x)/(W/2)))*0.35:(this.gk.lean||0)*0.9;
 
     // منحنی سختی — asymptotic با رشد سریع‌تر در لول ۳-۷
-    const targetSpawnI = 62 + 45*Math.exp(-this.level/5.5);
+    const targetSpawnI = Math.max(60, 73 - this.level*1.3);
     this.spawnI += (targetSpawnI - this.spawnI)*0.08;
 
     // تایمرها — هر کدام مستقل
@@ -4394,7 +4394,7 @@ const GK_GAME = {
         this._showMsg('👥 دوقلو!','#f6ad55');
         this.eventCD=220; this.suppressT=115; this.spawnT=0;
       } else {
-        this.spawnBall(null,null,1.55,'#ff3333');
+        this.spawnBall(null,null,1.0,'#ff3333',null,11);
         this._showMsg('🔴 توپ سریع!','#ff4d4d');
         this.eventCD=180; this.suppressT=90; this.spawnT=0;
       }
@@ -4407,7 +4407,7 @@ const GK_GAME = {
         this._showMsg('👥 دوقلو!','#f6ad55');
         this.eventCD=220; this.suppressT=115; this.spawnT=0;
       } else if(r < 0.82){
-        this.spawnBall(null,null,1.55,'#ff3333');
+        this.spawnBall(null,null,1.0,'#ff3333',null,11);
         this._showMsg('🔴 توپ سریع!','#ff4d4d');
         this.eventCD=180; this.suppressT=90; this.spawnT=0;
       } else {
@@ -4418,14 +4418,14 @@ const GK_GAME = {
     }
   },
 
-  spawnBall(forceX=null, forceY=null, speedMult=1.0, color=null, forceTX=null){
+  spawnBall(forceX=null, forceY=null, speedMult=1.0, color=null, forceTX=null, forceSP=null){
     const W=this.canvas.width, H=this.canvas.height;
     const x = forceX!==null ? forceX : 20+Math.random()*(W-40);
     const tx = forceTX!==null ? Math.max(28,Math.min(W-28,forceTX)) : 28+Math.random()*(W-56);
     const ty = this.gk.y;
     const dx=tx-x, dy=ty;
     const mag=Math.sqrt(dx*dx+dy*dy);
-    const sp=(Math.min(12, 7.44+this.level*0.356)+Math.random()*0.8)*speedMult;
+    const sp=forceSP!==null ? forceSP : (Math.min(8.5,7.756+this.level*0.044)+Math.random()*0.6)*speedMult;
     this.balls.push({x, y: forceY||(-16), vx:(dx/mag)*sp, vy:(dy/mag)*sp, r:14, rot:Math.random()*6.28, trail:[], color});
   },
 
