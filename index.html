@@ -4252,7 +4252,7 @@ const GK_GAME = {
     this.score=0; this.lives=3; this.level=1; this.combo=0;
     this.balls=[]; this.spawnT=0; this.spawnI=100; this.flash=null;
     this.shake=0; this.particles=[]; this.lifePickup=null;
-    this.eventCD=0; this.eventMsg=null; this.pauseT=0; this.waveQ=0; this.waveTimer=0; this.suppressT=0;
+    this.eventCD=0; this.eventMsg=null; this.pauseT=0; this.waveQ=0; this.waveTimer=0; this.suppressT=0; this.pendingTwin=null;
     this.gk.x=this.canvas.width/2||190; this.gk.tx=this.canvas.width/2||190;
     this.gk.w=82; this.gk.lean=0;
     this.running=true;
@@ -4297,6 +4297,12 @@ const GK_GAME = {
     // موج — تایمر کاملاً مستقل از spawnT
     if(this.waveQ>0){
       if(--this.waveTimer<=0){ this.spawnBall(); this.waveQ--; this.waveTimer=18; }
+    }
+    if(this.pendingTwin){
+      if(--this.pendingTwin.timer<=0){
+        this.spawnBall(this.pendingTwin.x,null,1.0,null,this.pendingTwin.tx);
+        this.pendingTwin=null;
+      }
     }
 
     // spawn معمولی — فقط وقتی هیچ رویداد فعالی نیست
@@ -4380,7 +4386,11 @@ const GK_GAME = {
 
     if(!canWave){
       if(r < 0.5){
-        this.spawnBall(W*0.28,null,1.0); this.spawnBall(W*0.72,null,1.0);
+        // دوقلو — نزدیک هم، در یک جهت
+        const cx = W*0.25 + Math.random()*W*0.5;
+        const sharedTX = W*0.2 + Math.random()*W*0.6;
+        this.spawnBall(cx-25, null, 1.0, null, sharedTX-15);
+        this.pendingTwin = { x: cx+25, tx: sharedTX+15, timer: 20 };
         this._showMsg('👥 دوقلو!','#f6ad55');
         this.eventCD=220; this.suppressT=115; this.spawnT=0;
       } else {
@@ -4390,7 +4400,10 @@ const GK_GAME = {
       }
     } else {
       if(r < 0.42){
-        this.spawnBall(W*0.28,null,1.0); this.spawnBall(W*0.72,null,1.0);
+        const cx = W*0.25 + Math.random()*W*0.5;
+        const sharedTX = W*0.2 + Math.random()*W*0.6;
+        this.spawnBall(cx-25, null, 1.0, null, sharedTX-15);
+        this.pendingTwin = { x: cx+25, tx: sharedTX+15, timer: 20 };
         this._showMsg('👥 دوقلو!','#f6ad55');
         this.eventCD=220; this.suppressT=115; this.spawnT=0;
       } else if(r < 0.82){
@@ -4405,14 +4418,14 @@ const GK_GAME = {
     }
   },
 
-  spawnBall(forceX=null, forceY=null, speedMult=1.0, color=null){
+  spawnBall(forceX=null, forceY=null, speedMult=1.0, color=null, forceTX=null){
     const W=this.canvas.width, H=this.canvas.height;
     const x = forceX!==null ? forceX : 20+Math.random()*(W-40);
-    const tx = 28+Math.random()*(W-56);
+    const tx = forceTX!==null ? Math.max(28,Math.min(W-28,forceTX)) : 28+Math.random()*(W-56);
     const ty = this.gk.y;
     const dx=tx-x, dy=ty;
     const mag=Math.sqrt(dx*dx+dy*dy);
-    const sp=(4.2+2.0*(1-Math.exp(-this.level/5.5))+Math.random()*1.0)*speedMult;
+    const sp=(7.5+2.0*(1-Math.exp(-this.level/6.5))+Math.random()*0.8)*speedMult;
     this.balls.push({x, y: forceY||(-16), vx:(dx/mag)*sp, vy:(dy/mag)*sp, r:14, rot:Math.random()*6.28, trail:[], color});
   },
 
