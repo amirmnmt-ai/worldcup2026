@@ -4252,7 +4252,7 @@ const GK_GAME = {
     this.score=0; this.lives=3; this.level=1; this.combo=0;
     this.balls=[]; this.spawnT=0; this.spawnI=100; this.flash=null;
     this.shake=0; this.particles=[]; this.lifePickup=null;
-    this.eventCD=0; this.eventMsg=null; this.pauseT=0; this.waveQ=0;
+    this.eventCD=0; this.eventMsg=null; this.pauseT=0; this.waveQ=0; this.suppressT=0;
     this.gk.x=this.canvas.width/2||190; this.gk.tx=this.canvas.width/2||190;
     this.gk.w=82; this.gk.lean=0;
     this.running=true;
@@ -4280,12 +4280,12 @@ const GK_GAME = {
     const targetSpawnI = 62 + 45*Math.exp(-this.level/5.5);
     this.spawnI += (targetSpawnI - this.spawnI)*0.08;
 
-    // رویدادهای تصادفی — از لول ۳ به بعد
+    // رویدادهای تصادفی — از لول ۳، احتمال کمتر
+    if(this.suppressT>0) this.suppressT--;
     if(this.eventCD>0){ this.eventCD--; }
-    else if(this.level>=3 && !this.pauseT && !this.waveQ && Math.random()<0.055){
+    else if(this.level>=3 && !this.pauseT && !this.waveQ && this.score>=8 && Math.random()<0.028){
       this._triggerEvent();
     }
-    // موج — وقفه قبل از spawn سه‌تایی
     if(this.pauseT>0){
       this.pauseT--;
       if(this.pauseT===0){ this.waveQ=3; this._showMsg('🌊 موج!','#3b82f6'); }
@@ -4293,10 +4293,10 @@ const GK_GAME = {
     if(this.waveQ>0 && this.spawnT%14===0){
       this.spawnBall(); this.waveQ--;
     }
-    // event message fadeout
     if(this.eventMsg){ this.eventMsg.t--; if(this.eventMsg.t<=0)this.eventMsg=null; }
 
-    if(++this.spawnT >= this.spawnI && !this.pauseT){
+    // spawn معمولی — نه در حین رویداد یا suppression
+    if(++this.spawnT >= this.spawnI && !this.pauseT && !this.suppressT){
       this.spawnBall();
       this.spawnT=0;
       // جون — ۴٪ شانس، فقط اگه جون < ۳ و هیچ جون روی صفحه نیست
@@ -4375,27 +4375,28 @@ const GK_GAME = {
     const r = Math.random();
 
     if(!canWave){
-      // فقط دوقلو یا توپ سریع
       if(r < 0.5){
         this.spawnBall(W*0.28,null,1.0); this.spawnBall(W*0.72,null,1.0);
-        this._showMsg('👥 دوقلو!','#f6ad55'); this.eventCD=30;
+        this._showMsg('👥 دوقلو!','#f6ad55');
+        this.eventCD=70; this.suppressT=55;
       } else {
         this.spawnBall(null,null,1.9,'#ff3333');
-        this._showMsg('🔴 توپ سریع!','#ff4d4d'); this.eventCD=24;
+        this._showMsg('🔴 توپ سریع!','#ff4d4d');
+        this.eventCD=60; this.suppressT=45;
       }
     } else {
-      // لول ۳۰+ — موج هم ممکنه ولی احتمالش کمه
       if(r < 0.42){
         this.spawnBall(W*0.28,null,1.0); this.spawnBall(W*0.72,null,1.0);
-        this._showMsg('👥 دوقلو!','#f6ad55'); this.eventCD=30;
+        this._showMsg('👥 دوقلو!','#f6ad55');
+        this.eventCD=70; this.suppressT=55;
       } else if(r < 0.82){
         this.spawnBall(null,null,1.9,'#ff3333');
-        this._showMsg('🔴 توپ سریع!','#ff4d4d'); this.eventCD=24;
+        this._showMsg('🔴 توپ سریع!','#ff4d4d');
+        this.eventCD=60; this.suppressT=45;
       } else {
-        // موج — فقط ۱۸٪ احتمال و فقط لول ۳۰+
         this.pauseT=110;
         this._showMsg('⚠️ آماده باش...','#60a5fa');
-        this.eventCD=120; // کول‌داون طولانی تا موج دوباره تکرار نشه
+        this.eventCD=120;
       }
     }
   },
