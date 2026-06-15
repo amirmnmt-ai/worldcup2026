@@ -4269,7 +4269,7 @@ const GK_GAME = {
     const nearest=this.balls.reduce((a,b)=>(!a||b.y>a.y)?b:a,null);
     this.gk.lean=nearest?Math.max(-1,Math.min(1,(nearest.x-this.gk.x)/(W/2)))*0.35:(this.gk.lean||0)*0.9;
     if(++this.spawnT>=this.spawnI){
-      this.spawnBall(); this.spawnT=0; this.spawnI=Math.max(36,this.spawnI-1.5);
+      this.spawnBall(); this.spawnT=0; this.spawnI=Math.max(38,this.spawnI-1.42);
     }
     this.balls=this.balls.filter(b=>{
       b.x+=b.vx; b.y+=b.vy; b.rot+=0.08;
@@ -4315,7 +4315,7 @@ const GK_GAME = {
     const ty=this.gk.y;
     const dx=tx-x,dy=ty;
     const mag=Math.sqrt(dx*dx+dy*dy);
-    const sp=2.8+this.level*0.36+Math.random()*1.5;
+    const sp=2.8+this.level*0.34+Math.random()*1.5;
     this.balls.push({x,y:-16,vx:(dx/mag)*sp,vy:(dy/mag)*sp,r:14,rot:Math.random()*6.28,trail:[]});
   },
 
