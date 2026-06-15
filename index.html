@@ -4425,7 +4425,7 @@ const GK_GAME = {
     const ty = this.gk.y;
     const dx=tx-x, dy=ty;
     const mag=Math.sqrt(dx*dx+dy*dy);
-    const sp=(7.5+2.0*(1-Math.exp(-this.level/6.5))+Math.random()*0.8)*speedMult;
+    const sp=(Math.min(12, 7.44+this.level*0.356)+Math.random()*0.8)*speedMult;
     this.balls.push({x, y: forceY||(-16), vx:(dx/mag)*sp, vy:(dy/mag)*sp, r:14, rot:Math.random()*6.28, trail:[], color});
   },
 
