@@ -4251,7 +4251,10 @@ const GK_GAME = {
     cancelAnimationFrame(this._idleFrame);
     this.score=0; this.lives=3; this.level=1; this.combo=0;
     this.balls=[]; this.spawnT=0; this.spawnI=100; this.flash=null;
-    this.gk.x=180; this.gk.tx=180;
+    this.shake=0; this.particles=[]; this.lifePickup=null;
+    this.eventCD=0; this.eventMsg=null; this.pauseT=0; this.waveQ=0;
+    this.gk.x=this.canvas.width/2||190; this.gk.tx=this.canvas.width/2||190;
+    this.gk.w=82; this.gk.lean=0;
     this.running=true;
     const loop = () => {
       if (!this.running) return;
@@ -4263,14 +4266,64 @@ const GK_GAME = {
 
   update() {
     const W=this.canvas.width, H=this.canvas.height;
+
+    // keeper — سریع‌تر و کمی پهن‌تر با سطح
+    const keepLerp = Math.min(0.30, 0.22 + this.level*0.007);
     const dx=this.gk.tx-this.gk.x;
-    this.gk.x += dx*0.22;
+    this.gk.x += dx*keepLerp;
+    this.gk.w = Math.min(104, 82 + this.level*1.8);
     this.gk.x = Math.max(this.gk.w/2+8, Math.min(W-this.gk.w/2-8, this.gk.x));
     const nearest=this.balls.reduce((a,b)=>(!a||b.y>a.y)?b:a,null);
     this.gk.lean=nearest?Math.max(-1,Math.min(1,(nearest.x-this.gk.x)/(W/2)))*0.35:(this.gk.lean||0)*0.9;
-    if(++this.spawnT>=this.spawnI){
-      this.spawnBall(); this.spawnT=0; this.spawnI=Math.max(38,this.spawnI-1.42);
+
+    // منحنی سختی — asymptotic با رشد سریع‌تر در لول ۳-۷
+    const targetSpawnI = 62 + 45*Math.exp(-this.level/5.5);
+    this.spawnI += (targetSpawnI - this.spawnI)*0.08;
+
+    // رویدادهای تصادفی — از لول ۳ به بعد
+    if(this.eventCD>0){ this.eventCD--; }
+    else if(this.level>=3 && !this.pauseT && !this.waveQ && Math.random()<0.055){
+      this._triggerEvent();
     }
+    // موج — وقفه قبل از spawn سه‌تایی
+    if(this.pauseT>0){
+      this.pauseT--;
+      if(this.pauseT===0){ this.waveQ=3; this._showMsg('🌊 موج!','#3b82f6'); }
+    }
+    if(this.waveQ>0 && this.spawnT%14===0){
+      this.spawnBall(); this.waveQ--;
+    }
+    // event message fadeout
+    if(this.eventMsg){ this.eventMsg.t--; if(this.eventMsg.t<=0)this.eventMsg=null; }
+
+    if(++this.spawnT >= this.spawnI && !this.pauseT){
+      this.spawnBall();
+      this.spawnT=0;
+      // جون — ۴٪ شانس، فقط اگه جون < ۳ و هیچ جون روی صفحه نیست
+      if(!this.lifePickup && this.lives<3 && this.score>=5 && Math.random()<0.04){
+        this.lifePickup = {
+          x: 45+Math.random()*(W-90),
+          y: -22, vy: 1.6, r: 16, rot: 0, pulse: 0
+        };
+      }
+    }
+
+    // آپدیت جون
+    if(this.lifePickup){
+      const lp=this.lifePickup;
+      lp.y += lp.vy; lp.rot += 0.04; lp.pulse++;
+      // تشخیص گرفتن
+      if(lp.y >= this.gk.y-lp.r*0.5){
+        const hit=Math.abs(lp.x-this.gk.x)<this.gk.w/2+lp.r*0.5;
+        if(hit && this.lives<3){
+          this.lives = Math.min(3, this.lives+1);
+          this.flash={col:'#ff4d88',a:0.25,t:20};
+          this._burst(lp.x,lp.y,'#ff4d4d');
+        }
+        this.lifePickup=null;
+      } else if(lp.y>H+30){ this.lifePickup=null; }
+    }
+
     this.balls=this.balls.filter(b=>{
       b.x+=b.vx; b.y+=b.vy; b.rot+=0.08;
       if(b.x<b.r){b.x=b.r;b.vx=Math.abs(b.vx);}
@@ -4308,15 +4361,41 @@ const GK_GAME = {
     }
   },
 
-  spawnBall(){
-    const W=this.canvas.width,H=this.canvas.height;
-    const x=20+Math.random()*(W-40);
-    const tx=28+Math.random()*(W-56);
-    const ty=this.gk.y;
-    const dx=tx-x,dy=ty;
+  _showMsg(text, col){
+    this.eventMsg={text, col, t:90};
+  },
+
+  _triggerEvent(){
+    const r=Math.random();
+    if(r<0.38){
+      // دوقلو — دو توپ از دو طرف
+      const W=this.canvas.width;
+      this.spawnBall(W*0.28, null, 1.0);
+      this.spawnBall(W*0.72, null, 1.0);
+      this._showMsg('👥 دوقلو!','#f6ad55');
+      this.eventCD=28;
+    } else if(r<0.72){
+      // توپ سریع قرمز
+      this.spawnBall(null, null, 1.9, '#ff3333');
+      this._showMsg('🔴 توپ سریع!','#ff4d4d');
+      this.eventCD=22;
+    } else {
+      // وقفه + موج
+      this.pauseT=110;
+      this._showMsg('⚠️ آماده باش...','#60a5fa');
+      this.eventCD=75;
+    }
+  },
+
+  spawnBall(forceX=null, forceY=null, speedMult=1.0, color=null){
+    const W=this.canvas.width, H=this.canvas.height;
+    const x = forceX!==null ? forceX : 20+Math.random()*(W-40);
+    const tx = 28+Math.random()*(W-56);
+    const ty = this.gk.y;
+    const dx=tx-x, dy=ty;
     const mag=Math.sqrt(dx*dx+dy*dy);
-    const sp=2.8+this.level*0.34+Math.random()*1.5;
-    this.balls.push({x,y:-16,vx:(dx/mag)*sp,vy:(dy/mag)*sp,r:14,rot:Math.random()*6.28,trail:[]});
+    const sp=(2.8+2.8*(1-Math.exp(-this.level/5.5))+Math.random()*1.1)*speedMult;
+    this.balls.push({x, y: forceY||(-16), vx:(dx/mag)*sp, vy:(dy/mag)*sp, r:14, rot:Math.random()*6.28, trail:[], color});
   },
 
   _sky(ctx,W,H){
@@ -4485,7 +4564,12 @@ const GK_GAME = {
     shd.addColorStop(0,'rgba(0,0,0,0.42)');shd.addColorStop(1,'rgba(0,0,0,0)');
     ctx.fillStyle=shd;ctx.beginPath();ctx.arc(3,4,b.r*1.15,0,Math.PI*2);ctx.fill();
     const bg=ctx.createRadialGradient(-b.r*0.4,-b.r*0.4,b.r*0.02,0,0,b.r);
-    bg.addColorStop(0,'#ffffff');bg.addColorStop(0.28,'#f8f8f8');bg.addColorStop(0.72,'#e2e2e2');bg.addColorStop(1,'#b2b2b2');
+    if(b.color){
+      // توپ رنگی (مثلاً قرمز برای توپ سریع)
+      bg.addColorStop(0,'#fff');bg.addColorStop(0.3,b.color);bg.addColorStop(1,'#660000');
+    } else {
+      bg.addColorStop(0,'#ffffff');bg.addColorStop(0.28,'#f8f8f8');bg.addColorStop(0.72,'#e2e2e2');bg.addColorStop(1,'#b2b2b2');
+    }
     ctx.fillStyle=bg;ctx.beginPath();ctx.arc(0,0,b.r,0,Math.PI*2);ctx.fill();
     ctx.rotate(b.rot);
     ctx.fillStyle='#0f0f0f';
@@ -4521,8 +4605,29 @@ const GK_GAME = {
     this._goal(ctx,W,H);
     this._keeper(ctx,W,H);
     this.balls.forEach(b=>{b.trail.push({x:b.x,y:b.y});if(b.trail.length>8)b.trail.shift();this._ball(ctx,b);});
+
+    // جون طلایی
+    if(this.lifePickup){
+      const lp=this.lifePickup;
+      const glow=ctx.createRadialGradient(lp.x,lp.y,0,lp.x,lp.y,lp.r*2.5);
+      glow.addColorStop(0,`rgba(255,80,120,${0.18+Math.sin(lp.pulse*0.15)*0.08})`);
+      glow.addColorStop(1,'rgba(255,80,120,0)');
+      ctx.fillStyle=glow; ctx.beginPath(); ctx.arc(lp.x,lp.y,lp.r*2.5,0,Math.PI*2); ctx.fill();
+      ctx.save(); ctx.translate(lp.x,lp.y); ctx.scale(1+Math.sin(lp.pulse*0.15)*0.08,1+Math.sin(lp.pulse*0.15)*0.08);
+      ctx.font=`${lp.r*2}px sans-serif`; ctx.textAlign='center'; ctx.textBaseline='middle';
+      ctx.fillText('❤️',0,0);
+      ctx.restore();
+    }
     (this.particles||[]).forEach(p=>{ctx.globalAlpha=p.life;ctx.fillStyle=p.col;ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,Math.PI*2);ctx.fill();});
     ctx.globalAlpha=1;
+    // پیام رویداد
+    if(this.eventMsg){
+      const em=this.eventMsg,fa=Math.min(1,em.t/18)*Math.min(1,em.t/90*3.5);
+      ctx.globalAlpha=fa;ctx.shadowColor=em.col;ctx.shadowBlur=18;ctx.fillStyle=em.col;
+      ctx.font='bold 20px Vazirmatn,sans-serif';ctx.textAlign='center';
+      ctx.fillText(em.text,W/2,H*0.38);
+      ctx.shadowBlur=0;ctx.globalAlpha=1;
+    }
     ctx.restore();
     const le=document.getElementById('ghud-lives'),se=document.getElementById('ghud-score'),lve=document.getElementById('ghud-level'),ce=document.getElementById('ghud-combo');
     if(le)le.textContent='❤️'.repeat(this.lives)+'🖤'.repeat(Math.max(0,3-this.lives));
