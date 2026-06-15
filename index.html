@@ -4299,11 +4299,11 @@ const GK_GAME = {
       this.spawnBall();
       this.spawnT=0;
       // رویداد: ۱۲٪ احتمال در هر spawn — cooldown طولانی برای جلوگیری از تکرار
-      if(!this.eventCD && this.score>=8 && Math.random()<0.12){
+      if(!this.eventCD && this.score>=10 && Math.random()<0.07){
         this._triggerEvent();
       }
       // جون تصادفی
-      if(!this.lifePickup && this.lives<3 && this.score>=5 && Math.random()<0.04){
+      if(!this.lifePickup && this.lives<3 && this.score>=5 && !this.eventCD && Math.random()<0.04){
         this.lifePickup={x:45+Math.random()*(W-90),y:-22,vy:1.6,r:16,rot:0,pulse:0};
       }
     }
@@ -4380,7 +4380,7 @@ const GK_GAME = {
         this._showMsg('👥 دوقلو!','#f6ad55');
         this.eventCD=360; this.suppressT=70;
       } else {
-        this.spawnBall(null,null,1.9,'#ff3333');
+        this.spawnBall(null,null,1.55,'#ff3333');
         this._showMsg('🔴 توپ سریع!','#ff4d4d');
         this.eventCD=300; this.suppressT=50;
       }
@@ -4390,7 +4390,7 @@ const GK_GAME = {
         this._showMsg('👥 دوقلو!','#f6ad55');
         this.eventCD=360; this.suppressT=70;
       } else if(r < 0.82){
-        this.spawnBall(null,null,1.9,'#ff3333');
+        this.spawnBall(null,null,1.55,'#ff3333');
         this._showMsg('🔴 توپ سریع!','#ff4d4d');
         this.eventCD=300; this.suppressT=50;
       } else {
