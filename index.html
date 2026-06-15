@@ -4298,8 +4298,8 @@ const GK_GAME = {
     if(++this.spawnT >= this.spawnI && !this.pauseT && !this.suppressT && !this.waveQ){
       this.spawnBall();
       this.spawnT=0;
-      // رویداد: ۱۰٪ احتمال در هر spawn (نه هر فریم — مهمه)
-      if(!this.eventCD && this.score>=8 && Math.random()<0.10){
+      // رویداد: ۱۲٪ احتمال در هر spawn — cooldown طولانی برای جلوگیری از تکرار
+      if(!this.eventCD && this.score>=8 && Math.random()<0.12){
         this._triggerEvent();
       }
       // جون تصادفی
@@ -4378,25 +4378,25 @@ const GK_GAME = {
       if(r < 0.5){
         this.spawnBall(W*0.28,null,1.0); this.spawnBall(W*0.72,null,1.0);
         this._showMsg('👥 دوقلو!','#f6ad55');
-        this.eventCD=70; this.suppressT=55;
+        this.eventCD=360; this.suppressT=70;
       } else {
         this.spawnBall(null,null,1.9,'#ff3333');
         this._showMsg('🔴 توپ سریع!','#ff4d4d');
-        this.eventCD=60; this.suppressT=45;
+        this.eventCD=300; this.suppressT=50;
       }
     } else {
       if(r < 0.42){
         this.spawnBall(W*0.28,null,1.0); this.spawnBall(W*0.72,null,1.0);
         this._showMsg('👥 دوقلو!','#f6ad55');
-        this.eventCD=70; this.suppressT=55;
+        this.eventCD=360; this.suppressT=70;
       } else if(r < 0.82){
         this.spawnBall(null,null,1.9,'#ff3333');
         this._showMsg('🔴 توپ سریع!','#ff4d4d');
-        this.eventCD=60; this.suppressT=45;
+        this.eventCD=300; this.suppressT=50;
       } else {
         this.pauseT=110;
         this._showMsg('⚠️ آماده باش...','#60a5fa');
-        this.eventCD=120;
+        this.eventCD=480;
       }
     }
   },
