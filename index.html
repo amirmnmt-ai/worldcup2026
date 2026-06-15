@@ -4366,24 +4366,37 @@ const GK_GAME = {
   },
 
   _triggerEvent(){
-    const r=Math.random();
-    if(r<0.38){
-      // دوقلو — دو توپ از دو طرف
-      const W=this.canvas.width;
-      this.spawnBall(W*0.28, null, 1.0);
-      this.spawnBall(W*0.72, null, 1.0);
-      this._showMsg('👥 دوقلو!','#f6ad55');
-      this.eventCD=28;
-    } else if(r<0.72){
-      // توپ سریع قرمز
-      this.spawnBall(null, null, 1.9, '#ff3333');
-      this._showMsg('🔴 توپ سریع!','#ff4d4d');
-      this.eventCD=22;
+    // هیچ‌وقت رویداد جدید وقتی موج یا مکث فعاله
+    if(this.pauseT>0 || this.waveQ>0) return;
+    const W=this.canvas.width;
+
+    // تعیین رویدادهای مجاز بر اساس لول
+    const canWave = this.level >= 30;
+    const r = Math.random();
+
+    if(!canWave){
+      // فقط دوقلو یا توپ سریع
+      if(r < 0.5){
+        this.spawnBall(W*0.28,null,1.0); this.spawnBall(W*0.72,null,1.0);
+        this._showMsg('👥 دوقلو!','#f6ad55'); this.eventCD=30;
+      } else {
+        this.spawnBall(null,null,1.9,'#ff3333');
+        this._showMsg('🔴 توپ سریع!','#ff4d4d'); this.eventCD=24;
+      }
     } else {
-      // وقفه + موج
-      this.pauseT=110;
-      this._showMsg('⚠️ آماده باش...','#60a5fa');
-      this.eventCD=75;
+      // لول ۳۰+ — موج هم ممکنه ولی احتمالش کمه
+      if(r < 0.42){
+        this.spawnBall(W*0.28,null,1.0); this.spawnBall(W*0.72,null,1.0);
+        this._showMsg('👥 دوقلو!','#f6ad55'); this.eventCD=30;
+      } else if(r < 0.82){
+        this.spawnBall(null,null,1.9,'#ff3333');
+        this._showMsg('🔴 توپ سریع!','#ff4d4d'); this.eventCD=24;
+      } else {
+        // موج — فقط ۱۸٪ احتمال و فقط لول ۳۰+
+        this.pauseT=110;
+        this._showMsg('⚠️ آماده باش...','#60a5fa');
+        this.eventCD=120; // کول‌داون طولانی تا موج دوباره تکرار نشه
+      }
     }
   },
 
