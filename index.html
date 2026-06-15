@@ -4256,12 +4256,17 @@ const GK_GAME = {
     this.gk.x=this.canvas.width/2||190; this.gk.tx=this.canvas.width/2||190;
     this.gk.w=82; this.gk.lean=0;
     this.running=true;
-    const loop = () => {
+    // cap به ۶۰fps — جلوگیری از سریع‌تر شدن توپ روی صفحه‌های ۹۰/۱۲۰Hz
+    const FRAME_MS = 1000/60;
+    let _lastT = 0;
+    const loop = (ts) => {
       if (!this.running) return;
-      this.update(); this.draw();
       this.frame = requestAnimationFrame(loop);
+      if (ts - _lastT < FRAME_MS - 1) return;
+      _lastT = ts;
+      this.update(); this.draw();
     };
-    loop();
+    requestAnimationFrame(loop);
   },
 
   update() {
@@ -4296,14 +4301,13 @@ const GK_GAME = {
 
     // spawn معمولی — فقط وقتی هیچ رویداد فعالی نیست
     if(++this.spawnT >= this.spawnI && !this.pauseT && !this.suppressT && !this.waveQ){
-      this.spawnBall();
       this.spawnT=0;
-      // رویداد: ۱۲٪ احتمال در هر spawn — cooldown طولانی برای جلوگیری از تکرار
-      if(!this.eventCD && this.score>=10 && Math.random()<0.07){
-        this._triggerEvent();
-      }
-      // جون تصادفی
-      if(!this.lifePickup && this.lives<3 && this.score>=5 && !this.eventCD && Math.random()<0.04){
+      // رویداد یا توپ معمولی — هیچ‌وقت هر دو همزمان
+      const doEvent = !this.eventCD && this.score>=10 && Math.random()<0.07;
+      if(doEvent){ this._triggerEvent(); }
+      else { this.spawnBall(); }
+      // جون — فقط بعد از spawn معمولی و بدون رویداد فعال
+      if(!doEvent && !this.lifePickup && this.lives<3 && this.score>=5 && !this.eventCD && Math.random()<0.04){
         this.lifePickup={x:45+Math.random()*(W-90),y:-22,vy:1.6,r:16,rot:0,pulse:0};
       }
     }
