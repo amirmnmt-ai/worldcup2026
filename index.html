@@ -1244,7 +1244,7 @@
     <button class="nav-tab" onclick="switchTab('leaderboard')">جدول</button>
     <button class="nav-tab" onclick="switchTab('results')">نتایج</button>
     <button class="nav-tab" onclick="switchTab('scorecard')">کارنامه</button>
-    <button class="nav-tab" onclick="switchTab('game')">گلبان</button>
+    <button class="nav-tab admin-only" onclick="switchTab('game')" style="display:none" id="tab-btn-game">گلبان</button>
     <button class="nav-tab admin-only" onclick="switchTab('admin')" style="display:none" id="tab-btn-admin">ادمین <span id="admin-badge" class="tab-badge" style="display:none">0</span></button>
   </nav>
 
@@ -1456,6 +1456,13 @@
       </div>
     </div>
 
+    <!-- ریست رکوردهای گلبان -->
+    <div style="margin-bottom:0.5rem">
+      <div class="section-divider-text">🎮 گلبان</div>
+      <button onclick="resetGameScores()" style="width:100%;padding:0.7rem;background:#7f1d1d;border:1px solid #991b1b;border-radius:10px;color:#fca5a5;font-family:Vazirmatn,sans-serif;font-size:0.85rem;cursor:pointer">
+        🗑️ ریست همه رکوردهای گلبان
+      </button>
+    </div>
     <!-- پیش‌بینی اضطراری — فقط از renderAdmin پر میشه -->
     <div id="admin-proxy-section" style="display:none;margin-bottom:0.5rem">
       <div class="section-divider"><span class="section-divider-text">📝 ورود پیش‌بینی به‌جای کاربر (اضطراری)</span></div>
@@ -4200,6 +4207,18 @@ function renderAll() {
 // ════════════════════════════════════════════════════════════
 //  GOALKEEPER GAME
 // ════════════════════════════════════════════════════════════
+async function resetGameScores() {
+  if (!confirm('همه رکوردهای گلبان پاک میشه. مطمئنی؟')) return;
+  try {
+    await fbWithTimeout(db.ref('game_scores').remove(), 6000);
+    appData.game_scores = {};
+    renderGameLeaderboard();
+    showToast('✅ رکوردهای گلبان ریست شد', 'success');
+  } catch(e) {
+    showToast('❌ خطا در ریست', 'error');
+  }
+}
+
 function renderGameLeaderboard() {
   const el = document.getElementById('game-leaderboard');
   if (!el) return;
