@@ -427,9 +427,9 @@
     backdrop-filter: blur(8px);
   }
   .leaderboard-row.me {
-    border-color: rgba(201,168,76,0.3);
-    background: rgba(201,168,76,0.05);
-    box-shadow: 0 0 20px rgba(201,168,76,0.08);
+    border-color: rgba(96,165,250,0.35);
+    background: rgba(96,165,250,0.05);
+    box-shadow: 0 0 16px rgba(96,165,250,0.1);
   }
   .leaderboard-row:hover { border-color: var(--border); transform: translateX(-2px); }
 
@@ -2322,7 +2322,7 @@ async function confirmResult(matchId) {
         if (!appData.match_locks) appData.match_locks = {};
         appData.match_locks[matchId] = true;
       } catch(e) { console.warn('lock failed:', e); }
-      renderAll();
+      renderAllDeferred();
       showToast(`✅ نتیجه ثبت و بازی قفل شد 🔒`, 'success');
 
       // ارسال پیام تلگرام
@@ -2591,6 +2591,11 @@ function showToast(msg, type = '') {
 }
 
 function switchTab(name) {
+  // اگه داریم از تب game میریم — idle loop رو cancel کن
+  if (name !== 'game') {
+    cancelAnimationFrame(GK_GAME._idleFrame);
+    GK_GAME._idleFrame = null;
+  }
   document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
   document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
   document.getElementById(`tab-${name}`).classList.add('active');
@@ -4195,6 +4200,7 @@ async function submitProxyPrediction() {
 //  RENDER ALL
 // ════════════════════════════════════════════════════════════
 function renderAll() {
+  const scrollY = window.scrollY;
   try { renderMatches();    } catch(e) { console.error('❌ renderMatches:', e); }
   try { renderLeaderboard();} catch(e) { console.error('❌ renderLeaderboard:', e); }
   try { renderResults();    } catch(e) { console.error('❌ renderResults:', e); }
@@ -4202,6 +4208,11 @@ function renderAll() {
   try { renderGameLeaderboard(); } catch(e) {}
   if (isAdmin) { try { renderAdmin(); } catch(e) { console.error('❌ renderAdmin:', e); } }
   try { injectIcons();      } catch(e) {}
+  window.scrollTo(0, scrollY);
+}
+
+function renderAllDeferred() {
+  requestAnimationFrame(() => renderAll());
 }
 
 // ════════════════════════════════════════════════════════════
@@ -4319,7 +4330,7 @@ const GK_GAME = {
     this.gk.lean=nearest?Math.max(-1,Math.min(1,(nearest.x-this.gk.x)/(W/2)))*0.35:(this.gk.lean||0)*0.9;
 
     // منحنی سختی — asymptotic با رشد سریع‌تر در لول ۳-۷
-    const targetSpawnI = Math.max(40, 92 - this.level*1.8);
+    const targetSpawnI = Math.max(22, 55 - this.level*1.3);
     this.spawnI += (targetSpawnI - this.spawnI)*0.08;
 
     // تایمرها
@@ -4331,7 +4342,7 @@ const GK_GAME = {
     if(++this.spawnT >= this.spawnI && !this.suppressT){
       this.spawnT=0;
       // رویداد یا توپ معمولی — هیچ‌وقت هر دو همزمان
-      const doEvent = !this.eventCD && this.score>=8 && Math.random()<0.18;
+      const doEvent = !this.eventCD && this.score>=5 && Math.random()<0.15;
       if(doEvent){ this._triggerEvent(); }
       else { this.spawnBall(); }
       // جون — فقط بعد از spawn معمولی و بدون رویداد فعال
@@ -4361,13 +4372,13 @@ const GK_GAME = {
       if(b.x<b.r){b.x=b.r;b.vx=Math.abs(b.vx);}
       if(b.x>W-b.r){b.x=W-b.r;b.vx=-Math.abs(b.vx);}
       // توپ فریبکار — تغییر مسیر در نیمه راه
-      if(b.swerve && !b.swerved && b.y > H*0.38){
-        b.vx = -b.vx*(1.3+Math.random()*0.5); b.swerved=true;
+      if(b.swerve && !b.swerved && b.y > H*0.25){
+        b.vx = -b.vx*(1.8+Math.random()*0.6); b.swerved=true;
       }
       // توپ نامرئی — اول ۱ ثانیه نشون داده میشه، بعد کاملاً ناپدید
       if(b.invisible){
         b.invisPhase=(b.invisPhase||0)+1;
-        b.opacity = b.invisPhase < 30 ? 1 : 0;
+        b.opacity = b.invisPhase < 6 ? 1 : 0;
         // trail وقتی نامرئیه پاک میشه
         if(b.opacity===0) b.trail=[];
       }
@@ -4418,15 +4429,19 @@ const GK_GAME = {
   _triggerEvent(){
     const W=this.canvas.width;
     const r=Math.random();
-    if(r < 0.35){
+    if(r < 0.30){
       // توپ سریع
-      const fastSP = 10 + this.level*0.15;
+      const fastSP = 18 + this.level*0.25;
       this.spawnBall(null,null,1.0,'#ef4444',null,fastSP,false,false,'fast');
       this._showMsg('🔴 توپ سریع!','#ef4444');
       this.eventCD=220; this.suppressT=85; this.spawnT=0;
-    } else if(r < 0.68){
+    } else if(r < 0.72){
       // توپ فریبکار
-      this.spawnBall(null,null,0.85,'#a855f7',null,null,true,false,'deceptive');
+      // فریبکار: spawn یه طرف، target طرف دیگه — swerve همیشه دراماتیک
+      const decSide = Math.random()<0.5;
+      const decX = decSide ? 20+Math.random()*W*0.25 : W*0.75+Math.random()*W*0.2;
+      const decTX = decSide ? W*0.65+Math.random()*W*0.3 : 20+Math.random()*W*0.3;
+      this.spawnBall(decX,null,0.85,'#a855f7',decTX,null,true,false,'deceptive');
       this._showMsg('🔀 توپ فریبکار!','#a855f7');
       this.eventCD=240; this.suppressT=100; this.spawnT=0;
     } else {
