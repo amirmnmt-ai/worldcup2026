@@ -1148,6 +1148,105 @@
     .res-score-main { font-size:1.4rem; }
     .nav-tab { font-size:0.68rem; padding:0.7rem 0.3rem; }
   }
+
+  /* ══ WEEKLY CHALLENGE ══ */
+  @keyframes challengePulse {
+    0%,100% { box-shadow: 0 0 0 0 rgba(201,168,76,0.25), 0 4px 24px rgba(0,0,0,0.3); }
+    50%      { box-shadow: 0 0 0 6px rgba(201,168,76,0), 0 4px 24px rgba(0,0,0,0.3); }
+  }
+  .challenge-card {
+    margin: 0.75rem 0 1rem;
+    border-radius: var(--radius);
+    overflow: hidden;
+    border: 1px solid var(--border);
+    background: var(--glass);
+    backdrop-filter: blur(10px);
+    animation: challengePulse 3s ease-in-out infinite;
+  }
+  .challenge-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0.65rem 1rem;
+    background: rgba(0,0,0,0.25);
+    border-bottom: 1px solid var(--border-subtle);
+  }
+  .challenge-title {
+    font-size: 0.72rem; font-weight: 700; color: var(--gold-light);
+    letter-spacing: 0.3px; display: flex; align-items: center; gap: 0.4rem;
+    padding: 0.18rem 0.65rem; border-radius: 20px;
+    background: rgba(201,168,76,0.18); border: 1px solid rgba(201,168,76,0.3);
+  }
+  .challenge-amount-badge {
+    font-size: 0.7rem; font-weight: 800; color: var(--text-dim);
+    border-radius: 20px; padding: 0.18rem 0.65rem;
+    background: rgba(255,255,255,0.06); border: 1px solid var(--border-subtle);
+    white-space: nowrap;
+  }
+  .challenge-body { padding: 0.9rem 1rem; }
+  .challenge-question {
+    font-size: 0.88rem; font-weight: 700; color: var(--text);
+    margin-bottom: 0.4rem; line-height: 1.5;
+  }
+  .challenge-options { display: flex; flex-direction: column; gap: 0.45rem; }
+  .challenge-option {
+    display: flex; align-items: center; gap: 0.65rem;
+    padding: 0.65rem 0.9rem;
+    border-radius: var(--radius-sm);
+    border: 1.5px solid var(--border-subtle);
+    background: rgba(255,255,255,0.03);
+    cursor: pointer; transition: all 0.2s;
+    font-size: 0.85rem; font-weight: 500; color: var(--text-mid);
+    touch-action: manipulation; -webkit-tap-highlight-color: transparent;
+    text-align: right;
+  }
+  .challenge-option:hover:not(:disabled) {
+    border-color: var(--border-bright);
+    background: rgba(201,168,76,0.06);
+    color: var(--text);
+  }
+  .challenge-option.selected {
+    border-color: var(--border-bright);
+    background: rgba(201,168,76,0.08);
+    color: var(--gold-light);
+    font-weight: 700;
+  }
+  .challenge-option.correct-answer {
+    border-color: var(--green);
+    background: rgba(0,214,143,0.08);
+    color: var(--green);
+    font-weight: 800;
+  }
+  .challenge-option.wrong-answer {
+    border-color: rgba(255,77,77,0.35);
+    background: rgba(255,77,77,0.06);
+    color: var(--red);
+  }
+  .challenge-option:disabled { cursor: default; }
+  .challenge-opt-letter {
+    width: 22px; height: 22px; border-radius: 50%; flex-shrink: 0;
+    background: rgba(201,168,76,0.1); border: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.72rem; font-weight: 900; color: var(--gold);
+  }
+  .challenge-option.correct-answer .challenge-opt-letter { background:rgba(0,214,143,0.15);border-color:var(--green);color:var(--green); }
+  .challenge-option.wrong-answer   .challenge-opt-letter { background:rgba(255,77,77,0.1);border-color:var(--red);color:var(--red); }
+  .challenge-option.selected        .challenge-opt-letter { background:rgba(201,168,76,0.2);border-color:var(--gold); }
+  .challenge-opt-votes {
+    margin-right: auto; font-size: 0.68rem; font-weight: 700;
+    color: var(--text-dim); white-space: nowrap;
+  }
+  .challenge-footer {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0.6rem 1rem;
+    border-top: 1px solid var(--border-subtle);
+    font-size: 0.72rem; color: var(--text-dim);
+  }
+  .challenge-settled-result {
+    padding: 0.75rem 1rem;
+    background: rgba(0,214,143,0.06);
+    border-top: 1px solid rgba(0,214,143,0.15);
+    font-size: 0.82rem; font-weight: 700; color: var(--green);
+    text-align: center;
+  }
 </style>
 </head>
 <body>
@@ -1292,6 +1391,9 @@
       ">⚽</span>
     </div>
 
+    <!-- ══ چالش هفته ══ -->
+    <div id="weekly-challenge-container"></div>
+
     <div id="matches-list"></div>
   </div>
 
@@ -1356,6 +1458,16 @@
 
   <!-- TAB: ADMIN -->
   <div class="tab-content" id="tab-admin">
+    <!-- ══ چالش روزانه — بالاترین ردیف ══ -->
+    <div class="section-divider">
+      <div class="section-divider-line"></div>
+      <div class="section-divider-text" style="color:#c990ff">🎲 چالش روزانه</div>
+      <div class="section-divider-line"></div>
+    </div>
+    <div id="admin-challenge-section" style="margin-bottom:1.2rem">
+      <div id="admin-challenge-form"></div>
+      <div id="admin-active-challenges"></div>
+    </div>
     <!-- ثبت نتایج — بالای پنل ادمین -->
     <div class="section-divider">
       <div class="section-divider-line"></div>
@@ -1442,6 +1554,7 @@
         🗑️ ریست همه رکوردهای گلبان
       </button>
     </div>
+
     <!-- پیش‌بینی اضطراری — فقط از renderAdmin پر میشه -->
     <div id="admin-proxy-section" style="display:none;margin-bottom:0.5rem">
       <div class="section-divider"><span class="section-divider-text">📝 ورود پیش‌بینی به‌جای کاربر (اضطراری)</span></div>
@@ -1787,7 +1900,7 @@ const ICONS = {
 // ════════════════════════════════════════════════════════════
 let currentUser  = null;
 let isAdmin      = false;
-let appData      = { users: {}, predictions: {}, results: {}, teamOverrides: {}, champion_picks: {}, champion_result: null, game_scores: {}, match_locks: {} };
+let appData      = { users: {}, predictions: {}, results: {}, teamOverrides: {}, champion_picks: {}, champion_result: null, game_scores: {}, match_locks: {}, daily_challenges: {}, daily_answers: {} };
 let dbListeners  = [];
 let _renderTimer = null;
 
@@ -2078,7 +2191,7 @@ function startListeners() {
     }
   });
 
-  ['users', 'predictions', 'results', 'teamOverrides', 'champion_picks', 'champion_result', 'game_scores', 'match_locks'].forEach(path => {
+  ['users', 'predictions', 'results', 'teamOverrides', 'champion_picks', 'champion_result', 'game_scores', 'match_locks', 'daily_challenges', 'daily_answers'].forEach(path => {
     const ref = db.ref(path);
     ref.on('value', snap => {
       const fresh = snap.val() || {};
@@ -2331,6 +2444,8 @@ async function confirmResult(matchId) {
         if (!appData.match_locks) appData.match_locks = {};
         appData.match_locks[matchId] = true;
       } catch(e) { console.warn('lock failed:', e); }
+      // تسویه خودکار چالش روزانه
+      try { await autoSettleDailyChallenges(matchId); } catch(e) { console.warn('autoSettle:', e); }
       renderAllDeferred();
       showToast(`✅ نتیجه ثبت و بازی قفل شد 🔒`, 'success');
 
@@ -2727,6 +2842,431 @@ function getChampionBalance(uid) {
   return (appData.champion_result?.settlements || {})[uid] || 0;
 }
 
+// ════════════════════════════════════════════════════════════
+//  WEEKLY CHALLENGE — محاسبه موجودی
+// ════════════════════════════════════════════════════════════
+function getChallengeBalance(uid) {
+  let total = 0;
+  const challenges = appData.daily_challenges || {};
+  const answers    = appData.daily_answers    || {};
+  for (const [cid, ch] of Object.entries(challenges)) {
+    if (!ch.settled || ch.result === null || ch.result === undefined) continue;
+    const chAnswers  = answers[cid] || {};
+    if (!chAnswers[uid]) continue; // شرکت نکرده → بی‌اثر
+    const participants = Object.keys(chAnswers);
+    if (participants.length < 2) continue; // کمتر از ۲ نفر → بی‌اثر
+    if (ch.result === -1) continue; // مساوی → بی‌اثر، پول رد و بدل نمیشه
+    const amount      = ch.amount || 10000;
+    const correctOpt  = ch.result;
+    const correctUids = participants.filter(u => chAnswers[u]?.optionIndex === correctOpt);
+    const wrongUids   = participants.filter(u => chAnswers[u]?.optionIndex !== correctOpt);
+    const nC = correctUids.length, nW = wrongUids.length;
+    if (chAnswers[uid].optionIndex === correctOpt) {
+      total += amount * nW;   // درست: از هر غلط X می‌گیره
+    } else {
+      total -= amount * nC;   // غلط: به هر درست X می‌ده
+    }
+  }
+  return total;
+}
+
+// ════════════════════════════════════════════════════════════
+//  DAILY CHALLENGE — چالش روزانه
+// ════════════════════════════════════════════════════════════
+
+// ساعت ایران: UTC+3:30
+function iranNow() {
+  return new Date(Date.now() + 3.5 * 60 * 60 * 1000);
+}
+function iranDateStr(d) {
+  return new Date(d.getTime() + 3.5 * 60 * 60 * 1000).toISOString().slice(0, 10);
+}
+function getMatchesForIranDate(dateStr) {
+  return MATCHES.filter(m => iranDateStr(new Date(m.datetime + '+03:30')) === dateStr);
+}
+// مهلت = 23:59 شب قبل از forDate (روز بازی‌ها)
+function calcDeadlineForChallenge(forDate) {
+  const d = new Date(forDate + 'T00:00:00Z');
+  d.setDate(d.getDate() - 1);
+  const prevDate = d.toISOString().slice(0, 10);
+  return new Date(prevDate + 'T23:59:00+03:30').getTime();
+}
+// تاریخ‌های آینده که بازی دارن
+function getFutureMatchDates() {
+  const todayIran = iranDateStr(new Date());
+  const dates = new Set();
+  MATCHES.forEach(m => {
+    const d = iranDateStr(new Date(m.datetime + '+03:30'));
+    if (d > todayIran) dates.add(d);
+  });
+  return [...dates].sort();
+}
+function iranDateToFa(dateStr) {
+  return new Date(dateStr + 'T12:00:00+03:30')
+    .toLocaleDateString('fa-IR', { weekday:'long', month:'long', day:'numeric' });
+}
+
+function renderWeeklyChallenge() {
+  const container = document.getElementById('weekly-challenge-container');
+  if (!container) return;
+  if (!isAdmin) { container.innerHTML = ''; return; }
+  const challenges = appData.daily_challenges || {};
+  const active = Object.entries(challenges)
+    .filter(([, ch]) => ch.active)
+    .sort(([, a], [, b]) => (b.ts || 0) - (a.ts || 0));
+  if (!active.length) { container.innerHTML = ''; return; }
+  container.innerHTML = active.map(([cid, ch]) => renderChallengeCard(cid, ch)).join('');
+}
+
+function renderChallengeCard(cid, ch) {
+  const myUid     = currentUser?.uid;
+  const answers   = (appData.daily_answers || {})[cid] || {};
+  const myAnswer  = myUid ? answers[myUid] : null;
+  const amount    = ch.amount || 10000;
+  const opts      = ch.options || [];
+  const settled   = ch.settled;
+  const result    = ch.result;
+  const deadline  = ch.deadline || 0;
+  const now       = Date.now();
+  const isExpired = now >= deadline;
+  // قفل واقعی = مهلت تموم شده یا تسویه شده (نه صرفاً رأی داده)
+  const isHardLocked = isExpired || settled;
+  const totalAnswers = Object.keys(answers).length;
+
+  // countdown با رنگ طلایی
+  let deadlineHtml = '';
+  if (!settled && !isExpired) {
+    const rem = deadline - now;
+    const h   = Math.floor(rem / 3600000);
+    const m2  = Math.floor((rem % 3600000) / 60000);
+    const s2  = Math.floor((rem % 60000) / 1000);
+    const p   = n => toPersianNum(String(n).padStart(2,'0'));
+    deadlineHtml = `<div style="text-align:center;margin-bottom:0.75rem;background:rgba(201,168,76,0.06);border:1px solid var(--border);border-radius:10px;padding:0.6rem">
+      <div style="font-size:0.62rem;color:var(--text-dim);margin-bottom:0.15rem">مهلت ثبت حدس</div>
+      <div style="font-size:1.35rem;font-weight:900;background:linear-gradient(135deg,var(--gold-light),var(--gold));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;letter-spacing:3px;direction:ltr" id="ch-countdown-${cid}">${p(h)}:${p(m2)}:${p(s2)}</div>
+      <div style="font-size:0.6rem;color:var(--text-dim);margin-top:0.1rem">تا ۲۳:۵۹ امشب</div>
+    </div>`;
+    if (!window._chTickers) window._chTickers = {};
+    clearInterval(window._chTickers[cid]);
+    window._chTickers[cid] = setInterval(() => {
+      const el = document.getElementById(`ch-countdown-${cid}`);
+      if (!el) { clearInterval(window._chTickers[cid]); return; }
+      const r  = (ch.deadline || 0) - Date.now();
+      if (r <= 0) { clearInterval(window._chTickers[cid]); renderWeeklyChallenge(); return; }
+      const hh = Math.floor(r/3600000), mm = Math.floor((r%3600000)/60000), ss = Math.floor((r%60000)/1000);
+      const pp = n => toPersianNum(String(n).padStart(2,'0'));
+      el.textContent = `${pp(hh)}:${pp(mm)}:${pp(ss)}`;
+    }, 1000);
+  }
+  if (!settled && isExpired) {
+    deadlineHtml = `<div style="font-size:0.72rem;color:var(--text-dim);text-align:center;margin-bottom:0.6rem;background:rgba(255,255,255,0.03);border:1px solid var(--border-subtle);border-radius:8px;padding:0.4rem">
+      🔒 مهلت تموم شد — در انتظار نتیجه بازی‌ها</div>`;
+  }
+
+  const letters = ['A','B','C','D','E'];
+  const optionsHtml = opts.map((opt, i) => {
+    let cls = 'challenge-option', icon = '';
+    // رأی هر گزینه فقط بعد از قفل نمایش داده میشه
+    const voteCount = isHardLocked ? Object.values(answers).filter(a => a.optionIndex === i).length : null;
+    const pct = voteCount !== null && totalAnswers > 0 ? Math.round(voteCount/totalAnswers*100) : null;
+    if (settled && result !== -1) {
+      if (i === result)                     { cls += ' correct-answer'; icon = '✓ '; }
+      else if (myAnswer?.optionIndex === i) { cls += ' wrong-answer';   icon = '✗ '; }
+    } else if (myAnswer?.optionIndex === i) { cls += ' selected'; }
+    // کلیک‌پذیر: تا زمانی که مهلت نگذشته و تسویه نشده — حتی اگه قبلاً رأی داده
+    const clickable = !isHardLocked;
+    return `<button class="${cls}" ${clickable ? `onclick="submitChallengeAnswer('${cid}',${i})"` : 'disabled'}>
+      <span class="challenge-opt-letter">${letters[i]}</span>
+      <span style="flex:1">${icon}${opt}</span>
+      ${voteCount !== null ? `<span class="challenge-opt-votes">${toPersianNum(voteCount)} نفر${pct!==null?' ('+toPersianNum(pct)+'٪)':''}</span>` : ''}
+    </button>`;
+  }).join('');
+
+  // accordion — فقط بعد از قفل واقعی (مهلت یا تسویه)
+  let accordionHtml = '';
+  if (isHardLocked && Object.keys(answers).length > 0) {
+    const rows = opts.map((opt, i) => {
+      const voters = Object.entries(answers).filter(([,a]) => a.optionIndex === i);
+      if (!voters.length) return '';
+      const isWin = settled && result === i;
+      const names = voters.map(([uid]) => {
+        const u = appData.users?.[uid];
+        return `<span style="padding:0.12rem 0.45rem;border-radius:20px;font-size:0.68rem;font-weight:600;background:${isWin?'rgba(0,214,143,0.1)':'rgba(255,255,255,0.05)'};border:1px solid ${isWin?'rgba(0,214,143,0.2)':'var(--border-subtle)'};color:${isWin?'var(--green)':'var(--text-mid)'};">${u?.name || '؟'}</span>`;
+      }).join(' ');
+      return `<div style="margin-bottom:0.55rem">
+        <div style="font-size:0.7rem;font-weight:700;color:${isWin?'var(--green)':'var(--text-dim)'};margin-bottom:0.28rem">${letters[i]}. ${opt}${isWin?' ✓':''}</div>
+        <div style="display:flex;flex-wrap:wrap;gap:0.28rem">${names}</div>
+      </div>`;
+    }).join('');
+    accordionHtml = `<div style="border-top:1px solid var(--border-subtle)">
+      <button onclick="this.nextElementSibling.classList.toggle('open');this.querySelector('.acc-arr').style.transform=this.nextElementSibling.classList.contains('open')?'rotate(180deg)':'rotate(0)'"
+        style="width:100%;padding:0.6rem 1rem;background:rgba(0,0,0,0.2);border:none;display:flex;align-items:center;justify-content:space-between;cursor:pointer;font-family:inherit;font-size:0.75rem;font-weight:700;color:var(--gold);direction:rtl">
+        <span>👁 حدس کاربران (${toPersianNum(Object.keys(answers).length)} نفر)</span>
+        <span class="acc-arr" style="transition:0.2s;color:var(--text-dim)">▾</span>
+      </button>
+      <div class="res-acc-body" style="padding:0">
+        <div style="padding:0.65rem 1rem;background:rgba(0,0,0,0.25)">${rows}</div>
+      </div>
+    </div>`;
+  }
+
+  let settledHtml = '';
+  if (settled) {
+    if (result === -1) {
+      settledHtml = `<div class="challenge-settled-result" style="color:var(--text-mid)">🤝 مساوی — پول رد و بدل نشد</div>`;
+    } else if (myUid && answers[myUid]) {
+      const nPart = Object.keys(answers).length;
+      if (nPart < 2) {
+        settledHtml = `<div class="challenge-settled-result" style="color:var(--text-dim)">کمتر از ۲ نفر — بی‌اثر</div>`;
+      } else {
+        const nC = Object.values(answers).filter(a => a.optionIndex === result).length;
+        const nW = nPart - nC;
+        const isCorrect = answers[myUid].optionIndex === result;
+        const gain = isCorrect ? amount*nW : -(amount*nC);
+        settledHtml = `<div class="challenge-settled-result" style="color:${isCorrect?'var(--green)':'var(--red)'};background:${isCorrect?'rgba(0,214,143,0.06)':'rgba(255,77,77,0.06)'};border-top-color:${isCorrect?'rgba(0,214,143,0.15)':'rgba(255,77,77,0.15)'}">
+          ${isCorrect ? `🎉 درست! <strong>+${toPersianNum(Math.abs(gain).toLocaleString('fa-IR'))} تومان</strong>` : `😔 اشتباه — <strong>${toPersianNum(Math.abs(gain).toLocaleString('fa-IR'))}- تومان</strong>`}
+        </div>`;
+      }
+    } else if (myUid && !answers[myUid]) {
+      settledHtml = `<div class="challenge-settled-result" style="color:var(--text-dim)">شرکت نکردی</div>`;
+    }
+  }
+
+  // preview — فقط قبل از مهلت و بعد از ثبت اولیه
+  let previewHtml = '';
+  if (!settled && myAnswer !== null && myAnswer !== undefined && !isExpired) {
+    previewHtml = `<div style="font-size:0.72rem;color:var(--gold);text-align:center;margin-top:0.6rem;font-weight:700">
+      ✅ انتخاب کردی — تا ۲۳:۵۹ می‌تونی تغییر بدی
+    </div>`;
+  }
+
+  const forDateFa = ch.forDate ? iranDateToFa(ch.forDate) : '';
+  const statusColor = settled?'var(--green)':isExpired?'var(--text-dim)':'var(--gold)';
+  const statusLabel = settled?'✅ تسویه':isExpired?'🔒 بسته':myAnswer?'✏️ تغییر':'👆 انتخاب';
+  return `<div class="challenge-card">
+    <div class="challenge-header">
+      <div class="challenge-title">⚽ چالش روزانه${forDateFa?' — '+forDateFa:''}${settled?' ✓':''}</div>
+      <div class="challenge-amount-badge">${toPersianNum((amount).toLocaleString('fa-IR'))} تومان</div>
+    </div>
+    <div class="challenge-body">
+      <div class="challenge-question">کدوم بازی مجموع گل بیشتری داره؟</div>
+      <div style="font-size:0.68rem;color:var(--text-dim);margin-bottom:0.7rem">(مجموع گل‌های هر دو تیم)</div>
+      ${deadlineHtml}
+      <div class="challenge-options">${optionsHtml}</div>
+      ${previewHtml}
+    </div>
+    ${settledHtml}
+    <div class="challenge-footer">
+      <span>${toPersianNum(totalAnswers)} شرکت‌کننده</span>
+      <span style="color:${statusColor}">${statusLabel}</span>
+    </div>
+    ${accordionHtml}
+  </div>`;
+}
+
+async function submitChallengeAnswer(cid, optionIndex) {
+  if (!currentUser) return;
+  const ch = (appData.daily_challenges || {})[cid];
+  if (!ch || ch.settled) { showToast('چالش تسویه شده', ''); return; }
+  if (Date.now() >= (ch.deadline || 0)) { showToast('🔒 مهلت تموم شده', ''); return; }
+  // اجازه تغییر رأی تا قبل از مهلت
+  const answer = { optionIndex, ts: firebase.database.ServerValue.TIMESTAMP };
+  try {
+    await fbWithTimeout(db.ref(`daily_answers/${cid}/${currentUser.uid}`).set(answer), 8000);
+    if (!appData.daily_answers) appData.daily_answers = {};
+    if (!appData.daily_answers[cid]) appData.daily_answers[cid] = {};
+    const existing = appData.daily_answers[cid][currentUser.uid];
+    appData.daily_answers[cid][currentUser.uid] = { ...answer, ts: Date.now() };
+    renderWeeklyChallenge();
+    showToast(existing ? '✏️ انتخاب تغییر کرد' : '✅ حدس ثبت شد', 'success');
+  } catch(e) { showToast('❌ خطا در ثبت', 'error'); }
+}
+
+async function settleWeeklyChallenge(cid, winnerIndex) {
+  const ch = (appData.daily_challenges || {})[cid];
+  if (!ch) return;
+  const label = winnerIndex === -1 ? '\u0645\u0633\u0627\u0648\u06CC' : `\u06AF\u0632\u06CC\u0646\u0647 \u00AB${ch.options[winnerIndex]}\u00BB`;
+  if (!confirm(`\u062A\u0633\u0648\u06CC\u0647 \u0628\u0627 ${label}?`)) return;
+  try {
+    await fbWithTimeout(db.ref(`daily_challenges/${cid}`).update({ settled: true, result: winnerIndex }), 8000);
+    showToast('\u2705 \u062A\u0633\u0648\u06CC\u0647 \u0634\u062F', 'success');
+  } catch(e) { showToast('\u274C \u062E\u0637\u0627 \u062F\u0631 \u062A\u0633\u0648\u06CC\u0647', 'error'); }
+}
+
+async function deleteWeeklyChallenge(cid) {
+  if (!confirm('\u0627\u06CC\u0646 \u0686\u0627\u0644\u0634 \u0622\u0631\u0634\u06CC\u0648 \u0628\u0634\u0647\u061F')) return;
+  try {
+    await fbWithTimeout(db.ref(`daily_challenges/${cid}`).update({ active: false }), 8000);
+    showToast('\u0622\u0631\u0634\u06CC\u0648 \u0634\u062F', 'success');
+  } catch(e) { showToast('\u274C', 'error'); }
+}
+
+async function autoSettleDailyChallenges(matchId) {
+  const challenges = appData.daily_challenges || {};
+  for (const [cid, ch] of Object.entries(challenges)) {
+    if (!ch.active || ch.settled) continue;
+    const matchIds = ch.matchIds || [];
+    if (!matchIds.includes(matchId)) continue;
+    const allDone = matchIds.every(mid => appData.results[mid]);
+    if (!allDone) continue;
+    const totals = matchIds.map(mid => {
+      const r = appData.results[mid];
+      return (r?.homeGoals ?? 0) + (r?.awayGoals ?? 0);
+    });
+    const maxGoals = Math.max(...totals);
+    const winners  = totals.map((t, i) => t === maxGoals ? i : -1).filter(i => i >= 0);
+    const resultIdx = winners.length === 1 ? winners[0] : -1;
+    try {
+      await fbWithTimeout(db.ref(`daily_challenges/${cid}`).update({ settled: true, result: resultIdx }), 8000);
+      const winOpt = resultIdx >= 0 ? ch.options[resultIdx] : null;
+      showToast(winOpt ? `\u{1F3B2} \u0686\u0627\u0644\u0634 \u062A\u0633\u0648\u06CC\u0647 \u0634\u062F: ${winOpt}` : '\u{1F3B2} \u0686\u0627\u0644\u0634: \u0645\u0633\u0627\u0648\u06CC', 'success');
+    } catch(e) { console.warn('autoSettle error:', e); }
+  }
+}
+
+function renderAdminChallenges() {
+  _renderChallengeForm();
+  _renderActiveChallenges();
+}
+
+function _renderChallengeForm() {
+  const el = document.getElementById('admin-challenge-form');
+  if (!el) return;
+  const futureDates = getFutureMatchDates();
+  if (!futureDates.length) {
+    el.innerHTML = '<div style="font-size:0.8rem;color:var(--text-dim);padding:0.4rem 0">\u0628\u0627\u0632\u06CC \u0622\u06CC\u0646\u062F\u0647\u200C\u0627\u06CC \u062F\u0631 \u0628\u0631\u0646\u0627\u0645\u0647 \u0646\u06CC\u0633\u062A</div>';
+    return;
+  }
+  const dateOptions = futureDates.map(d =>
+    `<option value="${d}">${iranDateToFa(d)}</option>`
+  ).join('');
+  el.innerHTML = `<div style="background:rgba(180,110,255,0.06);border:1px solid rgba(180,110,255,0.2);border-radius:var(--radius);padding:0.9rem;margin-bottom:0.75rem">
+    <div style="font-size:0.82rem;font-weight:800;color:#c990ff;margin-bottom:0.65rem">\u2795 \u0686\u0627\u0644\u0634 \u062C\u062F\u06CC\u062F \u2014 \u06A9\u062F\u0648\u0645 \u0628\u0627\u0632\u06CC \u0645\u062C\u0645\u0648\u0639 \u06AF\u0644 \u0628\u06CC\u0634\u062A\u0631\u06CC \u062F\u0627\u0631\u0647\u061F</div>
+    <div style="display:flex;gap:0.5rem;align-items:center;margin-bottom:0.6rem;flex-wrap:wrap">
+      <div style="display:flex;flex-direction:column;gap:0.2rem;flex:1;min-width:140px">
+        <label style="font-size:0.68rem;color:var(--text-dim);font-weight:700">\u0631\u0648\u0632 \u0628\u0627\u0632\u06CC\u200C\u0647\u0627</label>
+        <select id="ch-date" onchange="onChallengeDateChange(this.value)"
+          style="background:var(--surface);border:1.5px solid var(--border);border-radius:var(--radius-sm);padding:0.5rem 0.7rem;color:var(--text);font-family:Vazirmatn,sans-serif;font-size:0.82rem;outline:none">
+          <option value="">\u0627\u0646\u062A\u062E\u0627\u0628 \u0631\u0648\u0632...</option>
+          ${dateOptions}
+        </select>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:0.2rem;width:110px">
+        <label style="font-size:0.68rem;color:var(--text-dim);font-weight:700">\u0645\u0628\u0644\u063A (\u062A\u0648\u0645\u0627\u0646)</label>
+        <input type="number" id="ch-amount" value="10000" min="1000" step="1000"
+          style="background:var(--surface);border:1.5px solid var(--border);border-radius:var(--radius-sm);padding:0.5rem 0.7rem;color:var(--text);font-family:Vazirmatn,sans-serif;font-size:0.82rem;outline:none;text-align:center;width:100%">
+      </div>
+    </div>
+    <div id="ch-match-list" style="margin-bottom:0.6rem;font-size:0.78rem;color:var(--text-dim)">\u0627\u0628\u062A\u062F\u0627 \u0631\u0648\u0632 \u0628\u0627\u0632\u06CC\u200C\u0647\u0627 \u0631\u0648 \u0627\u0646\u062A\u062E\u0627\u0628 \u06A9\u0646</div>
+    <div id="ch-deadline-info" style="font-size:0.68rem;color:var(--text-dim);margin-bottom:0.5rem;text-align:center"></div>
+    <button onclick="createWeeklyChallenge()"
+      style="width:100%;padding:0.65rem;background:linear-gradient(135deg,#c990ff,#9060d0);border:none;border-radius:var(--radius-sm);color:#060810;font-family:Vazirmatn,sans-serif;font-size:0.88rem;font-weight:800;cursor:pointer">
+      \u{1F3B2} \u0627\u0646\u062A\u0634\u0627\u0631 \u0686\u0627\u0644\u0634
+    </button>
+  </div>`;
+}
+
+function onChallengeDateChange(dateStr) {
+  const listEl     = document.getElementById('ch-match-list');
+  const deadlineEl = document.getElementById('ch-deadline-info');
+  if (!listEl) return;
+  if (!dateStr) { listEl.innerHTML = '\u0627\u0628\u062A\u062F\u0627 \u0631\u0648\u0632 \u0628\u0627\u0632\u06CC\u200C\u0647\u0627 \u0631\u0648 \u0627\u0646\u062A\u062E\u0627\u0628 \u06A9\u0646'; return; }
+  const matches = getMatchesForIranDate(dateStr);
+  if (!matches.length) { listEl.innerHTML = '<span style="color:var(--red)">\u0627\u06CC\u0646 \u0631\u0648\u0632 \u0628\u0627\u0632\u06CC\u200C\u0627\u06CC \u0646\u062F\u0627\u0631\u062F</span>'; return; }
+  listEl.innerHTML = `<div style="font-size:0.72rem;color:var(--text-dim);margin-bottom:0.4rem;font-weight:700">\u0628\u0627\u0632\u06CC\u200C\u0647\u0627\u06CC ${iranDateToFa(dateStr)} \u2014 \u0627\u0646\u062A\u062E\u0627\u0628 \u06A9\u0646:</div>` +
+    matches.map(m => {
+      const h  = getTeamInfo(m.id, 'home'), a = getTeamInfo(m.id, 'away');
+      const dt = new Date(m.datetime + '+03:30');
+      const tm = dt.toLocaleTimeString('fa-IR', { hour:'2-digit', minute:'2-digit' });
+      const label = `${h.flag} ${h.name} - ${a.flag} ${a.name} (${tm})`;
+      return `<label style="display:flex;align-items:center;gap:0.55rem;padding:0.45rem 0.6rem;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:8px;margin-bottom:0.3rem;cursor:pointer;font-size:0.8rem;color:var(--text-mid)">
+        <input type="checkbox" value="${m.id}" data-label="${label}" checked
+          style="accent-color:#c990ff;width:16px;height:16px;flex-shrink:0">
+        <span style="flex:1">${h.flag} ${h.name} - ${a.flag} ${a.name}</span>
+        <span style="font-size:0.72rem;color:var(--text-dim)">${tm}</span>
+      </label>`;
+    }).join('');
+  if (deadlineEl) {
+    const deadline = calcDeadlineForChallenge(dateStr);
+    const deadlineFa = new Date(deadline).toLocaleDateString('fa-IR', { weekday:'short', day:'numeric', month:'long' });
+    deadlineEl.innerHTML = `\u23F0 \u0645\u0647\u0644\u062A: <strong style="color:#c990ff">${deadlineFa} \u0633\u0627\u0639\u062A \u06F2\u06F3:\u06F5\u06F9</strong>`;
+  }
+}
+
+async function createWeeklyChallenge() {
+  const dateEl  = document.getElementById('ch-date');
+  const forDate = dateEl?.value;
+  const amount  = parseInt(document.getElementById('ch-amount')?.value) || 10000;
+  if (!forDate) { showToast('\u0627\u0628\u062A\u062F\u0627 \u0631\u0648\u0632 \u0628\u0627\u0632\u06CC\u200C\u0647\u0627 \u0631\u0648 \u0627\u0646\u062A\u062E\u0627\u0628 \u06A9\u0646', 'error'); return; }
+  const checkboxes = document.querySelectorAll('#ch-match-list input[type=checkbox]:checked');
+  if (checkboxes.length < 2) { showToast('\u062D\u062F\u0627\u0642\u0644 \u06F2 \u0628\u0627\u0632\u06CC \u0627\u0646\u062A\u062E\u0627\u0628 \u06A9\u0646', 'error'); return; }
+  const matchIds = [], options = [];
+  checkboxes.forEach(cb => { matchIds.push(cb.value); options.push(cb.dataset.label); });
+  const deadline = calcDeadlineForChallenge(forDate);
+  if (Date.now() >= deadline) { showToast('\u0645\u0647\u0644\u062A \u0627\u06CC\u0646 \u0686\u0627\u0644\u0634 \u0642\u0628\u0644\u0627\u064B \u06AF\u0630\u0634\u062A\u0647!', 'error'); return; }
+  const cid = 'ch_' + Date.now();
+  const challenge = { options, matchIds, amount, forDate, deadline, active:true, settled:false, result:null, ts:firebase.database.ServerValue.TIMESTAMP };
+  try {
+    await fbWithTimeout(db.ref(`daily_challenges/${cid}`).set(challenge), 8000);
+    showToast('\u{1F3B2} \u0686\u0627\u0644\u0634 \u0645\u0646\u062A\u0634\u0631 \u0634\u062F!', 'success');
+    if (dateEl) dateEl.value = '';
+    const listEl = document.getElementById('ch-match-list');
+    if (listEl) listEl.innerHTML = '\u0627\u0628\u062A\u062F\u0627 \u0631\u0648\u0632 \u0628\u0627\u0632\u06CC\u200C\u0647\u0627 \u0631\u0648 \u0627\u0646\u062A\u062E\u0627\u0628 \u06A9\u0646';
+    renderAdmin();
+  } catch(e) { showToast('\u274C \u062E\u0637\u0627 \u062F\u0631 \u0627\u0646\u062A\u0634\u0627\u0631', 'error'); }
+}
+
+function _renderActiveChallenges() {
+  const el = document.getElementById('admin-active-challenges');
+  if (!el) return;
+  const challenges = appData.daily_challenges || {};
+  const answers    = appData.daily_answers    || {};
+  const active = Object.entries(challenges)
+    .filter(([, ch]) => ch.active)
+    .sort(([, a], [, b]) => (b.ts || 0) - (a.ts || 0));
+  if (!active.length) {
+    el.innerHTML = '<div style="font-size:0.78rem;color:var(--text-dim);text-align:center;padding:0.4rem 0">\u0647\u0646\u0648\u0632 \u0686\u0627\u0644\u0634\u06CC \u0641\u0639\u0627\u0644 \u0646\u06CC\u0633\u062A</div>';
+    return;
+  }
+  const letters = ['A','B','C','D','E'];
+  el.innerHTML = active.map(([cid, ch]) => {
+    const chAns  = answers[cid] || {};
+    const totalP = Object.keys(chAns).length;
+    const now    = Date.now();
+    const isExp  = now >= (ch.deadline || 0);
+    const forDateFa = ch.forDate ? iranDateToFa(ch.forDate) : '\u0686\u0627\u0644\u0634 \u0631\u0648\u0632\u0627\u0646\u0647';
+    const opts = (ch.options || []).map((opt, i) => {
+      const cnt   = Object.values(chAns).filter(a => a.optionIndex === i).length;
+      const pct   = totalP ? Math.round(cnt/totalP*100) : 0;
+      const isWin = ch.settled && ch.result === i;
+      const settleBtn = (!ch.settled && isExp)
+        ? `<button onclick="settleWeeklyChallenge('${cid}',${i})"
+            style="padding:0.18rem 0.5rem;font-size:0.66rem;background:rgba(0,214,143,0.12);border:1px solid rgba(0,214,143,0.3);border-radius:4px;color:var(--green);cursor:pointer;font-family:inherit">\u2713</button>` : '';
+      return `<div style="display:flex;align-items:center;gap:0.45rem;margin-bottom:0.28rem">
+        <span style="font-size:0.68rem;font-weight:700;color:${isWin?'var(--green)':'var(--text-dim)'};min-width:14px">${letters[i]}</span>
+        <span style="font-size:0.75rem;flex:1;color:${isWin?'var(--green)':'var(--text-mid)'};line-height:1.3">${opt}${isWin?' \u2713':''}</span>
+        <span style="font-size:0.66rem;color:var(--text-dim);white-space:nowrap">${toPersianNum(cnt)} (${toPersianNum(pct)}\u0666)</span>
+        ${settleBtn}
+      </div>`;
+    }).join('');
+    const drawBtn = (!ch.settled && isExp)
+      ? `<button onclick="settleWeeklyChallenge('${cid}',-1)"
+          style="width:100%;margin-top:0.35rem;padding:0.3rem;font-size:0.7rem;background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:4px;color:var(--text-dim);cursor:pointer;font-family:inherit">\u{1F91D} \u0645\u0633\u0627\u0648\u06CC</button>` : '';
+    return `<div style="background:rgba(180,110,255,0.05);border:1px solid rgba(180,110,255,0.18);border-radius:var(--radius-sm);padding:0.75rem;margin-bottom:0.5rem">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.35rem">
+        <span style="font-size:0.78rem;font-weight:800;color:#c990ff">${forDateFa}</span>
+        <div style="display:flex;gap:0.3rem;align-items:center">
+          <span style="font-size:0.65rem;color:${ch.settled?'var(--green)':isExp?'var(--text-dim)':'#c990ff'}">${ch.settled?'\u2705 \u062A\u0633\u0648\u06CC\u0647':isExp?'\u23F0 \u0645\u0646\u062A\u0638\u0631':'\u{1F7E2} \u0628\u0627\u0632'}</span>
+          <button onclick="deleteWeeklyChallenge('${cid}')" style="padding:0.18rem 0.38rem;background:rgba(255,77,77,0.1);border:1px solid rgba(255,77,77,0.25);border-radius:4px;color:var(--red);font-size:0.65rem;cursor:pointer;font-family:inherit">\u{1F5D1}</button>
+        </div>
+      </div>
+      <div style="font-size:0.68rem;color:var(--text-dim);margin-bottom:0.4rem">${toPersianNum(totalP)} \u0634\u0631\u06A9\u062A\u200C\u06A9\u0646\u0646\u062F\u0647 \u00B7 ${toPersianNum((ch.amount||10000).toLocaleString('fa-IR'))} \u062A\u0648\u0645\u0627\u0646</div>
+      ${opts}${drawBtn}
+    </div>`;
+  }).join('');
+}
+
+
 async function triggerChampionSettle() {
   const teamName = document.getElementById('champ-winner-input')?.value?.trim();
   const flag     = document.getElementById('champ-winner-flag')?.value?.trim() || '🏆';
@@ -2771,6 +3311,7 @@ function renderMatches() {
       if (c) { myPreds++; if (c==='exact') myExact++; }
     }
     myBalance += getChampionBalance(currentUser.uid);
+    myBalance += getChallengeBalance(currentUser.uid);
     const balEl = document.getElementById('my-balance-stat');
     const predEl = document.getElementById('my-pred-count');
     const exEl  = document.getElementById('my-exact-count');
@@ -2858,6 +3399,7 @@ function renderMatches() {
       if (c) { myPreds++; if (c==='exact') myExact++; }
     }
     myBalance += getChampionBalance(currentUser.uid);
+    myBalance += getChallengeBalance(currentUser.uid);
     const balEl = document.getElementById('my-balance-stat');
     const predEl = document.getElementById('my-pred-count');
     const exEl   = document.getElementById('my-exact-count');
@@ -3073,8 +3615,11 @@ function renderLeaderboard() {
     }
   }
 
-  // اضافه کردن موجودی حدس قهرمان و مرتب‌سازی نهایی
-  approvedList.forEach(u => { u.balance += getChampionBalance(u.uid); });
+  // اضافه کردن موجودی حدس قهرمان و چالش‌ها و مرتب‌سازی نهایی
+  approvedList.forEach(u => {
+    u.balance += getChampionBalance(u.uid);
+    u.balance += getChallengeBalance(u.uid);
+  });
   approvedList.sort((a, b) => b.balance - a.balance);
 
 
@@ -3634,6 +4179,7 @@ const ALL_TEAMS = [
 function renderAdmin() {
   autoFetchMissingResults();
   renderTelegramMessages();
+  try { renderAdminChallenges(); } catch(e) {}
 
   // badge تب ادمین
   const pendingCount = Object.values(appData.users).filter(u => !u.approved && !u.rejected).length;
@@ -4138,6 +4684,7 @@ async function submitProxyPrediction() {
 // ════════════════════════════════════════════════════════════
 function renderAll() {
   const scrollY = window.scrollY;
+  try { renderWeeklyChallenge(); } catch(e) { console.error('❌ renderWeeklyChallenge:', e); }
   try { renderMatches();    } catch(e) { console.error('❌ renderMatches:', e); }
   try { renderLeaderboard();} catch(e) { console.error('❌ renderLeaderboard:', e); }
   try { renderResults();    } catch(e) { console.error('❌ renderResults:', e); }
