@@ -4567,7 +4567,7 @@ async function captureAndShareResults() {
   showToast('در حال ساخت تصویر...', '');
   try {
     // سوئیچ به تب جدول
-    _switchToTab('leaderboard');
+    switchTab('leaderboard');
     await new Promise(r => setTimeout(r, 300));
 
     const el = document.getElementById('tab-leaderboard');
