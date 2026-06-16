@@ -1055,6 +1055,7 @@
 
   /* ── SCORECARD ANIMATIONS ── */
   @keyframes fillBar { from { width:0 } }
+  @keyframes fillBarV { from { transform:scaleY(0) } to { transform:scaleY(1) } }
   @keyframes fadeUp  { from { opacity:0; transform:translateY(12px) } to { opacity:1; transform:translateY(0) } }
   @keyframes ballBounce {
     from { transform: translateY(0); }
@@ -3125,9 +3126,9 @@ function renderResults() {
   }
 
   const ROUNDS = [
-    { key:'g1', label:'دور اول گروهی',    short:'G1', matches: allGroupSorted.slice(0,24) },
-    { key:'g2', label:'دور دوم گروهی',    short:'G2', matches: allGroupSorted.slice(24,48) },
-    { key:'g3', label:'دور سوم گروهی',    short:'G3', matches: allGroupSorted.slice(48,72) },
+    { key:'g1', label:'دور اول گروهی',    short:'G1', matches: allGroupSorted.slice(0,24).reverse() },
+    { key:'g2', label:'دور دوم گروهی',    short:'G2', matches: allGroupSorted.slice(24,48).reverse() },
+    { key:'g3', label:'دور سوم گروهی',    short:'G3', matches: allGroupSorted.slice(48,72).reverse() },
     { key:'r32',label:'یک‌شانزدهم نهایی', short:'R32',matches: doneMatches.filter(m=>m.stage==='r32') },
     { key:'r16',label:'یک‌هشتم نهایی',    short:'R16',matches: doneMatches.filter(m=>m.stage==='r16') },
     { key:'qf', label:'یک‌چهارم نهایی',   short:'QF', matches: doneMatches.filter(m=>m.stage==='qf') },
@@ -3138,8 +3139,9 @@ function renderResults() {
 
   if (!ROUNDS.length) { container.innerHTML = ''; return; }
 
-  // آخرین دور فعال
-  const lastKey = ROUNDS[ROUNDS.length - 1].key;
+  // ترتیب معکوس — آخرین دور اول
+  ROUNDS.reverse();
+  const lastKey = ROUNDS[0].key;
 
   // accordion — هر دور یه هدر کلیک‌شدنی، پیش‌فرض بسته
   const approvedUsers = Object.entries(appData.users).filter(([,u]) => u.approved);
@@ -3280,34 +3282,45 @@ function renderScorecard() {
   approvedUsers.sort((a,b)=>b.balance-a.balance);
 
   const maxAbs = Math.max(...approvedUsers.map(u=>Math.abs(u.balance)),1);
+  const maxPos = Math.max(...approvedUsers.map(u=>Math.max(u.balance,0)),1);
+  const maxNeg = Math.max(...approvedUsers.map(u=>Math.max(-u.balance,0)),1);
   const ranks = ['🥇','🥈','🥉','🎗️','5️⃣'];
+  const BAR_H = 110; // ارتفاع ناحیه مثبت
+  const NEG_H = maxNeg > 0 ? Math.round(BAR_H * maxNeg / maxAbs) : 0;
+  const TOTAL_H = BAR_H + NEG_H + 20; // 20px فضای خط صفر
 
-  // ── بخش ۱: نوارهای مقایسه‌ای ──
+  // ── بخش ۱: نمودار عمودی ──
   let html = `<div style="background:var(--bg-2);border-radius:14px;border:1px solid rgba(255,255,255,0.07);padding:1.1rem 1rem;margin-bottom:1rem">
     <div style="font-size:0.78rem;font-weight:700;color:var(--gold);margin-bottom:1rem;text-align:center;letter-spacing:0.5px">
       مقایسه موجودی &nbsp; ${toPersianNum(doneMatches.length)} بازی
-    </div>`;
+    </div>
+    <div style="display:flex;align-items:flex-end;justify-content:space-around;height:${TOTAL_H}px;position:relative;padding:0 8px">
+      <div style="position:absolute;left:0;right:0;bottom:${NEG_H+10}px;height:1px;background:rgba(255,255,255,0.2)"></div>`;
 
   approvedUsers.forEach((u,i)=>{
-    const pct = Math.round(Math.abs(u.balance)/maxAbs*100);
-    const col = u.balance>0?'#00d68f':u.balance<0?'#ff4d4d':'#4a5568';
+    const col = u.balance>=0?'#00d68f':'#ff4d4d';
+    const posH = u.balance>0 ? Math.round(BAR_H*u.balance/maxAbs) : 0;
+    const negH = u.balance<0 ? Math.round(NEG_H*(-u.balance)/maxNeg) : 0;
+    const barH = posH + negH;
+    const bottomOffset = u.balance>=0 ? NEG_H+10 : NEG_H+10-negH;
     const balStr = u.balance>0
-      ? `<span style="color:#00d68f;font-weight:800">${toPersianNum(u.balance.toLocaleString('fa-IR'))}+</span>`
-      : u.balance<0
-      ? `<span style="color:#ff4d4d;font-weight:800">${toPersianNum(Math.abs(u.balance).toLocaleString('fa-IR'))}-</span>`
-      : `<span style="color:rgba(255,255,255,0.3)">—</span>`;
-    html+=`<div style="margin-bottom:10px">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
-        <span style="font-size:0.78rem;font-weight:700">${ranks[i]} ${u.name}</span>
-        <span style="font-size:0.78rem">${balStr} <span style="font-size:0.65rem;color:rgba(255,255,255,0.3)">تومان</span></span>
-      </div>
-      <div style="height:8px;background:rgba(255,255,255,0.07);border-radius:4px;overflow:hidden">
-        <div style="height:100%;width:${pct}%;background:${col};border-radius:4px;
-          animation:fillBar 0.7s ${(i*0.12).toFixed(2)}s ease both;animation-fill-mode:both"></div>
+      ? `+${toPersianNum(u.balance.toLocaleString('fa-IR'))}`
+      : u.balance<0 ? `-${toPersianNum(Math.abs(u.balance).toLocaleString('fa-IR'))}` : '—';
+    const valColor = u.balance>0?'#00d68f':u.balance<0?'#ff4d4d':'rgba(255,255,255,0.3)';
+    const labelY = u.balance>=0 ? `bottom:${NEG_H+10+posH+4}px` : `bottom:${bottomOffset-18}px`;
+    html+=`<div style="display:flex;flex-direction:column;align-items:center;flex:1;position:relative;height:${TOTAL_H}px">
+      <div style="position:absolute;${labelY};font-size:0.6rem;color:${valColor};font-weight:700;white-space:nowrap">${balStr}</div>
+      <div style="position:absolute;bottom:${bottomOffset}px;width:70%;min-width:28px;max-width:48px;height:${Math.max(barH,3)}px;
+        background:${col};border-radius:3px;
+        animation:fillBarV 0.7s ${(i*0.12).toFixed(2)}s ease both;animation-fill-mode:both;
+        transform-origin:${u.balance>=0?'bottom':'top'};transform:scaleY(0)"></div>
+      <div style="position:absolute;bottom:${NEG_H-8}px;font-size:0.65rem;font-weight:700;text-align:center;width:100%;line-height:1.2">
+        <div>${ranks[i]||''}</div>
+        <div style="color:rgba(255,255,255,0.7)">${u.name}</div>
       </div>
     </div>`;
   });
-  html+=`</div>`;
+  html+=`</div></div>`;
 
   // ── بخش ۲: دونات‌های کنار هم ──
   html+=`<div style="background:var(--bg-2);border-radius:14px;border:1px solid rgba(255,255,255,0.07);padding:1.1rem 0.5rem">
