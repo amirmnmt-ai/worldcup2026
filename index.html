@@ -4248,7 +4248,7 @@ function renderGameLeaderboard() {
 
 const GK_GAME = {
   canvas:null, ctx:null, running:false, frame:null, initialized:false,
-  score:0, lives:3, level:1, combo:0,
+  score:0, lives:5, level:1, combo:0,
   gk:{ x:180, y:430, w:82, h:22, tx:180 },
   balls:[], spawnT:0, spawnI:100,
   flash:null,
@@ -4286,10 +4286,10 @@ const GK_GAME = {
 
   start() {
     cancelAnimationFrame(this._idleFrame);
-    this.score=0; this.lives=3; this.level=1; this.combo=0;
+    this.score=0; this.lives=5; this.level=1; this.combo=0;
     this.balls=[]; this.spawnT=0; this.spawnI=100; this.flash=null;
     this.shake=0; this.particles=[]; this.lifePickup=null;
-    this.eventCD=0; this.eventMsg=null; this.pauseT=0; this.waveQ=0; this.waveTimer=0; this.suppressT=0; this.pendingTwin=null;
+    this.eventCD=0; this.eventMsg=null; this.suppressT=0; this._popups=[];
     this.gk.x=this.canvas.width/2||190; this.gk.tx=this.canvas.width/2||190;
     this.gk.w=82; this.gk.lean=0;
     this.running=true;
@@ -4313,37 +4313,22 @@ const GK_GAME = {
     const keepLerp = Math.min(0.30, 0.22 + this.level*0.007);
     const dx=this.gk.tx-this.gk.x;
     this.gk.x += dx*keepLerp;
-    this.gk.w = Math.min(104, 82 + this.level*1.8);
+    this.gk.w = 82;
     this.gk.x = Math.max(this.gk.w/2+8, Math.min(W-this.gk.w/2-8, this.gk.x));
     const nearest=this.balls.reduce((a,b)=>(!a||b.y>a.y)?b:a,null);
     this.gk.lean=nearest?Math.max(-1,Math.min(1,(nearest.x-this.gk.x)/(W/2)))*0.35:(this.gk.lean||0)*0.9;
 
     // منحنی سختی — asymptotic با رشد سریع‌تر در لول ۳-۷
-    const targetSpawnI = Math.max(60, 73 - this.level*1.3);
+    const targetSpawnI = Math.max(40, 92 - this.level*1.8);
     this.spawnI += (targetSpawnI - this.spawnI)*0.08;
 
-    // تایمرها — هر کدام مستقل
+    // تایمرها
     if(this.eventCD>0) this.eventCD--;
     if(this.suppressT>0) this.suppressT--;
-    if(this.pauseT>0){
-      this.pauseT--;
-      if(this.pauseT===0){ this.waveQ=3; this.waveTimer=18; this._showMsg('🌊 موج!','#3b82f6'); }
-    }
     if(this.eventMsg){ this.eventMsg.t--; if(!this.eventMsg.t) this.eventMsg=null; }
 
-    // موج — تایمر کاملاً مستقل از spawnT
-    if(this.waveQ>0){
-      if(--this.waveTimer<=0){ this.spawnBall(); this.waveQ--; this.waveTimer=18; }
-    }
-    if(this.pendingTwin){
-      if(--this.pendingTwin.timer<=0){
-        this.spawnBall(this.pendingTwin.x,null,1.0,null,this.pendingTwin.tx);
-        this.pendingTwin=null;
-      }
-    }
-
     // spawn معمولی — فقط وقتی هیچ رویداد فعالی نیست
-    if(++this.spawnT >= this.spawnI && !this.pauseT && !this.suppressT && !this.waveQ){
+    if(++this.spawnT >= this.spawnI && !this.suppressT){
       this.spawnT=0;
       // رویداد یا توپ معمولی — هیچ‌وقت هر دو همزمان
       const doEvent = !this.eventCD && this.score>=8 && Math.random()<0.18;
@@ -4363,7 +4348,7 @@ const GK_GAME = {
       if(lp.y >= this.gk.y-lp.r*0.5){
         const hit=Math.abs(lp.x-this.gk.x)<this.gk.w/2+lp.r*0.5;
         if(hit && this.lives<3){
-          this.lives = Math.min(3, this.lives+1);
+          this.lives = Math.min(5, this.lives+1);
           this.flash={col:'#ff4d88',a:0.25,t:20};
           this._burst(lp.x,lp.y,'#ff4d4d');
         }
@@ -4375,13 +4360,24 @@ const GK_GAME = {
       b.x+=b.vx; b.y+=b.vy; b.rot+=0.08;
       if(b.x<b.r){b.x=b.r;b.vx=Math.abs(b.vx);}
       if(b.x>W-b.r){b.x=W-b.r;b.vx=-Math.abs(b.vx);}
+      // توپ فریبکار — تغییر مسیر در نیمه راه
+      if(b.swerve && !b.swerved && b.y > H*0.38){
+        b.vx = -b.vx*(1.3+Math.random()*0.5); b.swerved=true;
+      }
+      // توپ نامرئی — ناپدید در فاز میانی
+      if(b.invisible){
+        b.invisPhase=(b.invisPhase||0)+1;
+        b.opacity=(b.invisPhase>=20 && b.invisPhase<=75)?0:1;
+      }
       if(b.y>=this.gk.y-b.r*0.5){
         const hit=Math.abs(b.x-this.gk.x)<this.gk.w/2+b.r*0.35;
         if(hit){
-          this.score++;this.combo++;
+          const pts = b.btype==='invisible'?5 : b.btype==='deceptive'?3 : b.btype==='fast'?2 : 1;
+          this.score+=pts; this.combo++;
           if(this.combo%5===0)this.level++;
           this.flash={col:'#00d68f',a:0.22,t:16};this.shake=0;
           this._burst(b.x,b.y,'#00d68f');
+          if(pts>1) this._scorePopup(b.x,b.y,'+'+toPersianNum(pts),pts===5?'#06b6d4':pts===3?'#a855f7':'#fbbf24');
         }else{
           this.lives--;this.combo=0;
           this.flash={col:'#ff4d4d',a:0.38,t:22};this.shake=10;
@@ -4399,6 +4395,11 @@ const GK_GAME = {
     if(this.shake>0)this.shake-=1.8;
   },
 
+  _scorePopup(x,y,text,col){
+    this._popups=this._popups||[];
+    this._popups.push({x,y,text,col,t:50,vy:-1.8});
+  },
+
   _burst(x,y,col){
     this.particles=this.particles||[];
     for(let i=0;i<14;i++){
@@ -4413,57 +4414,36 @@ const GK_GAME = {
   },
 
   _triggerEvent(){
-    // هیچ‌وقت رویداد جدید وقتی موج یا مکث فعاله
-    if(this.pauseT>0 || this.waveQ>0) return;
     const W=this.canvas.width;
-
-    // تعیین رویدادهای مجاز بر اساس لول
-    const canWave = this.level >= 30;
-    const r = Math.random();
-
-    if(!canWave){
-      if(r < 0.5){
-        // دوقلو — نزدیک هم، در یک جهت
-        const cx = W*0.25 + Math.random()*W*0.5;
-        const sharedTX = W*0.2 + Math.random()*W*0.6;
-        this.spawnBall(cx-25, null, 1.0, null, sharedTX-15);
-        this.pendingTwin = { x: cx+25, tx: sharedTX+15, timer: 20 };
-        this._showMsg('👥 دوقلو!','#f6ad55');
-        this.eventCD=220; this.suppressT=115; this.spawnT=0;
-      } else {
-        this.spawnBall(null,null,1.0,'#ff3333',null,10);
-        this._showMsg('🔴 توپ سریع!','#ff4d4d');
-        this.eventCD=180; this.suppressT=90; this.spawnT=0;
-      }
+    const r=Math.random();
+    if(r < 0.35){
+      // توپ سریع
+      const fastSP = 10 + this.level*0.15;
+      this.spawnBall(null,null,1.0,'#ef4444',null,fastSP,false,false,'fast');
+      this._showMsg('🔴 توپ سریع!','#ef4444');
+      this.eventCD=220; this.suppressT=85; this.spawnT=0;
+    } else if(r < 0.68){
+      // توپ فریبکار
+      this.spawnBall(null,null,0.85,'#a855f7',null,null,true,false,'deceptive');
+      this._showMsg('🔀 توپ فریبکار!','#a855f7');
+      this.eventCD=240; this.suppressT=100; this.spawnT=0;
     } else {
-      if(r < 0.42){
-        const cx = W*0.25 + Math.random()*W*0.5;
-        const sharedTX = W*0.2 + Math.random()*W*0.6;
-        this.spawnBall(cx-25, null, 1.0, null, sharedTX-15);
-        this.pendingTwin = { x: cx+25, tx: sharedTX+15, timer: 20 };
-        this._showMsg('👥 دوقلو!','#f6ad55');
-        this.eventCD=220; this.suppressT=115; this.spawnT=0;
-      } else if(r < 0.82){
-        this.spawnBall(null,null,1.0,'#ff3333',null,10);
-        this._showMsg('🔴 توپ سریع!','#ff4d4d');
-        this.eventCD=180; this.suppressT=90; this.spawnT=0;
-      } else {
-        this.pauseT=110;
-        this._showMsg('⚠️ آماده باش...','#60a5fa');
-        this.eventCD=480; this.spawnT=0;
-      }
+      // توپ نامرئی
+      this.spawnBall(null,null,0.9,'#06b6d4',null,null,false,true,'invisible');
+      this._showMsg('👻 توپ نامرئی!','#06b6d4');
+      this.eventCD=260; this.suppressT=100; this.spawnT=0;
     }
   },
 
-  spawnBall(forceX=null, forceY=null, speedMult=1.0, color=null, forceTX=null, forceSP=null){
+  spawnBall(forceX=null, forceY=null, speedMult=1.0, color=null, forceTX=null, forceSP=null, swerve=false, invisible=false, btype="normal"){
     const W=this.canvas.width, H=this.canvas.height;
     const x = forceX!==null ? forceX : 20+Math.random()*(W-40);
     const tx = forceTX!==null ? Math.max(28,Math.min(W-28,forceTX)) : 28+Math.random()*(W-56);
     const ty = this.gk.y;
     const dx=tx-x, dy=ty;
     const mag=Math.sqrt(dx*dx+dy*dy);
-    const sp=forceSP!==null ? forceSP : (Math.min(8.5,7.756+this.level*0.044)+Math.random()*0.6)*speedMult;
-    this.balls.push({x, y: forceY||(-16), vx:(dx/mag)*sp, vy:(dy/mag)*sp, r:14, rot:Math.random()*6.28, trail:[], color});
+    const sp=forceSP!==null ? forceSP : (7.2+this.level*0.22+Math.random()*0.7)*speedMult;
+    this.balls.push({x, y: forceY||(-16), vx:(dx/mag)*sp, vy:(dy/mag)*sp, r:14, rot:Math.random()*6.28, trail:[], color, swerve, invisible, swerved:false, invisPhase:0, opacity:1, btype});
   },
 
   _sky(ctx,W,H){
@@ -4628,6 +4608,7 @@ const GK_GAME = {
       ctx.beginPath();ctx.arc(p.x,p.y,b.r*(0.3+0.7*i/b.trail.length),0,Math.PI*2);ctx.fill();
     });
     ctx.save();ctx.translate(b.x,b.y);
+    ctx.globalAlpha=b.opacity!==undefined?b.opacity:1;
     const shd=ctx.createRadialGradient(3,4,0,3,4,b.r*1.15);
     shd.addColorStop(0,'rgba(0,0,0,0.42)');shd.addColorStop(1,'rgba(0,0,0,0)');
     ctx.fillStyle=shd;ctx.beginPath();ctx.arc(3,4,b.r*1.15,0,Math.PI*2);ctx.fill();
@@ -4687,6 +4668,16 @@ const GK_GAME = {
       ctx.restore();
     }
     (this.particles||[]).forEach(p=>{ctx.globalAlpha=p.life;ctx.fillStyle=p.col;ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,Math.PI*2);ctx.fill();});
+    this._popups=this._popups||[];
+    this._popups=this._popups.filter(p=>{
+      p.y+=p.vy; p.t--;
+      ctx.globalAlpha=Math.min(1,p.t/20);
+      ctx.fillStyle=p.col; ctx.shadowColor=p.col; ctx.shadowBlur=8;
+      ctx.font='bold 22px Vazirmatn,sans-serif'; ctx.textAlign='center';
+      ctx.fillText(p.text,p.x,p.y);
+      ctx.shadowBlur=0;
+      return p.t>0;
+    });
     ctx.globalAlpha=1;
     // پیام رویداد
     if(this.eventMsg){
@@ -4698,7 +4689,7 @@ const GK_GAME = {
     }
     ctx.restore();
     const le=document.getElementById('ghud-lives'),se=document.getElementById('ghud-score'),lve=document.getElementById('ghud-level'),ce=document.getElementById('ghud-combo');
-    if(le)le.textContent='❤️'.repeat(this.lives)+'🖤'.repeat(Math.max(0,3-this.lives));
+    if(le)le.textContent='❤️'.repeat(this.lives)+'🖤'.repeat(Math.max(0,5-this.lives));
     if(se)se.textContent=toPersianNum(this.score);
     if(lve)lve.textContent='سطح '+toPersianNum(this.level);
     if(ce)ce.innerHTML=this.combo>=3?`<span style="color:#fbbf24;font-weight:700">🔥 ${toPersianNum(this.combo)} پشت هم</span>`:'';
