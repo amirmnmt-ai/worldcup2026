@@ -267,19 +267,19 @@
     -webkit-backdrop-filter: blur(20px) saturate(1.4);
     border-bottom: 1px solid var(--border);
     overflow-x: auto; scrollbar-width: none;
-    padding: 0 0.5rem;
+    padding: 0;
     position: sticky; top: 58px; z-index: 99;
   }
   .nav-tabs::-webkit-scrollbar { display: none; }
 
   .nav-tab {
-    flex: 1; min-width: 72px; padding: 0.85rem 0.5rem;
-    text-align: center; font-size: 0.78rem; font-weight: 700;
+    flex: 1; min-width: 0; padding: 0.72rem 0.35rem;
+    text-align: center; font-size: 0.72rem; font-weight: 700;
     color: var(--text-dim); cursor: pointer;
     border-bottom: 2px solid transparent;
     border-top: none; border-right: none; border-left: none;
     background: none; font-family: 'Vazirmatn', sans-serif;
-    transition: all 0.2s; white-space: nowrap; letter-spacing: 0.2px;
+    transition: all 0.2s; white-space: nowrap; letter-spacing: 0;
   }
   .nav-tab.active { color: var(--gold); border-bottom-color: var(--gold); }
   .nav-tab:hover:not(.active) { color: var(--text-mid); }
@@ -906,7 +906,7 @@
       scrollbar-width: none;
     }
     .app-nav::-webkit-scrollbar { display: none; }
-    .nav-tab { font-size: 0.78rem; padding: 0.85rem 0.7rem; white-space: nowrap; flex-shrink: 0; }
+    .nav-tab { font-size: 0.72rem; padding: 0.72rem 0.35rem; white-space: nowrap; flex-shrink: 0; }
 
     /* Match cards */
     .match-header { padding: 0.5rem 0.8rem; }
@@ -1145,7 +1145,7 @@
     .rr-cat  { font-size:0.65rem; }
     .rr-pay  { min-width:62px; font-size:0.7rem; }
     .res-score-main { font-size:1.4rem; }
-    .nav-tab { font-size:0.72rem; padding:0.8rem 0.55rem; }
+    .nav-tab { font-size:0.68rem; padding:0.7rem 0.3rem; }
   }
 </style>
 </head>
@@ -1396,29 +1396,7 @@
     </div>
 
         <!-- TEST PANEL -->
-    <div class="test-panel">
-      <div class="test-panel-title">🧪 پنل تست — فقط برای ادمین</div>
-      <div class="test-panel-desc">
-        بازی تست: <strong>🇮🇷 ایران vs عراق 🇮🇶 (یک‌شانزدهم نهایی)</strong> — فرم OT و پنالتی دارد<br>
-        <strong>قدم ۰:</strong> باز کن — مساوی پیش‌بینی کن تا فیلد وقت اضافه/پنالتی بیاد<br>
-        <strong>قدم ۱:</strong> قفل کن — پیش‌بینی همه ظاهر میشه<br>
-        <strong>قدم ۲:</strong> یکی از سه نتیجه رو تزریق کن
-      </div>
-      <div class="test-btns">
-        <button class="btn-test-inject" style="background:var(--green);color:#06080c" onclick="injectTestOpen()">📝 قدم ۰ — باز کردن</button>
-        <button class="btn-test-inject" onclick="lockTestMatch()">🔒 قدم ۱ — قفل</button>
-      </div>
-      <div class="test-btns" style="margin-top:0.5rem">
-        <button class="btn-test-inject" style="background:var(--blue);line-height:1.4;padding:0.5rem 0.6rem" onclick="injectTestResult('90')">⚽ ۹۰ دقیقه<br><small style="font-weight:400">ایران ۲–۱</small></button>
-        <button class="btn-test-inject" style="background:#7c3aed;line-height:1.4;padding:0.5rem 0.6rem" onclick="injectTestResult('ot')">⏱️ وقت اضافه<br><small style="font-weight:400">۱–۱ → ۲–۱</small></button>
-        <button class="btn-test-inject" style="background:#b45309;line-height:1.4;padding:0.5rem 0.6rem" onclick="injectTestResult('pen')">🥅 پنالتی<br><small style="font-weight:400">۱–۱ → OT ۱–۱ → ۵–۴</small></button>
-      </div>
-      <div class="test-btns" style="margin-top:0.4rem">
-        <button class="btn-test-clear" onclick="clearTestData()">🗑️ پاک کردن</button>
-      </div>
-    </div>
-
-    <div class="section-divider">
+<div class="section-divider">
       <div class="section-divider-line"></div>
       <div class="section-divider-text">کاربران در انتظار تأیید</div>
       <div class="section-divider-line"></div>
@@ -2080,7 +2058,6 @@ async function enterApp(fbUser, userData) {
 // ════════════════════════════════════════════════════════════
 //  REALTIME LISTENERS — همگام‌سازی زنده با Firebase
 // ════════════════════════════════════════════════════════════
-let testModeActive = false;
 let showDoneMatches = false; // بازی‌های پایان یافته پیش‌فرض مخفی
 const _rejectedUids = new Set(); // کاربرانی که ادمین رد کرده — پایدار می‌مونه
 
@@ -2103,7 +2080,6 @@ function startListeners() {
   ['users', 'predictions', 'results', 'teamOverrides', 'champion_picks', 'champion_result', 'game_scores', 'match_locks'].forEach(path => {
     const ref = db.ref(path);
     ref.on('value', snap => {
-      if (testModeActive && path !== 'users') return;
       const fresh = snap.val() || {};
 
       // برای users: ریجکت‌شده‌ها رو کاملاً حذف کن
@@ -2561,12 +2537,6 @@ function formatMoney(n) {
 }
 
 function getMatchStatus(match) {
-  // در حالت تست: وضعیت بازی تست رو مستقیم برمی‌گردونه
-  if (testModeActive && match.id === TEST_MID && _testMatchStatus) {
-    if (_testMatchStatus === 'done' && !appData.results[match.id]) return 'locked';
-    return _testMatchStatus;
-  }
-
   const now       = new Date();
   const matchTime = new Date(match.datetime + '+03:30'); // ساعت ایران
   const openTime  = new Date(matchTime.getTime() - 48 * 60 * 60 * 1000);
@@ -3502,7 +3472,7 @@ function openTelegram(idx) {
 // دریافت خودکار نتایج بازی‌های تموم‌شده بدون نتیجه
 let _autoFetchRunning = false;
 async function autoFetchMissingResults() {
-  if (_autoFetchRunning || testModeActive) return;
+  if (_autoFetchRunning) return;
   const missing = MATCHES.filter(m => {
     const s = getMatchStatus(m);
     return (s === 'locked') && !appData.results[m.id] && teamNameEN[getTeamInfo(m.id,'home').name];
@@ -3576,72 +3546,7 @@ async function refreshAdminData() {
   }
 }
 
-function _switchToTab(name) {
-  document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
-  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
-  const tabMap = { matches:'tab-matches', admin:'tab-admin', results:'tab-results', leaderboard:'tab-leaderboard', scorecard:'tab-scorecard' };
-  const tabLabelMap = { matches:'بازی‌ها', admin:'ادمین', results:'نتایج', leaderboard:'جدول', scorecard:'کارنامه' };
-  if (tabMap[name]) document.getElementById(tabMap[name])?.classList.add('active');
-  document.querySelectorAll('.nav-tab').forEach(t => {
-    if (t.textContent.trim() === tabLabelMap[name]) t.classList.add('active');
-  });
-}
 
-// قدم ۲: تزریق نتیجه — سه حالت
-function injectTestResult(mode) {
-  if (!_testInjected) { showToast('اول قدم ۰ رو بزن', 'error'); return; }
-  _testMatchStatus = 'done';
-  if (mode === '90') {
-    appData.results[TEST_MID] = { homeGoals: 2, awayGoals: 1, type: '90' };
-    showToast('قدم ۲ ✅ — نتیجه ۹۰ دقیقه: ایران ۲–۱ عراق', 'success');
-  } else if (mode === 'ot') {
-    appData.results[TEST_MID] = { homeGoals: 1, awayGoals: 1, type: 'ot', otResult: { homeGoals: 2, awayGoals: 1 } };
-    showToast('قدم ۲ ✅ — وقت اضافه: ۱–۱ → ۲–۱ ایران برنده', 'success');
-  } else if (mode === 'pen') {
-    appData.results[TEST_MID] = { homeGoals: 1, awayGoals: 1, type: 'pen', otResult: { homeGoals: 1, awayGoals: 1 }, penaltyGoals: 9, homePenGoals: 5, awayPenGoals: 4, penWinner: 'home' };
-    showToast('قدم ۲ ✅ — پنالتی: ۱–۱ → OT ۱–۱ → ایران ۵–۴', 'success');
-  }
-  renderAll();
-  document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
-  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
-  document.getElementById('tab-results').classList.add('active');
-  document.querySelectorAll('.nav-tab').forEach(t => { if (t.textContent.trim() === 'نتایج') t.classList.add('active'); });
-}
-
-function clearTestData() {
-  testModeActive   = false;
-  _testMatchStatus = null;
-  // پاک کردن نتیجه تست از Firebase هم
-  db.ref(`results/${TEST_MID}`).remove().catch(()=>{});
-
-  // حذف بازی تست از MATCHES
-  if (_testInjected) {
-    const idx = MATCHES.findIndex(m => m.id === TEST_MID);
-    if (idx !== -1) MATCHES.splice(idx, 1);
-    _testInjected = false;
-  }
-
-  // حذف کاربران و داده‌های تست از حافظه
-  for (const uid of TEST_UIDS) {
-    delete appData.users[uid];
-  }
-  delete appData.predictions[TEST_MID];
-  delete appData.results[TEST_MID];
-
-  // بروزرسانی از Firebase
-  Promise.all(['users','predictions','results'].map(path =>
-    db.ref(path).once('value').then(snap => { appData[path] = snap.val() || {}; })
-  )).then(() => renderAll());
-
-  document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
-  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
-  document.getElementById('tab-matches').classList.add('active');
-  document.querySelectorAll('.nav-tab').forEach(t => {
-    if (t.textContent.trim() === 'بازی‌ها') t.classList.add('active');
-  });
-
-  showToast('داده تست پاک شد 🗑️', 'success');
-}
 
 // ════════════════════════════════════════════════════════════
 //  RENDER ADMIN
