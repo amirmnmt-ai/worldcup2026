@@ -2789,6 +2789,7 @@ function showScreen(name) {
 // ════════════════════════════════════════════════════════════
 //  RENDER: MATCHES TAB
 // ════════════════════════════════════════════════════════════
+let _matchesRenderedOnce = false;
 function renderMatches() {
   // ── آپدیت آمار شخصی کاربر ──
   if (currentUser) {
@@ -2850,7 +2851,8 @@ function renderMatches() {
     if (status === 'done')     statusBadge = '<span class="badge badge-done">پایان یافت</span>';
 
     const _delay = Math.min(cardIdx * 0.055, 0.4); cardIdx++;
-    html += `<div class="match-card" style="animation:cardSlideUp 0.32s ease both;animation-delay:${_delay}s">
+    const _animStyle = _matchesRenderedOnce ? '' : `animation:cardSlideUp 0.32s ease both;animation-delay:${_delay}s`;
+    html += `<div class="match-card" style="${_animStyle}">
       <div class="match-header">
         <span class="match-stage ${getStageClass(match.stage)}">${match.stageLabel.split(' - ')[0]}</span>
         <span class="match-header-time">${dateStr}</span>
