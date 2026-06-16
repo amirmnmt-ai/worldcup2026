@@ -2700,6 +2700,21 @@ function switchTab(name) {
   if (name === 'game') { GK_GAME.init(); renderGameLeaderboard(); }
 }
 
+// نسخه برنامه‌ای بدون نیاز به event (برای استفاده در کد)
+function _switchToTab(name) {
+  if (name !== 'game') {
+    cancelAnimationFrame(GK_GAME._idleFrame);
+    GK_GAME._idleFrame = null;
+  }
+  document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  const tabEl = document.getElementById(`tab-${name}`);
+  if (tabEl) tabEl.classList.add('active');
+  const navEl = document.querySelector(`.nav-tab[onclick*="'${name}'"]`);
+  if (navEl) navEl.classList.add('active');
+  if (name === 'game') { GK_GAME.init(); renderGameLeaderboard(); }
+}
+
 // ══ تایپ‌رایتر بنر سورپرایز ══
 (function startTypewriter() {
   const el   = document.getElementById('surprise-text');
@@ -4566,9 +4581,13 @@ let _screenshotDataUrl = null;
 async function captureAndShareResults() {
   showToast('در حال ساخت تصویر...', '');
   try {
-    // سوئیچ به تب جدول
-    switchTab('leaderboard');
-    await new Promise(r => setTimeout(r, 300));
+    // سوئیچ مستقیم به تب جدول بدون نیاز به event
+    document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+    document.getElementById('tab-leaderboard').classList.add('active');
+    const lbNavBtn = document.querySelector('.nav-tab[onclick*="leaderboard"]');
+    if (lbNavBtn) lbNavBtn.classList.add('active');
+    await new Promise(r => setTimeout(r, 400));
 
     const el = document.getElementById('tab-leaderboard');
     const canvas = await html2canvas(el, {
@@ -4585,7 +4604,6 @@ async function captureAndShareResults() {
     _screenshotDataUrl = canvas.toDataURL('image/png');
     canvas.toBlob(blob => { _screenshotBlob = blob; }, 'image/png');
 
-    // نمایش در modal
     const preview = document.getElementById('screenshot-preview');
     preview.innerHTML = `<img src="${_screenshotDataUrl}" style="width:100%;display:block;border-radius:6px">`;
     document.getElementById('screenshot-modal').style.display = 'flex';
