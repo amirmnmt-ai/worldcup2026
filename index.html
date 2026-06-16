@@ -1162,29 +1162,33 @@
     background: var(--glass);
     backdrop-filter: blur(10px);
     animation: challengePulse 3s ease-in-out infinite;
+    font-family: Vazirmatn, var(--font);
   }
   .challenge-header {
     display: flex; align-items: center; justify-content: space-between;
     padding: 0.65rem 1rem;
     background: rgba(0,0,0,0.25);
     border-bottom: 1px solid var(--border-subtle);
+    font-family: Vazirmatn, var(--font);
   }
   .challenge-title {
     font-size: 0.72rem; font-weight: 700; color: var(--gold-light);
     letter-spacing: 0.3px; display: flex; align-items: center; gap: 0.4rem;
     padding: 0.18rem 0.65rem; border-radius: 20px;
     background: rgba(201,168,76,0.18); border: 1px solid rgba(201,168,76,0.3);
+    font-family: Vazirmatn, var(--font);
   }
   .challenge-amount-badge {
     font-size: 0.7rem; font-weight: 800; color: var(--text-dim);
     border-radius: 20px; padding: 0.18rem 0.65rem;
     background: rgba(255,255,255,0.06); border: 1px solid var(--border-subtle);
-    white-space: nowrap;
+    white-space: nowrap; font-family: Vazirmatn, var(--font);
   }
-  .challenge-body { padding: 0.9rem 1rem; }
+  .challenge-body { padding: 0.9rem 1rem; font-family: Vazirmatn, var(--font); }
   .challenge-question {
     font-size: 0.88rem; font-weight: 700; color: var(--text);
     margin-bottom: 0.4rem; line-height: 1.5;
+    font-family: Vazirmatn, var(--font);
   }
   .challenge-options { display: flex; flex-direction: column; gap: 0.45rem; }
   .challenge-option {
@@ -1195,8 +1199,9 @@
     background: rgba(255,255,255,0.03);
     cursor: pointer; transition: all 0.2s;
     font-size: 0.85rem; font-weight: 500; color: var(--text-mid);
+    font-family: Vazirmatn, var(--font);
     touch-action: manipulation; -webkit-tap-highlight-color: transparent;
-    text-align: right;
+    text-align: right; width: 100%;
   }
   .challenge-option:hover:not(:disabled) {
     border-color: var(--border-bright);
@@ -1226,6 +1231,7 @@
     background: rgba(201,168,76,0.1); border: 1px solid var(--border);
     display: flex; align-items: center; justify-content: center;
     font-size: 0.72rem; font-weight: 900; color: var(--gold);
+    font-family: Vazirmatn, var(--font);
   }
   .challenge-option.correct-answer .challenge-opt-letter { background:rgba(0,214,143,0.15);border-color:var(--green);color:var(--green); }
   .challenge-option.wrong-answer   .challenge-opt-letter { background:rgba(255,77,77,0.1);border-color:var(--red);color:var(--red); }
@@ -1233,19 +1239,21 @@
   .challenge-opt-votes {
     margin-right: auto; font-size: 0.68rem; font-weight: 700;
     color: var(--text-dim); white-space: nowrap;
+    font-family: Vazirmatn, var(--font);
   }
   .challenge-footer {
     display: flex; align-items: center; justify-content: space-between;
     padding: 0.6rem 1rem;
     border-top: 1px solid var(--border-subtle);
     font-size: 0.72rem; color: var(--text-dim);
+    font-family: Vazirmatn, var(--font);
   }
   .challenge-settled-result {
     padding: 0.75rem 1rem;
     background: rgba(0,214,143,0.06);
     border-top: 1px solid rgba(0,214,143,0.15);
     font-size: 0.82rem; font-weight: 700; color: var(--green);
-    text-align: center;
+    text-align: center; font-family: Vazirmatn, var(--font);
   }
 </style>
 </head>
@@ -1461,7 +1469,7 @@
     <!-- ══ چالش روزانه — بالاترین ردیف ══ -->
     <div class="section-divider">
       <div class="section-divider-line"></div>
-      <div class="section-divider-text" style="color:#c990ff">🎲 چالش روزانه</div>
+      <div class="section-divider-text" style="color:var(--gold)">⚽ چالش روزانه</div>
       <div class="section-divider-line"></div>
     </div>
     <div id="admin-challenge-section" style="margin-bottom:1.2rem">
@@ -2943,7 +2951,7 @@ function renderChallengeCard(cid, ch) {
     const p   = n => toPersianNum(String(n).padStart(2,'0'));
     deadlineHtml = `<div style="text-align:center;margin-bottom:0.75rem;background:rgba(201,168,76,0.06);border:1px solid var(--border);border-radius:10px;padding:0.6rem">
       <div style="font-size:0.62rem;color:var(--text-dim);margin-bottom:0.15rem">مهلت ثبت حدس</div>
-      <div style="font-size:1.35rem;font-weight:900;background:linear-gradient(135deg,var(--gold-light),var(--gold));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;letter-spacing:3px;direction:ltr" id="ch-countdown-${cid}">${p(h)}:${p(m2)}:${p(s2)}</div>
+      <div style="font-size:1.35rem;font-weight:900;background:linear-gradient(135deg,var(--gold-light),var(--gold));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;letter-spacing:3px;direction:ltr;font-family:Vazirmatn,var(--font)" id="ch-countdown-${cid}">${p(h)}:${p(m2)}:${p(s2)}</div>
       <div style="font-size:0.6rem;color:var(--text-dim);margin-top:0.1rem">تا ۲۳:۵۹ امشب</div>
     </div>`;
     if (!window._chTickers) window._chTickers = {};
@@ -3000,7 +3008,7 @@ function renderChallengeCard(cid, ch) {
     }).join('');
     accordionHtml = `<div style="border-top:1px solid var(--border-subtle)">
       <button onclick="this.nextElementSibling.classList.toggle('open');this.querySelector('.acc-arr').style.transform=this.nextElementSibling.classList.contains('open')?'rotate(180deg)':'rotate(0)'"
-        style="width:100%;padding:0.6rem 1rem;background:rgba(0,0,0,0.2);border:none;display:flex;align-items:center;justify-content:space-between;cursor:pointer;font-family:inherit;font-size:0.75rem;font-weight:700;color:var(--gold);direction:rtl">
+        style="width:100%;padding:0.6rem 1rem;background:rgba(0,0,0,0.2);border:none;display:flex;align-items:center;justify-content:space-between;cursor:pointer;font-family:Vazirmatn,var(--font);font-size:0.75rem;font-weight:700;color:var(--gold);direction:rtl">
         <span>👁 حدس کاربران (${toPersianNum(Object.keys(answers).length)} نفر)</span>
         <span class="acc-arr" style="transition:0.2s;color:var(--text-dim)">▾</span>
       </button>
@@ -3140,8 +3148,8 @@ function _renderChallengeForm() {
   const dateOptions = futureDates.map(d =>
     `<option value="${d}">${iranDateToFa(d)}</option>`
   ).join('');
-  el.innerHTML = `<div style="background:rgba(180,110,255,0.06);border:1px solid rgba(180,110,255,0.2);border-radius:var(--radius);padding:0.9rem;margin-bottom:0.75rem">
-    <div style="font-size:0.82rem;font-weight:800;color:#c990ff;margin-bottom:0.65rem">\u2795 \u0686\u0627\u0644\u0634 \u062C\u062F\u06CC\u062F \u2014 \u06A9\u062F\u0648\u0645 \u0628\u0627\u0632\u06CC \u0645\u062C\u0645\u0648\u0639 \u06AF\u0644 \u0628\u06CC\u0634\u062A\u0631\u06CC \u062F\u0627\u0631\u0647\u061F</div>
+  el.innerHTML = `<div style="background:rgba(201,168,76,0.04);border:1px solid var(--border);border-radius:var(--radius);padding:0.9rem;margin-bottom:0.75rem">
+    <div style="font-size:0.82rem;font-weight:800;color:var(--gold);margin-bottom:0.65rem">\u2795 \u0686\u0627\u0644\u0634 \u062C\u062F\u06CC\u062F \u2014 \u06A9\u062F\u0648\u0645 \u0628\u0627\u0632\u06CC \u0645\u062C\u0645\u0648\u0639 \u06AF\u0644 \u0628\u06CC\u0634\u062A\u0631\u06CC \u062F\u0627\u0631\u0647\u061F</div>
     <div style="display:flex;gap:0.5rem;align-items:center;margin-bottom:0.6rem;flex-wrap:wrap">
       <div style="display:flex;flex-direction:column;gap:0.2rem;flex:1;min-width:140px">
         <label style="font-size:0.68rem;color:var(--text-dim);font-weight:700">\u0631\u0648\u0632 \u0628\u0627\u0632\u06CC\u200C\u0647\u0627</label>
@@ -3160,8 +3168,8 @@ function _renderChallengeForm() {
     <div id="ch-match-list" style="margin-bottom:0.6rem;font-size:0.78rem;color:var(--text-dim)">\u0627\u0628\u062A\u062F\u0627 \u0631\u0648\u0632 \u0628\u0627\u0632\u06CC\u200C\u0647\u0627 \u0631\u0648 \u0627\u0646\u062A\u062E\u0627\u0628 \u06A9\u0646</div>
     <div id="ch-deadline-info" style="font-size:0.68rem;color:var(--text-dim);margin-bottom:0.5rem;text-align:center"></div>
     <button onclick="createWeeklyChallenge()"
-      style="width:100%;padding:0.65rem;background:linear-gradient(135deg,#c990ff,#9060d0);border:none;border-radius:var(--radius-sm);color:#060810;font-family:Vazirmatn,sans-serif;font-size:0.88rem;font-weight:800;cursor:pointer">
-      \u{1F3B2} \u0627\u0646\u062A\u0634\u0627\u0631 \u0686\u0627\u0644\u0634
+      style="width:100%;padding:0.65rem;background:linear-gradient(135deg,var(--gold-light),var(--gold),var(--gold-dim));border:none;border-radius:var(--radius-sm);color:#060810;font-family:Vazirmatn,var(--font);font-size:0.88rem;font-weight:800;cursor:pointer;box-shadow:0 4px 16px rgba(201,168,76,0.25)">
+      ⚽ انتشار چالش
     </button>
   </div>`;
 }
@@ -3181,7 +3189,7 @@ function onChallengeDateChange(dateStr) {
       const label = `${h.flag} ${h.name} - ${a.flag} ${a.name} (${tm})`;
       return `<label style="display:flex;align-items:center;gap:0.55rem;padding:0.45rem 0.6rem;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:8px;margin-bottom:0.3rem;cursor:pointer;font-size:0.8rem;color:var(--text-mid)">
         <input type="checkbox" value="${m.id}" data-label="${label}" checked
-          style="accent-color:#c990ff;width:16px;height:16px;flex-shrink:0">
+          style="accent-color:var(--gold);width:16px;height:16px;flex-shrink:0">
         <span style="flex:1">${h.flag} ${h.name} - ${a.flag} ${a.name}</span>
         <span style="font-size:0.72rem;color:var(--text-dim)">${tm}</span>
       </label>`;
@@ -3189,7 +3197,7 @@ function onChallengeDateChange(dateStr) {
   if (deadlineEl) {
     const deadline = calcDeadlineForChallenge(dateStr);
     const deadlineFa = new Date(deadline).toLocaleDateString('fa-IR', { weekday:'short', day:'numeric', month:'long' });
-    deadlineEl.innerHTML = `\u23F0 \u0645\u0647\u0644\u062A: <strong style="color:#c990ff">${deadlineFa} \u0633\u0627\u0639\u062A \u06F2\u06F3:\u06F5\u06F9</strong>`;
+    deadlineEl.innerHTML = `\u23F0 \u0645\u0647\u0644\u062A: <strong style="color:var(--gold)">${deadlineFa} \u0633\u0627\u0639\u062A \u06F2\u06F3:\u06F5\u06F9</strong>`;
   }
 }
 
@@ -3252,11 +3260,11 @@ function _renderActiveChallenges() {
     const drawBtn = (!ch.settled && isExp)
       ? `<button onclick="settleWeeklyChallenge('${cid}',-1)"
           style="width:100%;margin-top:0.35rem;padding:0.3rem;font-size:0.7rem;background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:4px;color:var(--text-dim);cursor:pointer;font-family:inherit">\u{1F91D} \u0645\u0633\u0627\u0648\u06CC</button>` : '';
-    return `<div style="background:rgba(180,110,255,0.05);border:1px solid rgba(180,110,255,0.18);border-radius:var(--radius-sm);padding:0.75rem;margin-bottom:0.5rem">
+    return `<div style="background:rgba(201,168,76,0.04);border:1px solid var(--border);border-radius:var(--radius-sm);padding:0.75rem;margin-bottom:0.5rem">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.35rem">
-        <span style="font-size:0.78rem;font-weight:800;color:#c990ff">${forDateFa}</span>
+        <span style="font-size:0.78rem;font-weight:800;color:var(--gold)">${forDateFa}</span>
         <div style="display:flex;gap:0.3rem;align-items:center">
-          <span style="font-size:0.65rem;color:${ch.settled?'var(--green)':isExp?'var(--text-dim)':'#c990ff'}">${ch.settled?'\u2705 \u062A\u0633\u0648\u06CC\u0647':isExp?'\u23F0 \u0645\u0646\u062A\u0638\u0631':'\u{1F7E2} \u0628\u0627\u0632'}</span>
+          <span style="font-size:0.65rem;color:${ch.settled?'var(--green)':isExp?'var(--text-dim)':'var(--gold)'}">${ch.settled?'\u2705 \u062A\u0633\u0648\u06CC\u0647':isExp?'\u23F0 \u0645\u0646\u062A\u0638\u0631':'\u{1F7E2} \u0628\u0627\u0632'}</span>
           <button onclick="deleteWeeklyChallenge('${cid}')" style="padding:0.18rem 0.38rem;background:rgba(255,77,77,0.1);border:1px solid rgba(255,77,77,0.25);border-radius:4px;color:var(--red);font-size:0.65rem;cursor:pointer;font-family:inherit">\u{1F5D1}</button>
         </div>
       </div>
