@@ -1801,7 +1801,7 @@ const ICONS = {
 // ════════════════════════════════════════════════════════════
 let currentUser  = null;
 let isAdmin      = false;
-let appData      = { users: {}, predictions: {}, results: {}, teamOverrides: {}, champion_picks: {}, champion_result: null, game_scores: {} };
+let appData      = { users: {}, predictions: {}, results: {}, teamOverrides: {}, champion_picks: {}, champion_result: null, game_scores: {}, match_locks: {} };
 let dbListeners  = [];
 let _renderTimer = null;
 
@@ -2090,7 +2090,7 @@ function startListeners() {
     }
   });
 
-  ['users', 'predictions', 'results', 'teamOverrides', 'champion_picks', 'champion_result', 'game_scores'].forEach(path => {
+  ['users', 'predictions', 'results', 'teamOverrides', 'champion_picks', 'champion_result', 'game_scores', 'match_locks'].forEach(path => {
     const ref = db.ref(path);
     ref.on('value', snap => {
       if (testModeActive && path !== 'users') return; // تست فعاله — فقط users بخون
@@ -2151,6 +2151,15 @@ async function submitPrediction(matchId) {
   try {
 
   if (!currentUser) { showToast('❌ لاگین نیستی', 'error'); return; }
+  if (appData.match_locks && appData.match_locks[matchId]) {
+    showToast('🔒 این بازی قفل شده — پیش‌بینی قابل تغییر نیست', 'error');
+    return;
+  }
+  const match = MATCHES.find(m => m.id === matchId);
+  if (!match || getMatchStatus(match) !== 'open') {
+    showToast('🔒 زمان پیش‌بینی این بازی تموم شده', 'error');
+    return;
+  }
 
   const ph = parseInt(document.getElementById(`ph-${matchId}`)?.value);
   const pa = parseInt(document.getElementById(`pa-${matchId}`)?.value);
@@ -2300,8 +2309,14 @@ async function confirmResult(matchId) {
 
       // موفق
       appData.results[matchId] = result;
+      // قفل زدن بازی — جلوگیری از تغییر پیش‌بینی
+      try {
+        await db.ref(`match_locks/${matchId}`).set(true);
+        if (!appData.match_locks) appData.match_locks = {};
+        appData.match_locks[matchId] = true;
+      } catch(e) { console.warn('lock failed:', e); }
       renderAll();
-      showToast(`✅ نتیجه ثبت و تأیید شد`, 'success');
+      showToast(`✅ نتیجه ثبت و بازی قفل شد 🔒`, 'success');
 
       // ارسال پیام تلگرام
       try {
