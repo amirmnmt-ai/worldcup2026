@@ -4210,7 +4210,10 @@ function renderAll() {
 async function resetGameScores() {
   if (!confirm('همه رکوردهای گلبان پاک میشه. مطمئنی؟')) return;
   try {
-    await fbWithTimeout(db.ref('game_scores').remove(), 6000);
+    const uids = Object.keys(appData.game_scores || {});
+    for (const uid of uids) {
+      await fbWithTimeout(db.ref(`game_scores/${uid}`).remove(), 6000);
+    }
     appData.game_scores = {};
     renderGameLeaderboard();
     showToast('✅ رکوردهای گلبان ریست شد', 'success');
