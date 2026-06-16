@@ -2146,7 +2146,7 @@ function debouncedRenderAll() {
   clearTimeout(_renderTimer);
   _renderTimer = setTimeout(() => {
     if (currentUser) renderAll();
-  }, 80);
+  }, 150);
 }
 
 // ════════════════════════════════════════════════════════════
@@ -2203,10 +2203,9 @@ async function submitPrediction(matchId) {
     try {
       if (attempt > 1) showToast(`⏳ تلاش ${attempt}/3...`, '');
       await fbWithTimeout(db.ref(`predictions/${matchId}/${currentUser.uid}`).set(pred), 8000);
-      // موفق — سرور تأیید کرد
+      // موفق — آپدیت optimistic، Firebase listener خودش renderAll میزنه
       if (!appData.predictions[matchId]) appData.predictions[matchId] = {};
       appData.predictions[matchId][currentUser.uid] = pred;
-      renderMatches();
       showToast('✅ پیش‌بینی ثبت شد', 'success');
       return;
     } catch (e) {
