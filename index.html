@@ -1244,7 +1244,7 @@
     <button class="nav-tab" onclick="switchTab('leaderboard')">جدول</button>
     <button class="nav-tab" onclick="switchTab('results')">نتایج</button>
     <button class="nav-tab" onclick="switchTab('scorecard')">کارنامه</button>
-    <button class="nav-tab admin-only" onclick="switchTab('game')" style="display:none" id="tab-btn-game">گلبان</button>
+    <button class="nav-tab" onclick="switchTab('game')" id="tab-btn-game">گلبان</button>
     <button class="nav-tab admin-only" onclick="switchTab('admin')" style="display:none" id="tab-btn-admin">ادمین <span id="admin-badge" class="tab-badge" style="display:none">0</span></button>
   </nav>
 
@@ -4301,22 +4301,19 @@ const GK_GAME = {
       if(b.swerve && !b.swerved && b.y > H*0.25){
         b.vx = -b.vx*(1.8+Math.random()*0.6); b.swerved=true;
       }
-      // توپ نامرئی — اول ۱ ثانیه نشون داده میشه، بعد کاملاً ناپدید
-      if(b.invisible){
-        b.invisPhase=(b.invisPhase||0)+1;
-        b.opacity = b.invisPhase < 6 ? 1 : 0;
-        // trail وقتی نامرئیه پاک میشه
-        if(b.opacity===0) b.trail=[];
-      }
       if(b.y>=this.gk.y-b.r*0.5){
         const hit=Math.abs(b.x-this.gk.x)<this.gk.w/2+b.r*0.35;
         if(hit){
-          const pts = b.btype==='invisible'?5 : b.btype==='deceptive'?3 : b.btype==='fast'?2 : 1;
-          this.score+=pts; this.combo++;
-          if(this.combo%5===0)this.level++;
+          const pts = b.btype==='deceptive'?5 : b.btype==='fast'?2 : 1;
+          this.combo++;
+          const comboBonus = this.combo>=10?3 : this.combo>=5?2 : this.combo>=3?1 : 0;
+          const totalPts = pts + comboBonus;
+          this.score+=totalPts;
+          if(this.combo%5===0) this.level++;
+          if(comboBonus>0) this._scorePopup(b.x, b.y-28, '🔥+'+toPersianNum(comboBonus),'#fbbf24');
           this.flash={col:'#00d68f',a:0.22,t:16};this.shake=0;
           this._burst(b.x,b.y,'#00d68f');
-          if(pts>1) this._scorePopup(b.x,b.y,'+'+toPersianNum(pts),pts===5?'#06b6d4':pts===3?'#a855f7':'#fbbf24');
+          if(pts>1) this._scorePopup(b.x,b.y,'+'+toPersianNum(pts),pts===3?'#a855f7':'#fbbf24');
         }else{
           this.lives--;this.combo=0;
           this.flash={col:'#ff4d4d',a:0.38,t:22};this.shake=10;
@@ -4355,34 +4352,24 @@ const GK_GAME = {
   _triggerEvent(){
     const W=this.canvas.width;
     const r=Math.random();
-    if(r < 0.30){
-      // توپ سریع
+    if(r < 0.45){
+      // شوت کارلوس
       const fastSP = 18 + this.level*0.25;
       this.spawnBall(null,null,1.0,'#ef4444',null,fastSP,false,false,'fast');
-      this._showMsg('🔴 توپ سریع!','#ef4444');
+      this._showMsg('🔴 شوت کارلوس!','#ef4444');
       this.eventCD=220; this.suppressT=85; this.spawnT=0;
-    } else if(r < 0.72){
-      // توپ فریبکار
-      // فریبکار: spawn یه طرف، target طرف دیگه — swerve همیشه دراماتیک
+    } else {
+      // شوت بکام — spawn یه طرف، target طرف دیگه
       const decSide = Math.random()<0.5;
       const decX = decSide ? 20+Math.random()*W*0.25 : W*0.75+Math.random()*W*0.2;
       const decTX = decSide ? W*0.65+Math.random()*W*0.3 : 20+Math.random()*W*0.3;
       this.spawnBall(decX,null,0.85,'#a855f7',decTX,null,true,false,'deceptive');
-      this._showMsg('🔀 توپ فریبکار!','#a855f7');
+      this._showMsg('🔀 شوت بکام!','#a855f7');
       this.eventCD=240; this.suppressT=100; this.spawnT=0;
-    } else {
-      // توپ نامرئی
-      // spawn یک طرف، target طرف دیگه → مسیر اریب
-      const invSide = Math.random()<0.5;
-      const invX = invSide ? 20+Math.random()*W*0.25 : W*0.75+Math.random()*W*0.2;
-      const invTX = invSide ? W*0.65+Math.random()*W*0.3 : 20+Math.random()*W*0.3;
-      this.spawnBall(invX,null,0.9,'#06b6d4',invTX,null,false,true,'invisible');
-      this._showMsg('👻 توپ نامرئی!','#06b6d4');
-      this.eventCD=260; this.suppressT=100; this.spawnT=0;
     }
   },
 
-  spawnBall(forceX=null, forceY=null, speedMult=1.0, color=null, forceTX=null, forceSP=null, swerve=false, invisible=false, btype="normal"){
+  spawnBall(forceX=null, forceY=null, speedMult=1.0, color=null, forceTX=null, forceSP=null, swerve=false, btype="normal"){
     const W=this.canvas.width, H=this.canvas.height;
     const x = forceX!==null ? forceX : 20+Math.random()*(W-40);
     const tx = forceTX!==null ? Math.max(28,Math.min(W-28,forceTX)) : 28+Math.random()*(W-56);
@@ -4390,7 +4377,7 @@ const GK_GAME = {
     const dx=tx-x, dy=ty;
     const mag=Math.sqrt(dx*dx+dy*dy);
     const sp=forceSP!==null ? forceSP : (9.0+this.level*0.28+Math.random()*0.8)*speedMult;
-    this.balls.push({x, y: forceY||(-16), vx:(dx/mag)*sp, vy:(dy/mag)*sp, r:14, rot:Math.random()*6.28, trail:[], color, swerve, invisible, swerved:false, invisPhase:0, opacity:1, btype});
+    this.balls.push({x, y: forceY||(-16), vx:(dx/mag)*sp, vy:(dy/mag)*sp, r:14, rot:Math.random()*6.28, trail:[], color, swerve, swerved:false, opacity:1, btype});
   },
 
   _sky(ctx,W,H){
@@ -4639,7 +4626,12 @@ const GK_GAME = {
     if(le)le.textContent='❤️'.repeat(this.lives)+'🖤'.repeat(Math.max(0,5-this.lives));
     if(se)se.textContent=toPersianNum(this.score);
     if(lve)lve.textContent='سطح '+toPersianNum(this.level);
-    if(ce)ce.innerHTML=this.combo>=3?`<span style="color:#fbbf24;font-weight:700">🔥 ${toPersianNum(this.combo)} پشت هم</span>`:'';
+    if(ce){
+      if(this.combo>=10) ce.innerHTML=`<span style="color:#ef4444;font-weight:900;font-size:0.85rem">🔥🔥🔥 ${toPersianNum(this.combo)} کمبو &nbsp;+۳</span>`;
+      else if(this.combo>=5) ce.innerHTML=`<span style="color:#f97316;font-weight:900">🔥🔥 ${toPersianNum(this.combo)} کمبو &nbsp;+۲</span>`;
+      else if(this.combo>=3) ce.innerHTML=`<span style="color:#fbbf24;font-weight:700">🔥 ${toPersianNum(this.combo)} کمبو &nbsp;+۱</span>`;
+      else ce.innerHTML='';
+    }
   },
 
   drawIdle(){
