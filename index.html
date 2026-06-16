@@ -2238,7 +2238,7 @@ async function submitPrediction(matchId) {
       if (_inp) {
         const _btn = _inp.closest('.match-card')?.querySelector('.btn-submit-prediction')
                   || document.querySelector('[onclick*="\'' + matchId + '\'"]');
-        if (_btn) _btn.innerHTML = '🔄 به‌روزرسانی';
+        if (_btn) _btn.textContent = 'به‌روزرسانی';
       }
       return;
     } catch (e) {
@@ -2789,7 +2789,6 @@ function showScreen(name) {
 // ════════════════════════════════════════════════════════════
 //  RENDER: MATCHES TAB
 // ════════════════════════════════════════════════════════════
-let _matchesRenderedOnce = false;
 function renderMatches() {
   // ── آپدیت آمار شخصی کاربر ──
   if (currentUser) {
@@ -2851,8 +2850,7 @@ function renderMatches() {
     if (status === 'done')     statusBadge = '<span class="badge badge-done">پایان یافت</span>';
 
     const _delay = Math.min(cardIdx * 0.055, 0.4); cardIdx++;
-    const _animStyle = _matchesRenderedOnce ? '' : `animation:cardSlideUp 0.32s ease both;animation-delay:${_delay}s`;
-    html += `<div class="match-card" style="${_animStyle}">
+    html += `<div class="match-card">
       <div class="match-header">
         <span class="match-stage ${getStageClass(match.stage)}">${match.stageLabel.split(' - ')[0]}</span>
         <span class="match-header-time">${dateStr}</span>
@@ -2983,7 +2981,7 @@ function renderPredictionSection(match, status, myPred) {
     </div>
     ${isKnockout ? renderKnockoutExtras(match, myPred) : ''}
     <button class="btn-submit-prediction" onclick="submitPrediction('${match.id}')">
-      ${hasExisting ? '✏️ به‌روزرسانی' : '✅ ثبت پیش‌بینی'}
+      ${hasExisting ? 'به‌روزرسانی' : '✅ ثبت پیش‌بینی'}
     </button>
   </div>`;
 }
