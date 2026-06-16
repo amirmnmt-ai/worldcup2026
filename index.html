@@ -2100,15 +2100,14 @@ function startListeners() {
   ['users', 'predictions', 'results', 'teamOverrides', 'champion_picks', 'champion_result', 'game_scores', 'match_locks'].forEach(path => {
     const ref = db.ref(path);
     ref.on('value', snap => {
-      if (testModeActive && path !== 'users') return; // تست فعاله — فقط users بخون
+      if (testModeActive && path !== 'users') return;
       const fresh = snap.val() || {};
 
       // برای users: ریجکت‌شده‌ها رو کاملاً حذف کن
       if (path === 'users') {
         for (const uid of _rejectedUids) {
-          delete fresh[uid]; // از لیست کاربران حذف بشن
+          delete fresh[uid];
         }
-        // کاربرایی که Firebase هم rejected:true داره رو حذف کن
         for (const uid of Object.keys(fresh)) {
           if (fresh[uid]?.rejected === true) {
             _rejectedUids.add(uid);
@@ -2118,7 +2117,7 @@ function startListeners() {
       }
 
       appData[path] = fresh;
-      // اگه اسم کاربر جاری توی Firebase عوض شده، هدر رو آپدیت کن
+
       if (path === 'users' && currentUser && fresh[currentUser.uid]) {
         const freshName = fresh[currentUser.uid].name;
         if (freshName && freshName !== currentUser.name) {
@@ -2129,7 +2128,15 @@ function startListeners() {
           if (avatarEl) avatarEl.textContent = freshName[0].toUpperCase();
         }
       }
-      debouncedRenderAll();
+
+      // render هوشمند — فقط آنچه تغییر کرده
+      if (path === 'predictions' || path === 'match_locks') {
+        debouncedRenderMatches(); // فقط تب بازی‌ها
+      } else if (path === 'game_scores') {
+        try { renderGameLeaderboard(); } catch(e) {}
+      } else {
+        debouncedRenderAll(); // بقیه: full render
+      }
     }, err => {
       console.error(`Firebase listener error [${path}]:`, err);
     });
@@ -2147,6 +2154,18 @@ function debouncedRenderAll() {
   _renderTimer = setTimeout(() => {
     if (currentUser) renderAll();
   }, 150);
+}
+
+let _renderMatchesTimer = null;
+function debouncedRenderMatches() {
+  clearTimeout(_renderMatchesTimer);
+  _renderMatchesTimer = setTimeout(() => {
+    if (!currentUser) return;
+    const scrollY = window.scrollY;
+    try { renderMatches(); } catch(e) {}
+    try { injectIcons(); } catch(e) {}
+    window.scrollTo(0, scrollY);
+  }, 80);
 }
 
 // ════════════════════════════════════════════════════════════
