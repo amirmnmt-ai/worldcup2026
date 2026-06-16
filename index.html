@@ -4575,11 +4575,18 @@ async function captureAndShareResults() {
       backgroundColor: '#0a0c0f',
       scale: 2,
       useCORS: true,
+      allowTaint: true,
       logging: false,
       width: el.scrollWidth,
       height: el.scrollHeight,
       windowWidth: el.scrollWidth,
       windowHeight: el.scrollHeight,
+      onclone: (doc) => {
+        // اطمینان از لود بودن فونت
+        const style = doc.createElement('style');
+        style.textContent = `* { font-family: Vazirmatn, Tahoma, sans-serif !important; }`;
+        doc.head.appendChild(style);
+      }
     });
 
     _screenshotDataUrl = canvas.toDataURL('image/png');
