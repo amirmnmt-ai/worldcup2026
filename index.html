@@ -3085,7 +3085,7 @@ function renderLeaderboard() {
   approvedList.forEach((user, i) => {
     const rank      = i + 1;
     const rankClass = rank <= 3 ? `rank-${rank}` : '';
-    const rankEmoji = rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : rank === 4 ? '🎗️' : '';
+    const rankEmoji = rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : rank === 4 ? '🎗️' : rank === 5 ? '💀' : '';
     const isMe      = currentUser?.uid === user.uid;
 
     html += `<div class="leaderboard-row ${isMe ? 'me' : ''}">
@@ -3284,7 +3284,7 @@ function renderScorecard() {
   const maxAbs = Math.max(...approvedUsers.map(u=>Math.abs(u.balance)),1);
   const maxPos = Math.max(...approvedUsers.map(u=>Math.max(u.balance,0)),1);
   const maxNeg = Math.max(...approvedUsers.map(u=>Math.max(-u.balance,0)),1);
-  const ranks = ['🥇','🥈','🥉','🎗️','5️⃣'];
+  const ranks = ['🥇','🥈','🥉','🎗️','💀'];
   const BAR_H = 110; // ارتفاع ناحیه مثبت
   const NEG_H = maxNeg > 0 ? Math.round(BAR_H * maxNeg / maxAbs) : 0;
   const TOTAL_H = BAR_H + NEG_H + 20; // 20px فضای خط صفر
@@ -3314,7 +3314,7 @@ function renderScorecard() {
         background:${col};border-radius:3px;
         animation:fillBarV 0.7s ${(i*0.12).toFixed(2)}s ease both;animation-fill-mode:both;
         transform-origin:${u.balance>=0?'bottom':'top'};transform:scaleY(0)"></div>
-      <div style="position:absolute;bottom:${NEG_H-8}px;font-size:0.65rem;font-weight:700;text-align:center;width:100%;line-height:1.2">
+      <div style="position:absolute;bottom:${NEG_H-8}px;font-size:0.5rem;font-weight:700;text-align:center;width:100%;line-height:1.2">
         <div>${ranks[i]||''}</div>
         <div style="color:rgba(255,255,255,0.7)">${u.name}</div>
       </div>
