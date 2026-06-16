@@ -3312,16 +3312,15 @@ function renderScorecard() {
   // ── بخش ۲: دونات‌های کنار هم ──
   html+=`<div style="background:var(--bg-2);border-radius:14px;border:1px solid rgba(255,255,255,0.07);padding:1.1rem 0.5rem">
     <div style="font-size:0.78rem;font-weight:700;color:var(--gold);margin-bottom:1.1rem;text-align:center;letter-spacing:0.5px">
-      🎯 درصد موفقیت پیش‌بینی
+      موفقیت پیش‌بینی
     </div>
     <div style="display:flex;justify-content:space-around;align-items:flex-start;flex-wrap:nowrap;gap:4px">`;
 
   approvedUsers.forEach((u,i)=>{
-    const score = u.exact*5 + u.correct*1 + u.wrong*(-3);
+    const score = u.exact*5 + u.correct*2 + u.neutral*0 + u.wrong*(-3);
     const succ  = u.total ? Math.max(0, Math.round((score + u.total*3)/(u.total*8)*100)) : 0;
 
     const R=36, C=2*Math.PI*R;
-    // segments: exact=gold, correct=green, neutral=gray, wrong=red
     const segs=[
       {v:u.exact,  col:'#C9A84C'},
       {v:u.correct,col:'#00d68f'},
@@ -3356,10 +3355,29 @@ function renderScorecard() {
           font-size="8" font-family="Vazirmatn,sans-serif">موفقیت</text>
       </svg>
       <div style="font-size:0.72rem;font-weight:700;text-align:center;max-width:60px;line-height:1.3">${u.name}</div>
-      <div style="font-size:0.65rem;color:rgba(255,255,255,0.4);text-align:center;line-height:1.6">
-        ${u.exact?`<span style="color:#C9A84C">🎯${toPersianNum(u.exact)}</span> `:''}${u.correct?`<span style="color:#00d68f">✅${toPersianNum(u.correct)}</span>`:''}
-        ${u.wrong?`<br><span style="color:#ff4d4d">❌${toPersianNum(u.wrong)}</span>`:''}
-      </div>
+    </div>`;
+  });
+
+  html+=`</div></div>`;
+
+  // ── بخش ۳: آکوردئون جزئیات ──
+  html+=`<div style="background:var(--bg-2);border-radius:14px;border:1px solid rgba(255,255,255,0.07);margin-top:0.75rem;overflow:hidden">
+    <button onclick="(function(btn){const b=btn.nextElementSibling;const open=b.style.display==='block';b.style.display=open?'none':'block';btn.querySelector('span:last-child').textContent=open?'▼':'▲';})(this)"
+      style="width:100%;display:flex;justify-content:space-between;align-items:center;padding:0.85rem 1rem;background:none;border:none;cursor:pointer;font-family:'Vazirmatn',sans-serif;touch-action:manipulation">
+      <span style="font-size:0.78rem;font-weight:700;color:var(--gold)">جزئیات</span>
+      <span style="color:var(--text-dim);font-size:0.7rem">▼</span>
+    </button>
+    <div style="display:none;padding:0.25rem 0.75rem 0.85rem">`;
+
+  approvedUsers.forEach(u=>{
+    html+=`<div style="display:flex;justify-content:space-between;align-items:center;padding:0.5rem 0;border-bottom:1px solid rgba(255,255,255,0.05)">
+      <span style="font-size:0.75rem;font-weight:700;min-width:50px">${u.name}</span>
+      <span style="display:flex;gap:10px;font-size:0.72rem">
+        <span style="color:#C9A84C">🎯 ${toPersianNum(u.exact)}</span>
+        <span style="color:#00d68f">✅ ${toPersianNum(u.correct)}</span>
+        <span style="color:rgba(255,255,255,0.35)">➖ ${toPersianNum(u.neutral)}</span>
+        <span style="color:#ff4d4d">❌ ${toPersianNum(u.wrong)}</span>
+      </span>
     </div>`;
   });
 
