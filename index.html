@@ -1996,6 +1996,9 @@ auth.onAuthStateChanged(async (fbUser) => {
     return;
   }
 
+  // اگه همین کاربر قبلاً توی اپه — دوباره init نکن (جلوگیری از flash سیاه)
+  if (currentUser && currentUser.uid === fbUser.uid) return;
+
   showScreen('loading');
 
   const { uid, email, displayName } = fbUser;
@@ -2157,10 +2160,12 @@ function debouncedRenderAll() {
 }
 
 let _renderMatchesTimer = null;
+let _skipNextMatchesRender = false;
 function debouncedRenderMatches() {
   clearTimeout(_renderMatchesTimer);
   _renderMatchesTimer = setTimeout(() => {
     if (!currentUser) return;
+    if (_skipNextMatchesRender) { _skipNextMatchesRender = false; return; }
     const scrollY = window.scrollY;
     try { renderMatches(); } catch(e) {}
     try { injectIcons(); } catch(e) {}
@@ -2222,10 +2227,19 @@ async function submitPrediction(matchId) {
     try {
       if (attempt > 1) showToast(`⏳ تلاش ${attempt}/3...`, '');
       await fbWithTimeout(db.ref(`predictions/${matchId}/${currentUser.uid}`).set(pred), 8000);
-      // موفق — آپدیت optimistic، Firebase listener خودش renderAll میزنه
+      // موفق — آپدیت optimistic
       if (!appData.predictions[matchId]) appData.predictions[matchId] = {};
       appData.predictions[matchId][currentUser.uid] = pred;
       showToast('✅ پیش‌بینی ثبت شد', 'success');
+      // در-جا: فقط دکمه رو عوض کن بدون هیچ render
+      _skipNextMatchesRender = true;
+      setTimeout(() => { _skipNextMatchesRender = false; }, 600);
+      const _inp = document.getElementById('ph-' + matchId);
+      if (_inp) {
+        const _btn = _inp.closest('.match-card')?.querySelector('.btn-submit-prediction')
+                  || document.querySelector('[onclick*="\'' + matchId + '\'"]');
+        if (_btn) _btn.innerHTML = '🔄 به‌روزرسانی';
+      }
       return;
     } catch (e) {
       console.error(`attempt ${attempt}:`, e.code, e.message);
