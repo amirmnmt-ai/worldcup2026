@@ -2451,6 +2451,8 @@ async function confirmResult(matchId) {
       } catch(e) { console.warn('lock failed:', e); }
       // تسویه خودکار چالش روزانه
       try { await autoSettleDailyChallenges(matchId); } catch(e) { console.warn('autoSettle:', e); }
+      // reset فلگ notif_sent تا Worker دوباره پیام نتیجه بفرسته
+      try { await db.ref(`notif_sent/${matchId}/result`).remove(); } catch(e) {}
       renderAllDeferred();
       showToast(`✅ نتیجه ثبت و بازی قفل شد 🔒`, 'success');
 
@@ -3238,55 +3240,75 @@ async function createWeeklyChallenge() {
 function _renderActiveChallenges() {
   const el = document.getElementById('admin-active-challenges');
   if (!el) return;
-  const challenges = appData.daily_challenges || {};
-  const answers    = appData.daily_answers    || {};
+  const challenges  = appData.daily_challenges || {};
+  const answers     = appData.daily_answers    || {};
+  const allApproved = Object.entries(appData.users || {}).filter(([,u]) => u.approved);
   const active = Object.entries(challenges)
     .filter(([, ch]) => ch.active)
     .sort(([, a], [, b]) => (b.ts || 0) - (a.ts || 0));
   if (!active.length) {
-    el.innerHTML = '<div style="font-size:0.78rem;color:var(--text-dim);text-align:center;padding:0.4rem 0">\u0647\u0646\u0648\u0632 \u0686\u0627\u0644\u0634\u06CC \u0641\u0639\u0627\u0644 \u0646\u06CC\u0633\u062A</div>';
+    el.innerHTML = '<div style="font-size:0.78rem;color:var(--text-dim);text-align:center;padding:0.4rem 0">هنوز چالشی فعال نیست</div>';
     return;
   }
   const letters = ['A','B','C','D','E'];
   el.innerHTML = active.map(([cid, ch]) => {
-    const chAns  = answers[cid] || {};
-    const totalP = Object.keys(chAns).length;
-    const now    = Date.now();
-    const isExp  = now >= (ch.deadline || 0);
-    const forDateFa = ch.forDate ? iranDateToFa(ch.forDate) : '\u0686\u0627\u0644\u0634 \u0631\u0648\u0632\u0627\u0646\u0647';
+    const chAns   = answers[cid] || {};
+    const totalP  = Object.keys(chAns).length;
+    const now     = Date.now();
+    const isExp   = now >= (ch.deadline || 0);
+    const forDateFa = ch.forDate ? iranDateToFa(ch.forDate) : 'چالش روزانه';
+
+    // وضعیت شرکت — فقط قبل از انقضا برای ادمین
+    let participationHtml = '';
+    if (!isExp && !ch.settled) {
+      const submittedUids = new Set(Object.keys(chAns));
+      const mkChip = (name, ok) =>
+        `<span style="padding:0.1rem 0.45rem;border-radius:20px;font-size:0.68rem;font-weight:600;` +
+        `background:${ok?'rgba(0,214,143,0.1)':'rgba(255,255,255,0.04)'};` +
+        `border:1px solid ${ok?'rgba(0,214,143,0.25)':'rgba(255,255,255,0.07)'};` +
+        `color:${ok?'var(--green)':'var(--text-dim)'};">${name}${ok?' ✓':''}</span>`;
+      const chips = allApproved
+        .map(([uid, u]) => mkChip(u.name, submittedUids.has(uid)))
+        .join(' ');
+      participationHtml = `<div style="margin-bottom:0.45rem;padding:0.45rem 0.6rem;background:rgba(255,255,255,0.02);border:1px solid var(--border-subtle);border-radius:8px">
+        <div style="font-size:0.65rem;color:var(--text-dim);margin-bottom:0.3rem;font-weight:700">وضعیت شرکت — ${toPersianNum(totalP)} از ${toPersianNum(allApproved.length)} نفر</div>
+        <div style="display:flex;flex-wrap:wrap;gap:0.28rem">${chips}</div>
+      </div>`;
+    }
+
     const opts = (ch.options || []).map((opt, i) => {
       const cnt   = Object.values(chAns).filter(a => a.optionIndex === i).length;
       const pct   = totalP ? Math.round(cnt/totalP*100) : 0;
       const isWin = ch.settled && ch.result === i;
       const settleBtn = (!ch.settled && isExp)
         ? `<button onclick="settleWeeklyChallenge('${cid}',${i})"
-            style="padding:0.18rem 0.5rem;font-size:0.66rem;background:rgba(0,214,143,0.12);border:1px solid rgba(0,214,143,0.3);border-radius:4px;color:var(--green);cursor:pointer;font-family:inherit">\u2713</button>` : '';
+            style="padding:0.18rem 0.5rem;font-size:0.66rem;background:rgba(0,214,143,0.12);border:1px solid rgba(0,214,143,0.3);border-radius:4px;color:var(--green);cursor:pointer;font-family:inherit">✓</button>` : '';
       return `<div style="display:flex;align-items:center;gap:0.45rem;margin-bottom:0.28rem">
         <span style="font-size:0.68rem;font-weight:700;color:${isWin?'var(--green)':'var(--text-dim)'};min-width:14px">${letters[i]}</span>
-        <span style="font-size:0.75rem;flex:1;color:${isWin?'var(--green)':'var(--text-mid)'};line-height:1.3">${opt}${isWin?' \u2713':''}</span>
-        <span style="font-size:0.66rem;color:var(--text-dim);white-space:nowrap">${toPersianNum(cnt)} (${toPersianNum(pct)}\u0666)</span>
+        <span style="font-size:0.75rem;flex:1;color:${isWin?'var(--green)':'var(--text-mid)'};line-height:1.3">${opt}${isWin?' ✓':''}</span>
+        <span style="font-size:0.66rem;color:var(--text-dim);white-space:nowrap">${toPersianNum(cnt)} (${toPersianNum(pct)}٪)</span>
         ${settleBtn}
       </div>`;
     }).join('');
     const drawBtn = (!ch.settled && isExp)
       ? `<button onclick="settleWeeklyChallenge('${cid}',-1)"
-          style="width:100%;margin-top:0.35rem;padding:0.3rem;font-size:0.7rem;background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:4px;color:var(--text-dim);cursor:pointer;font-family:inherit">\u{1F91D} \u0645\u0633\u0627\u0648\u06CC</button>` : '';
+          style="width:100%;margin-top:0.35rem;padding:0.3rem;font-size:0.7rem;background:rgba(255,255,255,0.03);border:1px solid var(--border-subtle);border-radius:4px;color:var(--text-dim);cursor:pointer;font-family:inherit">🤝 مساوی</button>` : '';
     return `<div style="background:rgba(201,168,76,0.04);border:1px solid var(--border);border-radius:var(--radius-sm);padding:0.75rem;margin-bottom:0.5rem">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.35rem">
         <span style="font-size:0.78rem;font-weight:800;color:var(--gold)">${forDateFa}</span>
         <div style="display:flex;gap:0.3rem;align-items:center">
-          <span style="font-size:0.65rem;color:${ch.settled?'var(--green)':isExp?'var(--text-dim)':'var(--gold)'}">${ch.settled?'\u2705 \u062A\u0633\u0648\u06CC\u0647':isExp?'\u23F0 \u0645\u0646\u062A\u0638\u0631':'\u{1F7E2} \u0628\u0627\u0632'}</span>
-          <button onclick="deleteWeeklyChallenge('${cid}')" style="padding:0.18rem 0.38rem;background:rgba(255,77,77,0.1);border:1px solid rgba(255,77,77,0.25);border-radius:4px;color:var(--red);font-size:0.65rem;cursor:pointer;font-family:inherit">\u{1F5D1}</button>
+          <span style="font-size:0.65rem;color:${ch.settled?'var(--green)':isExp?'var(--text-dim)':'var(--gold)'}">${ch.settled?'✅ تسویه':isExp?'⏰ منتظر':'🟢 باز'}</span>
+          <button onclick="deleteWeeklyChallenge('${cid}')" style="padding:0.18rem 0.38rem;background:rgba(255,77,77,0.1);border:1px solid rgba(255,77,77,0.25);border-radius:4px;color:var(--red);font-size:0.65rem;cursor:pointer;font-family:inherit">🗑</button>
         </div>
       </div>
-      <div style="font-size:0.68rem;color:var(--text-dim);margin-bottom:0.4rem">${toPersianNum(totalP)} \u0634\u0631\u06A9\u062A\u200C\u06A9\u0646\u0646\u062F\u0647 \u00B7 ${toPersianNum((ch.amount||10000).toLocaleString('fa-IR'))} \u062A\u0648\u0645\u0627\u0646</div>
-      ${opts}${drawBtn}
+      <div style="font-size:0.68rem;color:var(--text-dim);margin-bottom:0.4rem">${toPersianNum(totalP)} شرکت‌کننده · ${toPersianNum((ch.amount||10000).toLocaleString('fa-IR'))} تومان</div>
+      ${participationHtml}${opts}${drawBtn}
     </div>`;
   }).join('');
 }
 
 
-async function triggerChampionSettle() {
+async function triggerChampionSettle()) {
   const teamName = document.getElementById('champ-winner-input')?.value?.trim();
   const flag     = document.getElementById('champ-winner-flag')?.value?.trim() || '🏆';
   if (!teamName) { showToast('نام قهرمان رو وارد کن', 'error'); return; }
