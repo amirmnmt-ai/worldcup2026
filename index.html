@@ -3138,7 +3138,7 @@ async function autoSettleDailyChallenges(matchId) {
     const winners  = totals.map((t, i) => t === maxGoals ? i : -1).filter(i => i >= 0);
     const resultIdx = winners.length === 1 ? winners[0] : -1;
     try {
-      await fbWithTimeout(db.ref(`daily_challenges/${cid}`).update({ settled: true, result: resultIdx }), 8000);
+      await fbWithTimeout(db.ref(`daily_challenges/${cid}`).update({ settled: true, result: resultIdx, active: false }), 8000);
       const winOpt = resultIdx >= 0 ? ch.options[resultIdx] : null;
       showToast(winOpt ? `\u{1F3B2} \u0686\u0627\u0644\u0634 \u062A\u0633\u0648\u06CC\u0647 \u0634\u062F: ${winOpt}` : '\u{1F3B2} \u0686\u0627\u0644\u0634: \u0645\u0633\u0627\u0648\u06CC', 'success');
     } catch(e) { console.warn('autoSettle error:', e); }
@@ -3229,6 +3229,8 @@ async function createWeeklyChallenge() {
   const challenge = { options, matchIds, amount, forDate, deadline, active:true, settled:false, result:null, ts:firebase.database.ServerValue.TIMESTAMP };
   try {
     await fbWithTimeout(db.ref(`daily_challenges/${cid}`).set(challenge), 8000);
+    // اعلان تلگرام — Worker دور بعدی می‌فرسته (حداکثر ۳۰ دقیقه)
+    try { await db.ref(`challenge_notify/${cid}`).set({ options, deadline, sent: false }); } catch(e) {}
     showToast('\u{1F3B2} \u0686\u0627\u0644\u0634 \u0645\u0646\u062A\u0634\u0631 \u0634\u062F!', 'success');
     if (dateEl) dateEl.value = '';
     const listEl = document.getElementById('ch-match-list');
@@ -3703,7 +3705,7 @@ function renderLeaderboard() {
 // ════════════════════════════════════════════════════════════
 function renderResults() {
   const container = document.getElementById('results-list');
-  const allGroupSorted = MATCHES.filter(m => m.stage==='group' && appData.results[m.id]);
+  const allGroup = MATCHES.filter(m => m.stage==='group' && appData.results[m.id]);
   const doneMatches = MATCHES.filter(m => appData.results[m.id]);
 
   if (!doneMatches.length) {
@@ -3711,10 +3713,13 @@ function renderResults() {
     return;
   }
 
+  // تشخیص دور از عدد انتهای match ID (gX1,gX2=دور۱ / gX3,gX4=دور۲ / gX5,gX6=دور۳)
+  const matchRound = m => { const n=parseInt(m.id.slice(-1)); return n<=2?'g1':n<=4?'g2':'g3'; };
+
   const ROUNDS = [
-    { key:'g1', label:'دور اول گروهی',    short:'G1', matches: allGroupSorted.slice(0,24).reverse() },
-    { key:'g2', label:'دور دوم گروهی',    short:'G2', matches: allGroupSorted.slice(24,48).reverse() },
-    { key:'g3', label:'دور سوم گروهی',    short:'G3', matches: allGroupSorted.slice(48,72).reverse() },
+    { key:'g1', label:'دور اول گروهی',    short:'G1', matches: allGroup.filter(m=>matchRound(m)==='g1').reverse() },
+    { key:'g2', label:'دور دوم گروهی',    short:'G2', matches: allGroup.filter(m=>matchRound(m)==='g2').reverse() },
+    { key:'g3', label:'دور سوم گروهی',    short:'G3', matches: allGroup.filter(m=>matchRound(m)==='g3').reverse() },
     { key:'r32',label:'یک‌شانزدهم نهایی', short:'R32',matches: doneMatches.filter(m=>m.stage==='r32') },
     { key:'r16',label:'یک‌هشتم نهایی',    short:'R16',matches: doneMatches.filter(m=>m.stage==='r16') },
     { key:'qf', label:'یک‌چهارم نهایی',   short:'QF', matches: doneMatches.filter(m=>m.stage==='qf') },
@@ -3979,6 +3984,51 @@ function renderScorecard() {
   });
 
   html+=`</div></div>`;
+
+  // ── بخش ۴: نمودار چالش‌های روزانه ──
+  const chalUsers = approvedUsers.map(u => ({
+    ...u,
+    chalBal: getChallengeBalance(u.uid),
+  })).filter(u => u.chalBal !== 0);
+
+  if (chalUsers.length >= 2) {
+    const cmaxAbs = Math.max(...chalUsers.map(u=>Math.abs(u.chalBal)),1);
+    const cmaxPos = Math.max(...chalUsers.map(u=>Math.max(u.chalBal,0)),1);
+    const cmaxNeg = Math.max(...chalUsers.map(u=>Math.max(-u.chalBal,0)),1);
+    const CBAR_H  = 110;
+    const CNEG_H  = cmaxNeg > 0 ? Math.round(CBAR_H * cmaxNeg / cmaxAbs) : 0;
+    const CTOTAL_H= CBAR_H + CNEG_H + 20;
+
+    html+=`<div style="background:var(--bg-2);border-radius:14px;border:1px solid rgba(255,255,255,0.07);padding:1.1rem 1rem;margin-top:0.75rem">
+      <div style="font-size:0.78rem;font-weight:700;color:var(--gold);margin-bottom:1rem;text-align:center;letter-spacing:0.5px">
+        چالش‌های روزانه
+      </div>
+      <div style="display:flex;align-items:flex-end;justify-content:space-around;height:${CTOTAL_H}px;position:relative;padding:0 8px">
+        <div style="position:absolute;left:0;right:0;bottom:${CNEG_H+10}px;height:1px;background:rgba(255,255,255,0.2)"></div>`;
+
+    chalUsers.forEach((u,i) => {
+      const col  = u.chalBal>=0?'#00d68f':'#ff4d4d';
+      const posH = u.chalBal>0 ? Math.round(CBAR_H*u.chalBal/cmaxAbs) : 0;
+      const negH = u.chalBal<0 ? Math.round(CNEG_H*(-u.chalBal)/cmaxNeg) : 0;
+      const barH = posH + negH;
+      const bottomOffset = u.chalBal>=0 ? CNEG_H+10 : CNEG_H+10-negH;
+      const balStr = u.chalBal>0
+        ? `${toPersianNum(u.chalBal.toLocaleString('fa-IR'))}+`
+        : `${toPersianNum(Math.abs(u.chalBal).toLocaleString('fa-IR'))}-`;
+      const valColor = u.chalBal>0?'#00d68f':'#ff4d4d';
+      const labelY = u.chalBal>=0 ? `bottom:${CNEG_H+10+posH+4}px` : `bottom:${bottomOffset-18}px`;
+      html+=`<div style="display:flex;flex-direction:column;align-items:center;flex:1;position:relative;height:${CTOTAL_H}px">
+        <div style="position:absolute;${labelY};font-size:0.6rem;color:${valColor};font-weight:700;white-space:nowrap">${balStr}</div>
+        <div style="position:absolute;bottom:${bottomOffset}px;width:70%;min-width:28px;max-width:48px;height:${Math.max(barH,3)}px;
+          background:${col};border-radius:3px;
+          animation:fillBarV 0.7s ${(i*0.12).toFixed(2)}s ease both;animation-fill-mode:both;
+          transform-origin:${u.chalBal>=0?'bottom':'top'};transform:scaleY(0)"></div>
+        <div style="position:absolute;bottom:${CNEG_H-8}px;font-size:0.6rem;font-weight:700;text-align:center;width:100%;line-height:1.3;color:rgba(255,255,255,0.7)">${u.name}</div>
+      </div>`;
+    });
+    html+=`</div></div>`;
+  }
+
   container.innerHTML=html;
 }
 
