@@ -3728,24 +3728,22 @@ function renderResults() {
     { key:'fin',label:'فینال',      short:'FIN',matches: doneMatches.filter(m=>m.stage==='final') },
   ].filter(r => r.matches.length > 0);
 
-  if (!ROUNDS.length) { container.innerHTML = ''; return; }
+  if (!ROUNDS.length && !Object.values(appData.daily_challenges||{}).some(ch=>ch.settled)) {
+    container.innerHTML = '';
+    return;
+  }
 
-  // ترتیب معکوس — آخرین دور اول
-  ROUNDS.reverse();
-  const lastKey = ROUNDS[0].key;
-
-  // accordion — هر دور یه هدر کلیک‌شدنی، پیش‌فرض بسته
+  // accordion — همه پیش‌فرض بسته
   const approvedUsers = Object.entries(appData.users).filter(([,u]) => u.approved);
-  const accordionHtml = ROUNDS.map((round, idx) => {
-    const isLast = idx === ROUNDS.length - 1;
+  let accordionHtml = ROUNDS.map((round) => {
     return `
     <div class="res-accordion">
       <button class="res-acc-header" onclick="toggleAccordion('acc-${round.key}',this)">
         <span class="res-acc-title">${round.label}</span>
         <span class="res-acc-meta">${toPersianNum(round.matches.length)} بازی</span>
-        <span class="res-acc-arrow">${isLast ? '▲' : '▼'}</span>
+        <span class="res-acc-arrow">▼</span>
       </button>
-      <div class="res-acc-body ${isLast ? 'open' : ''}" id="acc-${round.key}">
+      <div class="res-acc-body" id="acc-${round.key}">
         <div class="res-acc-inner">
           ${round.matches.map(match => {
             const result = appData.results[match.id];
