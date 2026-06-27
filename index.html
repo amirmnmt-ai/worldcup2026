@@ -2308,10 +2308,14 @@ async function submitPrediction(matchId) {
     };
   }
 
-  const penEl = document.getElementById(`pen-${matchId}`);
-  if (penEl && penEl.value !== '') pred.penaltyGoals = parseInt(penEl.value);
-  const penWinnerEl = document.querySelector(`input[name="pen-winner-${matchId}"]:checked`);
-  if (penWinnerEl) pred.penWinner = penWinnerEl.value;
+  const penHEl = document.getElementById(`pen-home-pred-${matchId}`);
+  const penAEl = document.getElementById(`pen-away-pred-${matchId}`);
+  if (penHEl && penAEl && penHEl.value !== '' && penAEl.value !== '') {
+    const ph = parseInt(penHEl.value), pa = parseInt(penAEl.value);
+    pred.penPrediction = { homeGoals: ph, awayGoals: pa };
+    pred.penaltyGoals  = ph + pa;            // backward-compat
+    pred.penWinner     = ph > pa ? 'home' : ph < pa ? 'away' : null;
+  }
 
   // اطمینان از لاگین و اتصال
   if (!auth.currentUser) { showToast('❌ نشست منقضی شده — دوباره لاگین کن', 'error'); return; }
@@ -2554,10 +2558,18 @@ function getOTCategory(pred, result) {
 }
 
 function getPenCategory(pred, result) {
-  if (!pred.penWinner || !result.penWinner) return null;
-  if (pred.penWinner !== result.penWinner) return null;
-  return (pred.penaltyGoals !== undefined && pred.penaltyGoals === result.penaltyGoals)
-    ? 'exact' : 'correct';
+  // برنده از penPrediction (جدید) یا penWinner (قدیم) می‌خونیم
+  const predWinner = pred.penPrediction
+    ? (pred.penPrediction.homeGoals > pred.penPrediction.awayGoals ? 'home'
+       : pred.penPrediction.homeGoals < pred.penPrediction.awayGoals ? 'away' : null)
+    : pred.penWinner;
+  if (!predWinner || !result.penWinner) return null;
+  if (predWinner !== result.penWinner) return null;
+  // دقیق: هر دو عدد درست
+  const exact = pred.penPrediction
+    ? (pred.penPrediction.homeGoals === result.homePenGoals && pred.penPrediction.awayGoals === result.awayPenGoals)
+    : (pred.penaltyGoals !== undefined && pred.penaltyGoals === result.penaltyGoals);
+  return exact ? 'exact' : 'correct';
 }
 
 function calcSettlementForMatch(matchId, result) {
@@ -3577,26 +3589,18 @@ function renderKnockoutExtras(match, myPred) {
     <!-- ── Penalty Section ── -->
     <div id="pen-section-${mid}" style="display:${showPen ? 'block' : 'none'}">
       <div class="extra-section-title" style="margin-top:0.6rem">🥅 پنالتی — اگه وقت اضافه هم مساوی بمونه</div>
-      <div style="display:flex;align-items:center;gap:0.75rem;flex-wrap:wrap;margin-top:0.4rem">
-        <div style="font-size:0.8rem;color:var(--text-dim)">تعداد گل:</div>
+      <div style="display:flex;align-items:center;gap:0.5rem;margin-top:0.5rem">
+        <div style="flex:1;text-align:center;font-size:0.7rem;color:var(--text-dim)" dir="rtl">${getTeamInfo(mid,'home').name}</div>
         <input type="number" inputmode="numeric" pattern="[0-9]*" class="score-input"
-          id="pen-${mid}" min="0" max="30" value="${myPred?.penaltyGoals ?? ''}" placeholder="–"
-          style="width:70px">
-        <div style="font-size:0.75rem;color:var(--text-dim)">مجموع</div>
+          id="pen-home-pred-${mid}" min="0" max="20" value="${myPred?.penPrediction?.homeGoals ?? ''}" placeholder="–"
+          style="width:64px" oninput="updateKnockoutVisibility('${mid}')">
+        <div style="font-size:1rem;color:var(--text-dim);padding:0 0.2rem">–</div>
+        <input type="number" inputmode="numeric" pattern="[0-9]*" class="score-input"
+          id="pen-away-pred-${mid}" min="0" max="20" value="${myPred?.penPrediction?.awayGoals ?? ''}" placeholder="–"
+          style="width:64px" oninput="updateKnockoutVisibility('${mid}')">
+        <div style="flex:1;text-align:center;font-size:0.7rem;color:var(--text-dim)" dir="rtl">${getTeamInfo(mid,'away').name}</div>
       </div>
-      <div style="margin-top:0.6rem;font-size:0.8rem;color:var(--text-dim)">🏆 برنده پنالتی:</div>
-      <div style="display:flex;gap:1rem;margin-top:0.35rem">
-        <label style="display:flex;align-items:center;gap:0.4rem;cursor:pointer;font-size:0.85rem;color:var(--text-mid)">
-          <input type="radio" name="pen-winner-${mid}" value="home"
-            ${myPred?.penWinner==='home'?'checked':''} style="accent-color:var(--gold);width:16px;height:16px">
-          ${getTeamInfo(mid,'home').name}
-        </label>
-        <label style="display:flex;align-items:center;gap:0.4rem;cursor:pointer;font-size:0.85rem;color:var(--text-mid)">
-          <input type="radio" name="pen-winner-${mid}" value="away"
-            ${myPred?.penWinner==='away'?'checked':''} style="accent-color:var(--gold);width:16px;height:16px">
-          ${getTeamInfo(mid,'away').name}
-        </label>
-      </div>
+      <div style="font-size:0.72rem;color:var(--text-dim);text-align:center;margin-top:0.35rem">تعداد پنالتی‌های هر تیم رو جداگانه وارد کن — برنده خودکار مشخص میشه</div>
     </div>
   </div>`;
 }
@@ -4600,9 +4604,21 @@ function renderAdmin() {
     let predRows = '';
     for (const [uid, user] of approvedUsrs) {
       const pred = matchPreds[uid];
+      let predStr = '<span style="color:var(--text-dim);font-size:0.7rem">ثبت نشده</span>';
+      if (pred && pred.homeGoals !== undefined) {
+        predStr = toPersianNum(pred.homeGoals) + '–' + toPersianNum(pred.awayGoals);
+        if (isKO && pred.otPrediction) {
+          predStr += ' <span style="color:var(--text-dim);font-size:0.72rem"> | وقت اضافه: ' +
+            toPersianNum(pred.otPrediction.homeGoals) + '–' + toPersianNum(pred.otPrediction.awayGoals) + '</span>';
+        }
+        if (isKO && pred.penPrediction) {
+          predStr += ' <span style="color:#C9A84C;font-size:0.72rem"> | پنالتی: ' +
+            toPersianNum(pred.penPrediction.homeGoals) + '–' + toPersianNum(pred.penPrediction.awayGoals) + '</span>';
+        }
+      }
       predRows += `<div class="breakdown-row">
         <span class="breakdown-player">${user.name}</span>
-        <span class="breakdown-pred" dir="ltr">${pred ? toPersianNum(pred.homeGoals)+'–'+toPersianNum(pred.awayGoals) : '<span style="color:var(--text-dim);font-size:0.7rem">ثبت نشده</span>'}</span>
+        <span class="breakdown-pred" dir="ltr">${predStr}</span>
       </div>`;
     }
     return `<div class="admin-match-card" data-teams="${teamsStr}" data-status="${status}">
