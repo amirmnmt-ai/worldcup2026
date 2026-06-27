@@ -2301,20 +2301,42 @@ async function submitPrediction(matchId) {
 
   const othEl = document.getElementById(`oth-${matchId}`);
   const otaEl = document.getElementById(`ota-${matchId}`);
-  if (othEl && otaEl && othEl.value !== '' && otaEl.value !== '') {
+  const otFilled = othEl && otaEl && othEl.value !== '' && otaEl.value !== '';
+  if (otFilled) {
     pred.otPrediction = {
       homeGoals: parseInt(othEl.value),
       awayGoals: parseInt(otaEl.value)
     };
   }
 
+  // اگه OT پر شده و مساوی‌ست، پنالتی اجباریه
   const penHEl = document.getElementById(`pen-home-pred-${matchId}`);
   const penAEl = document.getElementById(`pen-away-pred-${matchId}`);
-  if (penHEl && penAEl && penHEl.value !== '' && penAEl.value !== '') {
-    const ph = parseInt(penHEl.value), pa = parseInt(penAEl.value);
-    pred.penPrediction = { homeGoals: ph, awayGoals: pa };
-    pred.penaltyGoals  = ph + pa;            // backward-compat
-    pred.penWinner     = ph > pa ? 'home' : ph < pa ? 'away' : null;
+  const penSectionVisible = document.getElementById(`pen-section-${matchId}`)?.style.display !== 'none';
+  if (penSectionVisible) {
+    if (!penHEl || !penAEl || penHEl.value === '' || penAEl.value === '') {
+      showToast('پیش‌بینی پنالتی رو هم کامل کن', 'error');
+      return;
+    }
+    const penH = parseInt(penHEl.value), penA = parseInt(penAEl.value);
+    if (penH === penA) {
+      showToast('در پنالتی مساوی نمیشه — یه تیم باید بیشتر بزنه', 'error');
+      return;
+    }
+    // نتایج شدنی پنالتی: برنده-بازنده باید یکی از این‌ها باشه
+    // 5 ضربه: 1-0, 2-0, 2-1, 3-0, 3-1, 3-2, 4-1, 4-2, 4-3, 5-3, 5-4
+    // sudden death: n+1 - n برای هر n >= 5
+    const w = Math.max(penH, penA), l = Math.min(penH, penA);
+    const normal5 = [[1,0],[2,0],[2,1],[3,0],[3,1],[3,2],[4,1],[4,2],[4,3],[5,3],[5,4]];
+    const isNormal = normal5.some(([a,b]) => a===w && b===l);
+    const isSudden = w >= 6 && w === l + 1;
+    if (!isNormal && !isSudden) {
+      showToast('این نتیجه در پنالتی ممکن نیست — بازی زودتر تموم میشد', 'error');
+      return;
+    }
+    pred.penPrediction = { homeGoals: penH, awayGoals: penA };
+    pred.penaltyGoals  = penH + penA;
+    pred.penWinner     = penH > penA ? 'home' : 'away';
   }
 
   // اطمینان از لاگین و اتصال
