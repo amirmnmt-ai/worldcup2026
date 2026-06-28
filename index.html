@@ -3512,14 +3512,12 @@ function renderMatches() {
 
 function formatPredFull(pred, isKO) {
   if (!pred || pred.homeGoals === undefined) return '<span style="color:var(--text-dim);font-size:0.7rem">ثبت نشده</span>';
-  let s = toPersianNum(pred.homeGoals) + '–' + toPersianNum(pred.awayGoals);
+  let s = '۹۰ دقیقه ' + toPersianNum(pred.homeGoals) + '–' + toPersianNum(pred.awayGoals);
   if (isKO && pred.otPrediction) {
-    s += ' <span style="color:var(--text-dim);font-size:0.68rem"> | وقت اضافه: ' +
-      toPersianNum(pred.otPrediction.homeGoals) + '–' + toPersianNum(pred.otPrediction.awayGoals) + '</span>';
+    s += '<br>اضافه ' + toPersianNum(pred.otPrediction.homeGoals) + '–' + toPersianNum(pred.otPrediction.awayGoals);
   }
   if (isKO && pred.penPrediction) {
-    s += ' <span style="color:#C9A84C;font-size:0.68rem"> | پنالتی: ' +
-      toPersianNum(pred.penPrediction.homeGoals) + '–' + toPersianNum(pred.penPrediction.awayGoals) + '</span>';
+    s += '<br>پنالتی ' + toPersianNum(pred.penPrediction.homeGoals) + '–' + toPersianNum(pred.penPrediction.awayGoals);
   }
   return s;
 }
