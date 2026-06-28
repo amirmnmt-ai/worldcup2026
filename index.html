@@ -2444,14 +2444,14 @@ function adminResultChanged(matchId) {
   const rh = parseInt(document.getElementById(`rh-${matchId}`)?.value);
   const ra = parseInt(document.getElementById(`ra-${matchId}`)?.value);
   const otDiv = document.getElementById(`ot-admin-${matchId}`);
-  const rtEl = document.getElementById(`rt-${matchId}`);
-  if (!otDiv || !rtEl) return;
+  const rtEl  = document.getElementById(`rt-${matchId}`);
+  if (!otDiv) return;
   if (!isNaN(rh) && !isNaN(ra) && rh === ra) {
-    otDiv.style.display = 'flex';
-    rtEl.value = 'ot';
+    otDiv.style.display = 'block';
+    if (rtEl) rtEl.value = 'ot';
   } else {
     otDiv.style.display = 'none';
-    rtEl.value = '90';
+    if (rtEl) rtEl.value = '90';
     const penDiv = document.getElementById(`pen-admin-${matchId}`);
     if (penDiv) penDiv.style.display = 'none';
   }
@@ -2461,14 +2461,14 @@ function adminOTChanged(matchId) {
   const oth = parseInt(document.getElementById(`oth-r-${matchId}`)?.value);
   const ota = parseInt(document.getElementById(`ota-r-${matchId}`)?.value);
   const penDiv = document.getElementById(`pen-admin-${matchId}`);
-  const rtEl = document.getElementById(`rt-${matchId}`);
-  if (!penDiv || !rtEl) return;
+  const rtEl   = document.getElementById(`rt-${matchId}`);
+  if (!penDiv) return;
   if (!isNaN(oth) && !isNaN(ota) && oth === ota) {
-    penDiv.style.display = 'flex';
-    rtEl.value = 'pen';
+    penDiv.style.display = 'block';
+    if (rtEl) rtEl.value = 'pen';
   } else {
     penDiv.style.display = 'none';
-    rtEl.value = 'ot';
+    if (rtEl) rtEl.value = 'ot';
   }
 }
 
@@ -2482,29 +2482,25 @@ async function confirmResult(matchId) {
     return;
   }
 
-  const result = { homeGoals: rh, awayGoals: ra, type: '90' };
-
   const typeEl = document.getElementById(`rt-${matchId}`);
-  if (typeEl) {
-    result.type = typeEl.value;
+  const type = typeEl ? typeEl.value : '90';
+  const result = { homeGoals: rh, awayGoals: ra, type };
+
+  if (type === 'ot' || type === 'pen') {
     const othEl = document.getElementById(`oth-r-${matchId}`);
     const otaEl = document.getElementById(`ota-r-${matchId}`);
-    if (othEl?.value !== '' && otaEl?.value !== '') {
-      result.otResult = {
-        homeGoals: parseInt(othEl.value),
-        awayGoals: parseInt(otaEl.value)
-      };
-    }
-    const penEl = document.getElementById(`pen-r-${matchId}`);
-    if (penEl?.value !== '') result.penaltyGoals = parseInt(penEl.value);
+    if (!othEl?.value || !otaEl?.value) { showToast('نتیجه وقت اضافه را وارد کنید', 'error'); return; }
+    result.otResult = { homeGoals: parseInt(othEl.value), awayGoals: parseInt(otaEl.value) };
+  }
+
+  if (type === 'pen') {
     const penH = parseInt(document.getElementById(`pen-home-r-${matchId}`)?.value);
     const penA = parseInt(document.getElementById(`pen-away-r-${matchId}`)?.value);
-    if (!isNaN(penH) && !isNaN(penA)) {
-      result.homePenGoals = penH;
-      result.awayPenGoals = penA;
-      result.penaltyGoals = penH + penA; // مجموع برای پیش‌بینی تعداد
-      result.penWinner    = penH > penA ? 'home' : 'away'; // برنده خودکار
-    }
+    if (isNaN(penH) || isNaN(penA)) { showToast('نتیجه پنالتی را وارد کنید', 'error'); return; }
+    result.homePenGoals = penH;
+    result.awayPenGoals = penA;
+    result.penaltyGoals = penH + penA;
+    result.penWinner    = penH > penA ? 'home' : 'away';
   }
 
   // ذخیره با retry خودکار
@@ -4780,57 +4776,51 @@ function renderAdmin() {
         <div class="breakdown-title">👁️ پیش‌بینی‌ها (فقط ادمین)</div>
         ${predRows}
       </div>` : ''}
-      <div class="admin-result-input" style="flex-direction:column;gap:0.6rem">
-        <!-- ۹۰ دقیقه -->
-        <div style="font-size:0.72rem;color:var(--text-dim);text-align:center">وقت قانونی</div>
-        <div style="display:flex;align-items:center;justify-content:center;gap:8px;direction:rtl">
-          <div style="flex:1;text-align:center;font-size:0.8rem">${homeInfo.flag} ${homeInfo.name}</div>
-          <input type="number" inputmode="numeric" id="rh-${match.id}" min="0" max="20" value="${existing ? existing.homeGoals : ''}" placeholder="۰"
-            style="width:60px;height:48px;font-size:1.3rem;text-align:center;background:var(--bg-2);border:1px solid var(--border);border-radius:8px;color:var(--text)"
-            oninput="adminResultChanged('${match.id}')">
-          <div style="font-size:1.2rem;color:var(--text-dim)">–</div>
-          <input type="number" inputmode="numeric" id="ra-${match.id}" min="0" max="20" value="${existing ? existing.awayGoals : ''}" placeholder="۰"
-            style="width:60px;height:48px;font-size:1.3rem;text-align:center;background:var(--bg-2);border:1px solid var(--border);border-radius:8px;color:var(--text)"
-            oninput="adminResultChanged('${match.id}')">
-          <div style="flex:1;text-align:center;font-size:0.8rem">${awayInfo.name} ${awayInfo.flag}</div>
+      <div class="admin-result-input" dir="ltr">
+        <div class="input-group">
+          <label dir="rtl">${homeInfo.flag} ${homeInfo.name}</label>
+          <input type="number" inputmode="numeric" id="rh-${match.id}" min="0" max="20" value="${existing ? existing.homeGoals : ''}" placeholder="۰" oninput="adminResultChanged('${match.id}')">
+        </div>
+        <div style="font-size:1.2rem;color:var(--text-dim);align-self:flex-end;padding-bottom:0.3rem">–</div>
+        <div class="input-group">
+          <label dir="rtl">${awayInfo.flag} ${awayInfo.name}</label>
+          <input type="number" inputmode="numeric" id="ra-${match.id}" min="0" max="20" value="${existing ? existing.awayGoals : ''}" placeholder="۰" oninput="adminResultChanged('${match.id}')">
         </div>
         ${isKO ? `
-        <!-- وقت اضافه — فقط اگه ۹۰ دقیقه مساوی بود -->
-        <div id="ot-admin-${match.id}" style="display:${(existing?.type==='ot'||existing?.type==='pen')?'flex':'none'};flex-direction:column;gap:0.4rem">
-          <div style="font-size:0.72rem;color:var(--text-dim);text-align:center">تجمیع وقت قانونی + وقت اضافه</div>
-          <div style="display:flex;align-items:center;justify-content:center;gap:8px;direction:rtl">
-            <div style="flex:1;text-align:center;font-size:0.8rem">${homeInfo.flag} ${homeInfo.name}</div>
-            <input type="number" inputmode="numeric" id="oth-r-${match.id}" min="0" max="20" value="${existing?.otResult?.homeGoals ?? ''}" placeholder="۰"
-              style="width:60px;height:48px;font-size:1.3rem;text-align:center;background:var(--bg-2);border:1px solid var(--border);border-radius:8px;color:var(--text)"
-              oninput="adminOTChanged('${match.id}')">
-            <div style="font-size:1.2rem;color:var(--text-dim)">–</div>
-            <input type="number" inputmode="numeric" id="ota-r-${match.id}" min="0" max="20" value="${existing?.otResult?.awayGoals ?? ''}" placeholder="۰"
-              style="width:60px;height:48px;font-size:1.3rem;text-align:center;background:var(--bg-2);border:1px solid var(--border);border-radius:8px;color:var(--text)"
-              oninput="adminOTChanged('${match.id}')">
-            <div style="flex:1;text-align:center;font-size:0.8rem">${awayInfo.name} ${awayInfo.flag}</div>
-          </div>
-          <!-- پنالتی — فقط اگه OT هم مساوی بود -->
-          <div id="pen-admin-${match.id}" style="display:${existing?.type==='pen'?'flex':'none'};flex-direction:column;gap:0.4rem">
-            <div style="font-size:0.72rem;color:var(--text-dim);text-align:center">پنالتی</div>
-            <div style="display:flex;align-items:center;justify-content:center;gap:8px;direction:rtl">
-              <div style="flex:1;text-align:center;font-size:0.8rem">${homeInfo.flag} ${homeInfo.name}</div>
-              <input type="number" inputmode="numeric" id="pen-home-r-${match.id}" min="0" max="20" value="${existing?.homePenGoals ?? ''}" placeholder="۰"
-                style="width:60px;height:48px;font-size:1.3rem;text-align:center;background:var(--bg-2);border:1px solid var(--border);border-radius:8px;color:var(--text)">
-              <div style="font-size:1.2rem;color:var(--text-dim)">–</div>
-              <input type="number" inputmode="numeric" id="pen-away-r-${match.id}" min="0" max="20" value="${existing?.awayPenGoals ?? ''}" placeholder="۰"
-                style="width:60px;height:48px;font-size:1.3rem;text-align:center;background:var(--bg-2);border:1px solid var(--border);border-radius:8px;color:var(--text)">
-              <div style="flex:1;text-align:center;font-size:0.8rem">${awayInfo.name} ${awayInfo.flag}</div>
-            </div>
-          </div>
-        </div>
-        <!-- hidden type field برای confirmResult -->
         <input type="hidden" id="rt-${match.id}" value="${existing?.type || '90'}">
         ` : ''}
-        <div style="display:flex;gap:0.5rem">
-          <button class="btn-confirm" style="flex:1" onclick="confirmResult('${match.id}')">${existing ? '🔄 به‌روزرسانی' : '✅ ثبت'}</button>
-          <button class="btn-confirm" style="background:var(--blue)" onclick="fetchResultFromAPI('${match.id}')">🌐 API</button>
+        <button class="btn-confirm" onclick="confirmResult('${match.id}')">${existing ? '🔄 به‌روزرسانی' : '✅ ثبت'}</button>
+        <button class="btn-confirm" style="background:var(--blue)" onclick="fetchResultFromAPI('${match.id}')">🌐 API</button>
+      </div>
+      ${isKO ? `
+      <div id="ot-admin-${match.id}" style="display:${(existing?.type==='ot'||existing?.type==='pen')?'block':'none'};margin-top:0.4rem">
+        <div style="font-size:0.72rem;color:var(--text-dim);text-align:center;margin-bottom:0.3rem">تجمیع وقت قانونی + وقت اضافه</div>
+        <div class="admin-result-input" dir="ltr">
+          <div class="input-group">
+            <label dir="rtl">${homeInfo.flag} ${homeInfo.name}</label>
+            <input type="number" inputmode="numeric" id="oth-r-${match.id}" min="0" max="20" value="${existing?.otResult?.homeGoals ?? ''}" placeholder="۰" oninput="adminOTChanged('${match.id}')">
+          </div>
+          <div style="font-size:1.2rem;color:var(--text-dim);align-self:flex-end;padding-bottom:0.3rem">–</div>
+          <div class="input-group">
+            <label dir="rtl">${awayInfo.flag} ${awayInfo.name}</label>
+            <input type="number" inputmode="numeric" id="ota-r-${match.id}" min="0" max="20" value="${existing?.otResult?.awayGoals ?? ''}" placeholder="۰" oninput="adminOTChanged('${match.id}')">
+          </div>
         </div>
       </div>
+      <div id="pen-admin-${match.id}" style="display:${existing?.type==='pen'?'block':'none'};margin-top:0.4rem">
+        <div style="font-size:0.72rem;color:var(--text-dim);text-align:center;margin-bottom:0.3rem">پنالتی</div>
+        <div class="admin-result-input" dir="ltr">
+          <div class="input-group">
+            <label dir="rtl">${homeInfo.flag} ${homeInfo.name}</label>
+            <input type="number" inputmode="numeric" id="pen-home-r-${match.id}" min="0" max="20" value="${existing?.homePenGoals ?? ''}" placeholder="۰">
+          </div>
+          <div style="font-size:1.2rem;color:var(--text-dim);align-self:flex-end;padding-bottom:0.3rem">–</div>
+          <div class="input-group">
+            <label dir="rtl">${awayInfo.flag} ${awayInfo.name}</label>
+            <input type="number" inputmode="numeric" id="pen-away-r-${match.id}" min="0" max="20" value="${existing?.awayPenGoals ?? ''}" placeholder="۰">
+          </div>
+        </div>
+      </div>` : ''}
     </div>`;
   }).join('');
   // اعمال فیلتر فعلی
