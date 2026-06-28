@@ -3513,7 +3513,8 @@ function renderMatches() {
 function formatPredFull(pred, isKO) {
   if (!pred || pred.homeGoals === undefined) return '<span style="color:var(--text-dim);font-size:0.7rem">ثبت نشده</span>';
   const pn = toPersianNum;
-  const row = (h, a) => `<span style="display:block;text-align:center;font-size:0.72rem;direction:ltr;unicode-bidi:isolate">${pn(h)}–${pn(a)}</span>`;
+  // صفحه RTL: راست=home، چپ=away — پس away–home نمایش میدیم
+  const row = (h, a) => `<span style="display:block;text-align:center;font-size:0.72rem">${pn(a)}–${pn(h)}</span>`;
   let s = row(pred.homeGoals, pred.awayGoals);
   if (isKO && pred.otPrediction)
     s += row(pred.otPrediction.homeGoals, pred.otPrediction.awayGoals);
