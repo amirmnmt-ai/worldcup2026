@@ -4855,7 +4855,7 @@ async function saveKOEditTeams(matchId) {
     appData.teamOverrides[matchId].home = { name: hName, flag: hTeam?.flag || '🏳️' };
     appData.teamOverrides[matchId].away = { name: aName, flag: aTeam?.flag || '🏳️' };
     showToast('ویرایش تیم‌ها ذخیره شد ✅', 'success');
-    renderAdminPanel();
+    renderAdmin();
   } catch(e) { showToast('خطا در ذخیره: ' + e.message, 'error'); }
 }
 
