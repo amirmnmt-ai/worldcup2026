@@ -3513,13 +3513,12 @@ function renderMatches() {
 function formatPredFull(pred, isKO) {
   if (!pred || pred.homeGoals === undefined) return '<span style="color:var(--text-dim);font-size:0.7rem">ثبت نشده</span>';
   const fmt = (h, a) => toPersianNum(h) + '–' + toPersianNum(a);
-  let s = '<span style="font-size:0.72rem;white-space:nowrap">۹۰ دقیقه ' + fmt(pred.homeGoals, pred.awayGoals) + '</span>';
-  if (isKO && pred.otPrediction) {
-    s += '<br><span style="font-size:0.72rem;white-space:nowrap">اضافه ' + fmt(pred.otPrediction.homeGoals, pred.otPrediction.awayGoals) + '</span>';
-  }
-  if (isKO && pred.penPrediction) {
-    s += '<br><span style="font-size:0.72rem;white-space:nowrap">پنالتی ' + fmt(pred.penPrediction.homeGoals, pred.penPrediction.awayGoals) + '</span>';
-  }
+  const row = (label, val) => `<span style="font-size:0.72rem;white-space:nowrap;display:block;direction:ltr;text-align:right">${label} ${val}</span>`;
+  let s = row('۹۰ دقیقه', fmt(pred.homeGoals, pred.awayGoals));
+  if (isKO && pred.otPrediction)
+    s += row('اضافه', fmt(pred.otPrediction.homeGoals, pred.otPrediction.awayGoals));
+  if (isKO && pred.penPrediction)
+    s += row('پنالتی', fmt(pred.penPrediction.homeGoals, pred.penPrediction.awayGoals));
   return s;
 }
 
@@ -4589,13 +4588,13 @@ function renderAdmin() {
           <div style="font-size:0.68rem;color:var(--text-dim)">📅 ${dateStr} · ${timeStr}</div>
         </div>
         <!-- دو ورودی روی یه خط + دکمه زیرش -->
-        <div style="display:flex;gap:6px;align-items:center;margin-bottom:6px">
+        <div style="display:flex;gap:6px;align-items:center;margin-bottom:6px;direction:rtl">
           <div style="flex:1;display:flex;align-items:center;gap:5px;background:var(--bg-2);border:1px solid var(--border);border-radius:8px;padding:5px 7px;min-width:0">
             <span id="tbd-hf-${m.id}" style="font-size:1.1rem;flex-shrink:0">${hFlag}</span>
             <input id="tbd-h-${m.id}" list="tbd-teams-datalist"
               placeholder="میزبان" value="${hName}"
               oninput="updateTBDFlag('${m.id}','h')"
-              style="flex:1;background:transparent;border:none;color:var(--text);font-family:'Vazirmatn',sans-serif;font-size:0.78rem;min-width:0;outline:none;width:100%">
+              style="flex:1;background:transparent;border:none;color:var(--text);font-family:'Vazirmatn',sans-serif;font-size:0.78rem;min-width:0;outline:none;width:100%;direction:rtl">
           </div>
           <span style="color:var(--text-dim);font-size:0.72rem;flex-shrink:0">vs</span>
           <div style="flex:1;display:flex;align-items:center;gap:5px;background:var(--bg-2);border:1px solid var(--border);border-radius:8px;padding:5px 7px;min-width:0">
@@ -4603,7 +4602,7 @@ function renderAdmin() {
             <input id="tbd-a-${m.id}" list="tbd-teams-datalist"
               placeholder="مهمان" value="${aName}"
               oninput="updateTBDFlag('${m.id}','a')"
-              style="flex:1;background:transparent;border:none;color:var(--text);font-family:'Vazirmatn',sans-serif;font-size:0.78rem;min-width:0;outline:none;width:100%">
+              style="flex:1;background:transparent;border:none;color:var(--text);font-family:'Vazirmatn',sans-serif;font-size:0.78rem;min-width:0;outline:none;width:100%;direction:rtl">
           </div>
         </div>
         <button onclick="saveTBDTeams('${m.id}')"
@@ -4653,13 +4652,13 @@ function renderAdmin() {
             <div style="font-size:0.75rem;color:var(--gold);font-weight:700">${stageLabel}${num?' — بازی '+toPersianNum(num):''}</div>
             <div style="font-size:0.68rem;color:var(--text-dim)">📅 ${dateStr} · ${timeStr}</div>
           </div>
-          <div style="display:flex;gap:6px;align-items:center;margin-bottom:6px">
+          <div style="display:flex;gap:6px;align-items:center;margin-bottom:6px;direction:rtl">
             <div style="flex:1;display:flex;align-items:center;gap:5px;background:var(--bg-2);border:1px solid var(--border);border-radius:8px;padding:5px 7px;min-width:0">
               <span id="ko-edit-hf-${m.id}" style="font-size:1.1rem;flex-shrink:0">${hFlag}</span>
               <input id="ko-edit-h-${m.id}" list="ko-edit-teams-datalist"
                 placeholder="میزبان" value="${hName}"
                 oninput="updateKOEditFlag('${m.id}','h')"
-                style="flex:1;background:transparent;border:none;color:var(--text);font-family:'Vazirmatn',sans-serif;font-size:0.78rem;min-width:0;outline:none;width:100%">
+                style="flex:1;background:transparent;border:none;color:var(--text);font-family:'Vazirmatn',sans-serif;font-size:0.78rem;min-width:0;outline:none;width:100%;direction:rtl">
             </div>
             <span style="color:var(--text-dim);font-size:0.72rem;flex-shrink:0">vs</span>
             <div style="flex:1;display:flex;align-items:center;gap:5px;background:var(--bg-2);border:1px solid var(--border);border-radius:8px;padding:5px 7px;min-width:0">
@@ -4667,7 +4666,7 @@ function renderAdmin() {
               <input id="ko-edit-a-${m.id}" list="ko-edit-teams-datalist"
                 placeholder="مهمان" value="${aName}"
                 oninput="updateKOEditFlag('${m.id}','a')"
-                style="flex:1;background:transparent;border:none;color:var(--text);font-family:'Vazirmatn',sans-serif;font-size:0.78rem;min-width:0;outline:none;width:100%">
+                style="flex:1;background:transparent;border:none;color:var(--text);font-family:'Vazirmatn',sans-serif;font-size:0.78rem;min-width:0;outline:none;width:100%;direction:rtl">
             </div>
           </div>
           <button onclick="saveKOEditTeams('${m.id}')"
