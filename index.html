@@ -3510,6 +3510,20 @@ function renderMatches() {
   }
 }
 
+function formatPredFull(pred, isKO) {
+  if (!pred || pred.homeGoals === undefined) return '<span style="color:var(--text-dim);font-size:0.7rem">ثبت نشده</span>';
+  let s = toPersianNum(pred.homeGoals) + '–' + toPersianNum(pred.awayGoals);
+  if (isKO && pred.otPrediction) {
+    s += ' <span style="color:var(--text-dim);font-size:0.68rem"> | وقت اضافه: ' +
+      toPersianNum(pred.otPrediction.homeGoals) + '–' + toPersianNum(pred.otPrediction.awayGoals) + '</span>';
+  }
+  if (isKO && pred.penPrediction) {
+    s += ' <span style="color:#C9A84C;font-size:0.68rem"> | پنالتی: ' +
+      toPersianNum(pred.penPrediction.homeGoals) + '–' + toPersianNum(pred.penPrediction.awayGoals) + '</span>';
+  }
+  return s;
+}
+
 function renderPredictionSection(match, status, myPred) {
   const isKnockout = match.stage !== 'group';
 
@@ -3526,13 +3540,14 @@ function renderPredictionSection(match, status, myPred) {
     const matchPreds    = appData.predictions[match.id] || {};
     const approvedUsers = Object.entries(appData.users).filter(([,u]) => u.approved);
     let predRows = '';
+    const isKOLocked = match.stage !== 'group';
     for (const [uid, user] of approvedUsers) {
       const pred = matchPreds[uid];
       if (!pred) continue;
       const isMe = uid === currentUser?.uid;
       predRows += `<div class="breakdown-row">
         <span class="breakdown-player">${user.name}</span>
-        <span class="breakdown-pred" dir="ltr">${toPersianNum(pred.homeGoals)}–${toPersianNum(pred.awayGoals)}</span>
+        <span class="breakdown-pred" dir="ltr">${formatPredFull(pred, isKOLocked)}</span>
         <span class="breakdown-result res-zero">در انتظار نتیجه</span>
       </div>`;
     }
@@ -3547,13 +3562,14 @@ function renderPredictionSection(match, status, myPred) {
     const matchPredsDone    = appData.predictions[match.id] || {};
     const approvedUsersDone = Object.entries(appData.users).filter(([,u]) => u.approved);
     let doneRows = '';
+    const isKODone = match.stage !== 'group';
     for (const [uid, user] of approvedUsersDone) {
       const pred = matchPredsDone[uid];
       if (!pred) continue;
       const isMe = uid === currentUser?.uid;
       doneRows += `<div class="breakdown-row${isMe?' highlight':''}">
         <span class="breakdown-player">${user.name}</span>
-        <span class="breakdown-pred" dir="ltr">${toPersianNum(pred.homeGoals)}–${toPersianNum(pred.awayGoals)}</span>
+        <span class="breakdown-pred" dir="ltr">${formatPredFull(pred, isKODone)}</span>
         <span class="breakdown-result res-zero">نتیجه ثبت شد</span>
       </div>`;
     }
