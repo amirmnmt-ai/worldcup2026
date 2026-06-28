@@ -2326,7 +2326,7 @@ async function submitPrediction(matchId) {
     const oth = parseInt(othEl.value), ota = parseInt(otaEl.value);
     // نتیجه وقت اضافه نمی‌تونه از ۹۰ دقیقه کمتر باشه
     if (oth < ph || ota < pa) {
-      showToast('نتیجه وقت اضافه در ادامه گل‌های وقت قانونی است — نمی‌تونه کمتر بشه', 'error');
+      showToast('نتیجه وقت اضافه نمی‌تونه کمتر از ۹۰ دقیقه باشه', 'error');
       return;
     }
     pred.otPrediction = { homeGoals: oth, awayGoals: ota };
