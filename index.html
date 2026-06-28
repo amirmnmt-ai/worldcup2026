@@ -3513,18 +3513,12 @@ function renderMatches() {
 function formatPredFull(pred, isKO) {
   if (!pred || pred.homeGoals === undefined) return '<span style="color:var(--text-dim);font-size:0.7rem">ثبت نشده</span>';
   const pn = toPersianNum;
-  // نمایش: عدد home | برچسب | عدد away — کاملاً مستقل از direction
-  const row = (label, h, a) =>
-    `<span style="font-size:0.72rem;display:flex;align-items:center;justify-content:center;gap:4px;direction:ltr">` +
-    `<span style="min-width:18px;text-align:right">${pn(h)}</span>` +
-    `<span style="color:var(--text-dim);font-size:0.65rem;direction:rtl">${label}</span>` +
-    `<span style="min-width:18px;text-align:left">${pn(a)}</span>` +
-    `</span>`;
-  let s = row('وقت قانونی', pred.homeGoals, pred.awayGoals);
+  const row = (h, a) => `<span style="display:block;text-align:center;font-size:0.72rem;direction:ltr;unicode-bidi:isolate">${pn(h)}–${pn(a)}</span>`;
+  let s = row(pred.homeGoals, pred.awayGoals);
   if (isKO && pred.otPrediction)
-    s += row('اضافه', pred.otPrediction.homeGoals, pred.otPrediction.awayGoals);
+    s += row(pred.otPrediction.homeGoals, pred.otPrediction.awayGoals);
   if (isKO && pred.penPrediction)
-    s += row('پنالتی', pred.penPrediction.homeGoals, pred.penPrediction.awayGoals);
+    s += row(pred.penPrediction.homeGoals, pred.penPrediction.awayGoals);
   return s;
 }
 
