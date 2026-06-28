@@ -1537,6 +1537,13 @@
     </div>
     <div id="tbd-teams-list" style="margin-bottom:0.5rem"></div>
 
+    <div class="section-divider" style="margin:0.5rem 0">
+      <div class="section-divider-line"></div>
+      <div class="section-divider-text">ویرایش تیم‌های ذخیره‌شده</div>
+      <div class="section-divider-line"></div>
+    </div>
+    <div id="ko-edit-container" style="margin-bottom:0.5rem"></div>
+
     <!-- پنل تسویه حدس قهرمان -->
     <div id="champion-settle-panel" style="margin-bottom:0.5rem">
       <div class="section-divider">
@@ -2789,9 +2796,10 @@ function _switchToTab(name) {
 // ════════════════════════════════════════════════════════════
 //  CHAMPION PICK
 // ════════════════════════════════════════════════════════════
+// deadline قهرمان: تا لحظه شروع اولین بازی یک‌شانزدهم نهایی (آفریقا vs کانادا)
 const CHAMP_R32_FIRST = new Date("2026-06-28T22:30:00+03:30").getTime();
 const CHAMP_OPEN      = CHAMP_R32_FIRST - 24 * 3600 * 1000;
-const CHAMP_CLOSE     = CHAMP_R32_FIRST -  1 * 3600 * 1000;
+const CHAMP_CLOSE     = CHAMP_R32_FIRST;  // تا لحظه شروع بازی
 
 let _champTimerInterval = null;
 
@@ -3602,10 +3610,7 @@ function renderKnockoutExtras(match, myPred) {
   return `<div class="knockout-extras visible" id="ko-wrap-${mid}">
     <!-- ── OT Section ── -->
     <div id="ot-section-${mid}" style="display:${showOT ? 'block' : 'none'}">
-      <div class="extra-section-title" style="margin-top:0.4rem">⏱️ نتیجه بعد از وقت اضافه</div>
-      <div style="font-size:0.72rem;color:var(--text-dim);margin-bottom:0.4rem" id="ot-hint-${mid}">
-        نتیجه کل رو بنویس — مثلاً اگه ۲–۲ دادی و فکر می‌کنی میزبان یک گل میزنه: ۳–۲ بنویس
-      </div>
+      <div class="extra-section-title" style="margin-top:0.4rem">تجمیع نتیجه ۹۰ دقیقه + وقت اضافه</div>
       <div class="score-input-row" dir="ltr">
         <div style="flex:1;text-align:center;font-size:0.7rem;color:var(--text-dim)" dir="rtl">${getTeamInfo(mid,'home').name}</div>
         <input type="number" inputmode="numeric" pattern="[0-9]*" class="score-input"
@@ -3617,13 +3622,11 @@ function renderKnockoutExtras(match, myPred) {
           oninput="updateKnockoutVisibility('${mid}')">
         <div style="flex:1;text-align:center;font-size:0.7rem;color:var(--text-dim)" dir="rtl">${getTeamInfo(mid,'away').name}</div>
       </div>
-      <div style="font-size:0.7rem;color:var(--text-dim);margin-top:0.3rem;text-align:center" id="ot-equal-hint-${mid}" style="display:none">
-        ↓ اگه وقت اضافه هم مساوی بمونه، بازی به پنالتی می‌ره
-      </div>
+      <div id="ot-equal-hint-${mid}" style="display:none"></div>
     </div>
     <!-- ── Penalty Section ── -->
     <div id="pen-section-${mid}" style="display:${showPen ? 'block' : 'none'}">
-      <div class="extra-section-title" style="margin-top:0.6rem">🥅 پنالتی — اگه وقت اضافه هم مساوی بمونه</div>
+      <div class="extra-section-title" style="margin-top:0.4rem">پنالتی</div>
       <div style="display:flex;align-items:center;gap:0.5rem;margin-top:0.5rem">
         <div style="flex:1;text-align:center;font-size:0.7rem;color:var(--text-dim)" dir="rtl">${getTeamInfo(mid,'home').name}</div>
         <input type="number" inputmode="numeric" pattern="[0-9]*" class="score-input"
@@ -3635,7 +3638,7 @@ function renderKnockoutExtras(match, myPred) {
           style="width:64px" oninput="updateKnockoutVisibility('${mid}')">
         <div style="flex:1;text-align:center;font-size:0.7rem;color:var(--text-dim)" dir="rtl">${getTeamInfo(mid,'away').name}</div>
       </div>
-      <div style="font-size:0.72rem;color:var(--text-dim);text-align:center;margin-top:0.35rem">تعداد پنالتی‌های هر تیم رو جداگانه وارد کن — برنده خودکار مشخص میشه</div>
+
     </div>
   </div>`;
 }
@@ -4598,6 +4601,71 @@ function renderAdmin() {
     tbdContainer.innerHTML = '<div style="font-size:0.85rem;color:var(--text-dim);padding:0.5rem">همه تیم‌ها مشخص شده‌اند</div>';
   }
 
+  // ── بازی‌های حذفی که تیم‌هاشون ذخیره شده ولی قابل ادیت هستن ──
+  const koEditContainer = document.getElementById('ko-edit-container');
+  if (koEditContainer) {
+    const savedKOMatches = MATCHES.filter(m => {
+      if (m.stage === 'group') return false;
+      const h = getTeamInfo(m.id,'home'); const a = getTeamInfo(m.id,'away');
+      return h.name !== '؟' && a.name !== '؟';
+    });
+    if (savedKOMatches.length) {
+      const dlId2 = 'ko-edit-teams-datalist';
+      if (!document.getElementById(dlId2)) {
+        const dl2 = document.createElement('datalist');
+        dl2.id = dlId2;
+        ALL_TEAMS.forEach(t => {
+          const opt = document.createElement('option');
+          opt.value = t.name; opt.label = t.flag + ' ' + t.name;
+          dl2.appendChild(opt);
+        });
+        document.body.appendChild(dl2);
+      }
+      koEditContainer.innerHTML = savedKOMatches.map(m => {
+        const ov = (appData.teamOverrides||{})[m.id]||{};
+        const hName = getTeamInfo(m.id,'home').name;
+        const aName = getTeamInfo(m.id,'away').name;
+        const hFlag = (ALL_TEAMS.find(t=>t.name===hName)||{}).flag || '🏳️';
+        const aFlag = (ALL_TEAMS.find(t=>t.name===aName)||{}).flag || '🏳️';
+        const stageMap = {r32:'یک‌شانزدهم',r16:'یک‌هشتم',qf:'یک‌چهارم',sf:'نیمه‌نهایی','3rd':'رده‌بندی',final:'فینال'};
+        const stageLabel = stageMap[m.stage] || m.stage;
+        const num = m.id.replace(/[^0-9]/g,'');
+        const matchDt = new Date(m.datetime + (m.datetime.includes('+') ? '' : '+03:30'));
+        const dateStr = matchDt.toLocaleDateString('fa-IR', {weekday:'short', month:'long', day:'numeric'});
+        const timeStr = matchDt.toLocaleTimeString('fa-IR', {hour:'2-digit', minute:'2-digit'});
+        return `<div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:0.7rem;margin-bottom:0.5rem">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:0.55rem;flex-wrap:wrap;gap:2px">
+            <div style="font-size:0.75rem;color:var(--gold);font-weight:700">${stageLabel}${num?' — بازی '+toPersianNum(num):''}</div>
+            <div style="font-size:0.68rem;color:var(--text-dim)">📅 ${dateStr} · ${timeStr}</div>
+          </div>
+          <div style="display:flex;gap:6px;align-items:center;margin-bottom:6px">
+            <div style="flex:1;display:flex;align-items:center;gap:5px;background:var(--bg-2);border:1px solid var(--border);border-radius:8px;padding:5px 7px;min-width:0">
+              <span id="ko-edit-hf-${m.id}" style="font-size:1.1rem;flex-shrink:0">${hFlag}</span>
+              <input id="ko-edit-h-${m.id}" list="ko-edit-teams-datalist"
+                placeholder="میزبان" value="${hName}"
+                oninput="updateKOEditFlag('${m.id}','h')"
+                style="flex:1;background:transparent;border:none;color:var(--text);font-family:'Vazirmatn',sans-serif;font-size:0.78rem;min-width:0;outline:none;width:100%">
+            </div>
+            <span style="color:var(--text-dim);font-size:0.72rem;flex-shrink:0">vs</span>
+            <div style="flex:1;display:flex;align-items:center;gap:5px;background:var(--bg-2);border:1px solid var(--border);border-radius:8px;padding:5px 7px;min-width:0">
+              <span id="ko-edit-af-${m.id}" style="font-size:1.1rem;flex-shrink:0">${aFlag}</span>
+              <input id="ko-edit-a-${m.id}" list="ko-edit-teams-datalist"
+                placeholder="مهمان" value="${aName}"
+                oninput="updateKOEditFlag('${m.id}','a')"
+                style="flex:1;background:transparent;border:none;color:var(--text);font-family:'Vazirmatn',sans-serif;font-size:0.78rem;min-width:0;outline:none;width:100%">
+            </div>
+          </div>
+          <button onclick="saveKOEditTeams('${m.id}')"
+            style="width:100%;padding:0.45rem;background:var(--gold);border:none;border-radius:8px;color:#000;font-weight:700;cursor:pointer;font-family:'Vazirmatn',sans-serif;font-size:0.8rem">
+            💾 ذخیره ویرایش
+          </button>
+        </div>`;
+      }).join('');
+    } else {
+      koEditContainer.innerHTML = '<div style="font-size:0.85rem;color:var(--text-dim);padding:0.5rem">بازی حذفی ذخیره‌شده‌ای برای ادیت وجود ندارد</div>';
+    }
+  }
+
   // هشدار نتایج ثبت‌نشده
   const missedBadge = document.getElementById('missed-results-badge');
   const missedMatches = MATCHES.filter(m => {
@@ -4758,6 +4826,32 @@ function updateTBDFlag(matchId, side) {
   if (!input || !flagEl) return;
   const team = ALL_TEAMS.find(t => t.name === input.value.trim());
   flagEl.textContent = team ? team.flag : '🏳️';
+}
+
+function updateKOEditFlag(matchId, side) {
+  const inp = document.getElementById(`ko-edit-${side === 'h' ? 'h' : 'a'}-${matchId}`);
+  const flagEl = document.getElementById(`ko-edit-${side === 'h' ? 'h' : 'a'}f-${matchId}`);
+  if (!inp || !flagEl) return;
+  const found = ALL_TEAMS.find(t => t.name === inp.value);
+  flagEl.textContent = found ? found.flag : '🏳️';
+}
+
+async function saveKOEditTeams(matchId) {
+  const hInp = document.getElementById(`ko-edit-h-${matchId}`);
+  const aInp = document.getElementById(`ko-edit-a-${matchId}`);
+  if (!hInp || !aInp) return;
+  const hName = hInp.value.trim(), aName = aInp.value.trim();
+  if (!hName || !aName) { showToast('هر دو تیم رو وارد کن', 'error'); return; }
+  const hTeam = ALL_TEAMS.find(t => t.name === hName);
+  const aTeam = ALL_TEAMS.find(t => t.name === aName);
+  const ov = { home: { name: hName, flag: hTeam?.flag || '🏳️' }, away: { name: aName, flag: aTeam?.flag || '🏳️' } };
+  try {
+    await db.ref(`teamOverrides/${matchId}`).update(ov);
+    if (!appData.teamOverrides) appData.teamOverrides = {};
+    appData.teamOverrides[matchId] = { ...(appData.teamOverrides[matchId]||{}), ...ov };
+    showToast('ویرایش تیم‌ها ذخیره شد ✅', 'success');
+    renderAdminPanel();
+  } catch(e) { showToast('خطا در ذخیره', 'error'); }
 }
 
 async function saveTBDTeams(matchId) {
