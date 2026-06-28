@@ -3513,8 +3513,8 @@ function renderMatches() {
 function formatPredFull(pred, isKO) {
   if (!pred || pred.homeGoals === undefined) return '<span style="color:var(--text-dim);font-size:0.7rem">ثبت نشده</span>';
   const fmt = (h, a) => toPersianNum(h) + '–' + toPersianNum(a);
-  const row = (label, val) => `<span style="font-size:0.72rem;white-space:nowrap;display:block;text-align:center"><span dir="rtl">${label}</span> <span dir="ltr">${val}</span></span>`;
-  let s = row('۹۰ دقیقه', fmt(pred.homeGoals, pred.awayGoals));
+  const row = (label, val) => `<span style="font-size:0.72rem;white-space:nowrap;display:block;text-align:center;direction:rtl">${label} <bdi>${val}</bdi></span>`;
+  let s = row('وقت قانونی', fmt(pred.homeGoals, pred.awayGoals));
   if (isKO && pred.otPrediction)
     s += row('اضافه', fmt(pred.otPrediction.homeGoals, pred.otPrediction.awayGoals));
   if (isKO && pred.penPrediction)
