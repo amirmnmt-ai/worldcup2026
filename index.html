@@ -2437,7 +2437,39 @@ async function rejectUser(uid, name) {
 function toggleAdminOTFields(matchId) {
   const type = document.getElementById(`rt-${matchId}`)?.value;
   const otDiv = document.getElementById(`ot-admin-${matchId}`);
-  if (otDiv) otDiv.style.display = (type === 'ot' || type === 'pen') ? 'contents' : 'none';
+  if (otDiv) otDiv.style.display = (type === 'ot' || type === 'pen') ? 'flex' : 'none';
+}
+
+function adminResultChanged(matchId) {
+  const rh = parseInt(document.getElementById(`rh-${matchId}`)?.value);
+  const ra = parseInt(document.getElementById(`ra-${matchId}`)?.value);
+  const otDiv = document.getElementById(`ot-admin-${matchId}`);
+  const rtEl = document.getElementById(`rt-${matchId}`);
+  if (!otDiv || !rtEl) return;
+  if (!isNaN(rh) && !isNaN(ra) && rh === ra) {
+    otDiv.style.display = 'flex';
+    rtEl.value = 'ot';
+  } else {
+    otDiv.style.display = 'none';
+    rtEl.value = '90';
+    const penDiv = document.getElementById(`pen-admin-${matchId}`);
+    if (penDiv) penDiv.style.display = 'none';
+  }
+}
+
+function adminOTChanged(matchId) {
+  const oth = parseInt(document.getElementById(`oth-r-${matchId}`)?.value);
+  const ota = parseInt(document.getElementById(`ota-r-${matchId}`)?.value);
+  const penDiv = document.getElementById(`pen-admin-${matchId}`);
+  const rtEl = document.getElementById(`rt-${matchId}`);
+  if (!penDiv || !rtEl) return;
+  if (!isNaN(oth) && !isNaN(ota) && oth === ota) {
+    penDiv.style.display = 'flex';
+    rtEl.value = 'pen';
+  } else {
+    penDiv.style.display = 'none';
+    rtEl.value = 'ot';
+  }
 }
 
 // ثبت نتیجه بازی توسط ادمین
@@ -4748,30 +4780,56 @@ function renderAdmin() {
         <div class="breakdown-title">👁️ پیش‌بینی‌ها (فقط ادمین)</div>
         ${predRows}
       </div>` : ''}
-      <div class="admin-result-input" dir="ltr">
-        <div class="input-group">
-          <label dir="rtl">${homeInfo.name} (میزبان)</label>
-          <input type="number" inputmode="numeric" id="rh-${match.id}" min="0" max="20" value="${existing ? existing.homeGoals : ''}" placeholder="۰">
-        </div>
-        <div style="font-size:1.2rem;color:var(--text-dim);align-self:flex-end;padding-bottom:0.3rem">–</div>
-        <div class="input-group">
-          <label dir="rtl">${awayInfo.name} (مهمان)</label>
-          <input type="number" inputmode="numeric" id="ra-${match.id}" min="0" max="20" value="${existing ? existing.awayGoals : ''}" placeholder="۰">
+      <div class="admin-result-input" style="flex-direction:column;gap:0.6rem">
+        <!-- ۹۰ دقیقه -->
+        <div style="font-size:0.72rem;color:var(--text-dim);text-align:center">وقت قانونی</div>
+        <div style="display:flex;align-items:center;justify-content:center;gap:8px;direction:rtl">
+          <div style="flex:1;text-align:center;font-size:0.8rem">${homeInfo.flag} ${homeInfo.name}</div>
+          <input type="number" inputmode="numeric" id="rh-${match.id}" min="0" max="20" value="${existing ? existing.homeGoals : ''}" placeholder="۰"
+            style="width:60px;height:48px;font-size:1.3rem;text-align:center;background:var(--bg-2);border:1px solid var(--border);border-radius:8px;color:var(--text)"
+            oninput="adminResultChanged('${match.id}')">
+          <div style="font-size:1.2rem;color:var(--text-dim)">–</div>
+          <input type="number" inputmode="numeric" id="ra-${match.id}" min="0" max="20" value="${existing ? existing.awayGoals : ''}" placeholder="۰"
+            style="width:60px;height:48px;font-size:1.3rem;text-align:center;background:var(--bg-2);border:1px solid var(--border);border-radius:8px;color:var(--text)"
+            oninput="adminResultChanged('${match.id}')">
+          <div style="flex:1;text-align:center;font-size:0.8rem">${awayInfo.name} ${awayInfo.flag}</div>
         </div>
         ${isKO ? `
-        <div class="input-group">
-          <label>نوع نتیجه</label>
-          <select id="rt-${match.id}" onchange="toggleAdminOTFields('${match.id}')">
-            <option value="90" ${existing?.type==='90'?'selected':''}>۹۰ دقیقه</option>
-            <option value="ot" ${existing?.type==='ot'?'selected':''}>وقت اضافه</option>
-            <option value="pen" ${existing?.type==='pen'?'selected':''}>پنالتی</option>
-          </select>
+        <!-- وقت اضافه — فقط اگه ۹۰ دقیقه مساوی بود -->
+        <div id="ot-admin-${match.id}" style="display:${(existing?.type==='ot'||existing?.type==='pen')?'flex':'none'};flex-direction:column;gap:0.4rem">
+          <div style="font-size:0.72rem;color:var(--text-dim);text-align:center">تجمیع وقت قانونی + وقت اضافه</div>
+          <div style="display:flex;align-items:center;justify-content:center;gap:8px;direction:rtl">
+            <div style="flex:1;text-align:center;font-size:0.8rem">${homeInfo.flag} ${homeInfo.name}</div>
+            <input type="number" inputmode="numeric" id="oth-r-${match.id}" min="0" max="20" value="${existing?.otResult?.homeGoals ?? ''}" placeholder="۰"
+              style="width:60px;height:48px;font-size:1.3rem;text-align:center;background:var(--bg-2);border:1px solid var(--border);border-radius:8px;color:var(--text)"
+              oninput="adminOTChanged('${match.id}')">
+            <div style="font-size:1.2rem;color:var(--text-dim)">–</div>
+            <input type="number" inputmode="numeric" id="ota-r-${match.id}" min="0" max="20" value="${existing?.otResult?.awayGoals ?? ''}" placeholder="۰"
+              style="width:60px;height:48px;font-size:1.3rem;text-align:center;background:var(--bg-2);border:1px solid var(--border);border-radius:8px;color:var(--text)"
+              oninput="adminOTChanged('${match.id}')">
+            <div style="flex:1;text-align:center;font-size:0.8rem">${awayInfo.name} ${awayInfo.flag}</div>
+          </div>
+          <!-- پنالتی — فقط اگه OT هم مساوی بود -->
+          <div id="pen-admin-${match.id}" style="display:${existing?.type==='pen'?'flex':'none'};flex-direction:column;gap:0.4rem">
+            <div style="font-size:0.72rem;color:var(--text-dim);text-align:center">پنالتی</div>
+            <div style="display:flex;align-items:center;justify-content:center;gap:8px;direction:rtl">
+              <div style="flex:1;text-align:center;font-size:0.8rem">${homeInfo.flag} ${homeInfo.name}</div>
+              <input type="number" inputmode="numeric" id="pen-home-r-${match.id}" min="0" max="20" value="${existing?.homePenGoals ?? ''}" placeholder="۰"
+                style="width:60px;height:48px;font-size:1.3rem;text-align:center;background:var(--bg-2);border:1px solid var(--border);border-radius:8px;color:var(--text)">
+              <div style="font-size:1.2rem;color:var(--text-dim)">–</div>
+              <input type="number" inputmode="numeric" id="pen-away-r-${match.id}" min="0" max="20" value="${existing?.awayPenGoals ?? ''}" placeholder="۰"
+                style="width:60px;height:48px;font-size:1.3rem;text-align:center;background:var(--bg-2);border:1px solid var(--border);border-radius:8px;color:var(--text)">
+              <div style="flex:1;text-align:center;font-size:0.8rem">${awayInfo.name} ${awayInfo.flag}</div>
+            </div>
+          </div>
         </div>
-        <div id="ot-admin-${match.id}" style="display:${(existing?.type==='ot'||existing?.type==='pen')?'contents':'none'}">
-          ${renderOTAdminInputs(match.id, existing)}
-        </div>` : ''}
-        <button class="btn-confirm" onclick="confirmResult('${match.id}')">${existing ? '🔄 به‌روزرسانی' : '✅ ثبت'}</button>
-        <button class="btn-confirm" style="background:var(--blue)" onclick="fetchResultFromAPI('${match.id}')">🌐 API</button>
+        <!-- hidden type field برای confirmResult -->
+        <input type="hidden" id="rt-${match.id}" value="${existing?.type || '90'}">
+        ` : ''}
+        <div style="display:flex;gap:0.5rem">
+          <button class="btn-confirm" style="flex:1" onclick="confirmResult('${match.id}')">${existing ? '🔄 به‌روزرسانی' : '✅ ثبت'}</button>
+          <button class="btn-confirm" style="background:var(--blue)" onclick="fetchResultFromAPI('${match.id}')">🌐 API</button>
+        </div>
       </div>
     </div>`;
   }).join('');
