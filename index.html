@@ -2323,10 +2323,13 @@ async function submitPrediction(matchId) {
 
   const otFilled = othEl && otaEl && othEl.value !== '' && otaEl.value !== '';
   if (otFilled) {
-    pred.otPrediction = {
-      homeGoals: parseInt(othEl.value),
-      awayGoals: parseInt(otaEl.value)
-    };
+    const oth = parseInt(othEl.value), ota = parseInt(otaEl.value);
+    // نتیجه وقت اضافه نمی‌تونه از ۹۰ دقیقه کمتر باشه
+    if (oth < ph || ota < pa) {
+      showToast('نتیجه وقت اضافه در ادامه گل‌های وقت قانونی است — نمی‌تونه کمتر بشه', 'error');
+      return;
+    }
+    pred.otPrediction = { homeGoals: oth, awayGoals: ota };
   }
 
   // اگه OT پر شده و مساوی‌ست، پنالتی اجباریه
