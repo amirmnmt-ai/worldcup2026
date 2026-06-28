@@ -4844,14 +4844,19 @@ async function saveKOEditTeams(matchId) {
   if (!hName || !aName) { showToast('هر دو تیم رو وارد کن', 'error'); return; }
   const hTeam = ALL_TEAMS.find(t => t.name === hName);
   const aTeam = ALL_TEAMS.find(t => t.name === aName);
-  const ov = { home: { name: hName, flag: hTeam?.flag || '🏳️' }, away: { name: aName, flag: aTeam?.flag || '🏳️' } };
+  const ov = {
+    'home/name': hName, 'home/flag': hTeam?.flag || '🏳️',
+    'away/name': aName, 'away/flag': aTeam?.flag || '🏳️'
+  };
   try {
     await db.ref(`teamOverrides/${matchId}`).update(ov);
     if (!appData.teamOverrides) appData.teamOverrides = {};
-    appData.teamOverrides[matchId] = { ...(appData.teamOverrides[matchId]||{}), ...ov };
+    if (!appData.teamOverrides[matchId]) appData.teamOverrides[matchId] = {};
+    appData.teamOverrides[matchId].home = { name: hName, flag: hTeam?.flag || '🏳️' };
+    appData.teamOverrides[matchId].away = { name: aName, flag: aTeam?.flag || '🏳️' };
     showToast('ویرایش تیم‌ها ذخیره شد ✅', 'success');
     renderAdminPanel();
-  } catch(e) { showToast('خطا در ذخیره', 'error'); }
+  } catch(e) { showToast('خطا در ذخیره: ' + e.message, 'error'); }
 }
 
 async function saveTBDTeams(matchId) {
