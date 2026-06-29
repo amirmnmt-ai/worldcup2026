@@ -3811,12 +3811,12 @@ function renderResults() {
     { key:'g1', label:'دور اول گروهی',    short:'G1', matches: allGroup.filter(m=>matchRound(m)==='g1').reverse() },
     { key:'g2', label:'دور دوم گروهی',    short:'G2', matches: allGroup.filter(m=>matchRound(m)==='g2').reverse() },
     { key:'g3', label:'دور سوم گروهی',    short:'G3', matches: allGroup.filter(m=>matchRound(m)==='g3').reverse() },
-    { key:'r32',label:'یک‌شانزدهم نهایی', short:'R32',matches: doneMatches.filter(m=>m.stage==='r32') },
-    { key:'r16',label:'یک‌هشتم نهایی',    short:'R16',matches: doneMatches.filter(m=>m.stage==='r16') },
-    { key:'qf', label:'یک‌چهارم نهایی',   short:'QF', matches: doneMatches.filter(m=>m.stage==='qf') },
-    { key:'sf', label:'نیمه‌نهایی', short:'SF', matches: doneMatches.filter(m=>m.stage==='sf') },
-    { key:'3rd',label:'رده‌بندی',   short:'3rd',matches: doneMatches.filter(m=>m.stage==='3rd') },
-    { key:'fin',label:'فینال',      short:'FIN',matches: doneMatches.filter(m=>m.stage==='final') },
+    { key:'r32',label:'یک‌شانزدهم نهایی', short:'R32',matches: doneMatches.filter(m=>m.stage==='r32').reverse() },
+    { key:'r16',label:'یک‌هشتم نهایی',    short:'R16',matches: doneMatches.filter(m=>m.stage==='r16').reverse() },
+    { key:'qf', label:'یک‌چهارم نهایی',   short:'QF', matches: doneMatches.filter(m=>m.stage==='qf').reverse() },
+    { key:'sf', label:'نیمه‌نهایی', short:'SF', matches: doneMatches.filter(m=>m.stage==='sf').reverse() },
+    { key:'3rd',label:'رده‌بندی',   short:'3rd',matches: doneMatches.filter(m=>m.stage==='3rd').reverse() },
+    { key:'fin',label:'فینال',      short:'FIN',matches: doneMatches.filter(m=>m.stage==='final').reverse() },
   ].filter(r => r.matches.length > 0);
 
   if (!ROUNDS.length && !Object.values(appData.daily_challenges||{}).some(ch=>ch.settled)) {
