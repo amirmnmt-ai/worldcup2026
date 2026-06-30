@@ -2652,6 +2652,19 @@ function getPenCategory(pred, result) {
   return exact ? 'exact' : 'correct';
 }
 
+// نرخ‌های رد و بدل پول بر اساس مرحله — یک‌شانزدهم نرخ پایه، بقیه مراحل بالاتر
+function getRatesForStage(stage) {
+  const RATES = {
+    r32:   { e90:25000, c90:7000,  w90:3000,  eOT:8000,  cOT:4000, ePen:20000, cPen:5000  },
+    r16:   { e90:35000, c90:10000, w90:5000,  eOT:10000, cOT:5000, ePen:25000, cPen:7000  },
+    qf:    { e90:35000, c90:10000, w90:5000,  eOT:10000, cOT:5000, ePen:25000, cPen:7000  },
+    sf:    { e90:40000, c90:12000, w90:7000,  eOT:12000, cOT:7000, ePen:27000, cPen:9000  },
+    "3rd": { e90:40000, c90:12000, w90:7000,  eOT:12000, cOT:7000, ePen:27000, cPen:9000  },
+    final: { e90:50000, c90:20000, w90:10000, eOT:15000, cOT:9000, ePen:30000, cPen:11000 },
+  };
+  return RATES[stage] || RATES.r32;
+}
+
 function calcSettlementForMatch(matchId, result) {
   const match = MATCHES.find(m => m.id === matchId);
   if (!match) return { payments: {}, weights: {}, totalPool: 0, cat90: {}, catOT: {}, catPen: {} };
@@ -2687,7 +2700,7 @@ function calcSettlementForMatch(matchId, result) {
   const n_w = uids.filter(u => cat90[u] === 'wrong').length;
 
   // ── نرخ‌ها ──
-  const R = { e90:25000, c90:7000, w90:3000, eOT:8000, cOT:4000, ePen:20000, cPen:5000 };
+  const R = getRatesForStage(match.stage);
 
   // ── محاسبه مستقیم (همان فرمول اکسل) ──
   for (const uid of uids) {
