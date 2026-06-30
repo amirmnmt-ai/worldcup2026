@@ -2619,9 +2619,16 @@ function get90Category(pred, result) {
 function getOTCategory(pred, result) {
   const op = pred.otPrediction, or_ = result.otResult;
   if (!op || !or_) return null;
-  const {homeGoals: ph, awayGoals: pa} = op;
+  // عدد خام تجمیعیه — برای دقیق بودن، گل‌های اضافه‌شده در خود OT رو مقایسه می‌کنیم
+  // (نه عدد کل، چون پایه‌های ۹۰ دقیقه ممکنه فرق داشته باشن)
+  const otGoalsPredH = op.homeGoals - pred.homeGoals;
+  const otGoalsPredA = op.awayGoals - pred.awayGoals;
+  const otGoalsResH  = or_.homeGoals - result.homeGoals;
+  const otGoalsResA  = or_.awayGoals - result.awayGoals;
+  if (otGoalsPredH === otGoalsResH && otGoalsPredA === otGoalsResA) return 'exact';
+
   const {homeGoals: rh, awayGoals: ra} = or_;
-  if (ph === rh && pa === ra) return 'exact';
+  const {homeGoals: ph, awayGoals: pa} = op;
   if (rh !== ra) {
     const rw = rh > ra ? 'H' : 'A';
     const pw = ph > pa ? 'H' : ph < pa ? 'A' : 'D';
